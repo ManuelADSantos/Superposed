@@ -9,8 +9,8 @@ FPS = 60
 TILE_SIZE = 64
 
 # Physics
-BELT_SPEED = 1.8
-GENERATOR_SPEED = 2.0
+BELT_SPEED = 1.5
+GENERATOR_SPEED = 1.5
 
 # Colors
 BG = (20, 20, 25)

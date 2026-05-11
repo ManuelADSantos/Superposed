@@ -60,21 +60,17 @@ class QubitItem:
 
     def draw(self, surface, x, y, size):
         """Draw the qubit on the given surface."""
-        cx = x + size // 2
-        cy = y + size // 2
+        from sprites import get_qubit_sprite
 
-        # Calculate animation state if disappearing
         if self.is_disappearing:
-            scale = max(0.1, self.disappear_time / 0.3)  # Shrink to 0.1 size over 0.3s
+            scale = max(0.18, self.disappear_time / 0.3)
         else:
             scale = 1.0
 
-        # Draw circle with scale
-        if self.state == QubitState.SUPERPOSITION:
-            pygame.draw.circle(surface, PURPLE, (cx, cy), max(2, int(size * scale / 4)))
-            pygame.draw.circle(surface, WHITE, (cx, cy), max(2, int(size * scale / 4)), 2)
-        else:
-            pygame.draw.circle(surface, state_color(self.state), (cx, cy), max(2, int(size * scale / 5)))
+        sprite_size = max(8, int(size * scale))
+        sprite = get_qubit_sprite(self.state, sprite_size, self.is_disappearing, scale)
+        sprite_rect = sprite.get_rect(center=(x + size // 2, y + size // 2))
+        surface.blit(sprite, sprite_rect)
 
 
 class Tile:

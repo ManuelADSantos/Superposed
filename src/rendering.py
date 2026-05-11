@@ -7,6 +7,7 @@ from config import (
     WIDTH, HEIGHT, TILE_SIZE, BG, GRID, WHITE, YELLOW, RED, GREEN, BLUE, PURPLE
 )
 from entities import BuildingType, QubitState, DIR_VECTORS, state_color
+from sprites import get_building_sprite
 from world import world, get_tile, world_to_screen, screen_to_world
 
 
@@ -95,31 +96,15 @@ def draw_grid(surface):
 
             tile = get_tile(x, y)
 
-            # Draw building
-            if tile.building == BuildingType.BELT:
-                pygame.draw.rect(surface, BLUE, rect.inflate(-10, -10), border_radius=6)
-                draw_arrow(surface, rect, tile.direction)
+            # Draw building sprite
+            if tile.building != BuildingType.EMPTY:
+                sprite = get_building_sprite(tile.building, tile.direction, int(size))
+                if sprite is not None:
+                    sprite_rect = sprite.get_rect(center=rect.center)
+                    surface.blit(sprite, sprite_rect)
 
-            elif tile.building == BuildingType.GENERATOR:
-                pygame.draw.rect(surface, GREEN, rect.inflate(-10, -10), border_radius=6)
-                draw_arrow(surface, rect, tile.direction)
-                draw_building_label(surface, rect, "S")
-
-            elif tile.building == BuildingType.HADAMARD:
-                pygame.draw.rect(surface, PURPLE, rect.inflate(-10, -10), border_radius=6)
-                draw_arrow(surface, rect, tile.direction)
-                draw_building_label(surface, rect, "H")
-
-            elif tile.building == BuildingType.X_GATE:
-                pygame.draw.rect(surface, (80, 220, 220), rect.inflate(-10, -10), border_radius=6)
-                draw_arrow(surface, rect, tile.direction)
-                draw_building_label(surface, rect, "X")
-
-            elif tile.building == BuildingType.MEASUREMENT:
-                pygame.draw.rect(surface, (235, 190, 80), rect.inflate(-10, -10), border_radius=6)
-                draw_arrow(surface, rect, tile.direction)
-                draw_building_label(surface, rect, "M")
-                draw_measurement_histogram(surface, rect, tile)
+                if tile.building == BuildingType.MEASUREMENT:
+                    draw_measurement_histogram(surface, rect, tile)
 
             # Draw item on tile
             if tile.item:

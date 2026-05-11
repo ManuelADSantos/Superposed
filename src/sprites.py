@@ -26,20 +26,21 @@ def _draw_panel(surface, rect, base_color, border_color, radius=10):
     pygame.draw.rect(surface, border_color, rect, 2, border_radius=radius)
 
 
-def _draw_direction_chevron(surface, direction, rect, color=WHITE):
-    cx = rect.centerx
-    cy = rect.centery
-
+def _direction_edge(rect, direction):
     if direction == Direction.UP:
-        points = [(cx, cy - 12), (cx - 10, cy + 8), (cx + 10, cy + 8)]
-    elif direction == Direction.RIGHT:
-        points = [(cx + 12, cy), (cx - 8, cy - 10), (cx - 8, cy + 10)]
-    elif direction == Direction.DOWN:
-        points = [(cx, cy + 12), (cx - 10, cy - 8), (cx + 10, cy - 8)]
-    else:
-        points = [(cx - 12, cy), (cx + 8, cy - 10), (cx + 8, cy + 10)]
+        return pygame.Rect(rect.left + 10, rect.top + 8, rect.width - 20, 10)
+    if direction == Direction.RIGHT:
+        return pygame.Rect(rect.right - 18, rect.top + 10, 10, rect.height - 20)
+    if direction == Direction.DOWN:
+        return pygame.Rect(rect.left + 10, rect.bottom - 18, rect.width - 20, 10)
+    return pygame.Rect(rect.left + 8, rect.top + 10, 10, rect.height - 20)
 
-    pygame.draw.polygon(surface, color, points)
+
+def _draw_direction_mark(surface, direction, rect, accent_color):
+    edge = _direction_edge(rect, direction)
+    glow = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+    pygame.draw.rect(glow, _with_alpha(accent_color, 120), edge, border_radius=4)
+    surface.blit(glow, (0, 0))
 
 
 def _draw_belt(surface, direction, size):
@@ -52,12 +53,7 @@ def _draw_belt(surface, direction, size):
     pygame.draw.rect(sprite, (22, 34, 50), inner, border_radius=9)
     pygame.draw.rect(sprite, (68, 112, 180), inner, 2, border_radius=9)
 
-    if direction in (Direction.LEFT, Direction.RIGHT):
-        chevron_rect = pygame.Rect(inner.left + 8, inner.centery - 10, inner.width - 16, 20)
-    else:
-        chevron_rect = pygame.Rect(inner.centerx - 10, inner.top + 8, 20, inner.height - 16)
-
-    _draw_direction_chevron(sprite, direction, chevron_rect, color=WHITE)
+    _draw_direction_mark(sprite, direction, base, (165, 210, 255))
 
     shine = pygame.Surface((size, size), pygame.SRCALPHA)
     pygame.draw.line(shine, (255, 255, 255, 45), (8, 8), (size - 10, 10), 3)
@@ -78,7 +74,7 @@ def _draw_generator(surface, direction, size):
 
     ring = core.inflate(16, 16)
     pygame.draw.ellipse(sprite, (170, 255, 205, 120), ring, 3)
-    _draw_direction_chevron(sprite, direction, base.inflate(-20, -20), color=(235, 255, 240))
+    _draw_direction_mark(sprite, direction, base, (180, 255, 210))
 
     return sprite
 
@@ -102,7 +98,7 @@ def _draw_hadamard(surface, direction, size):
     text = font.render("H", True, WHITE)
     sprite.blit(text, text.get_rect(center=base.center))
 
-    _draw_direction_chevron(sprite, direction, base.inflate(-18, -18), color=(245, 225, 255))
+    _draw_direction_mark(sprite, direction, base, (220, 185, 255))
     return sprite
 
 
@@ -118,7 +114,7 @@ def _draw_x_gate(surface, direction, size):
     pygame.draw.line(sprite, (120, 255, 255), inset.topleft, inset.bottomright, 2)
     pygame.draw.line(sprite, (120, 255, 255), inset.topright, inset.bottomleft, 2)
 
-    _draw_direction_chevron(sprite, direction, base.inflate(-20, -20), color=(235, 255, 255))
+    _draw_direction_mark(sprite, direction, base, (150, 250, 255))
     return sprite
 
 
@@ -140,7 +136,7 @@ def _draw_measurement(surface, direction, size):
     pygame.draw.line(sprite, RED, (meter.left + 8, meter.centery), (meter.centerx - 2, meter.centery), 4)
     pygame.draw.line(sprite, BLUE, (meter.centerx + 2, meter.centery), (meter.right - 8, meter.centery), 4)
 
-    _draw_direction_chevron(sprite, direction, base.inflate(-18, -18), color=(255, 244, 210))
+    _draw_direction_mark(sprite, direction, base, (255, 225, 145))
     return sprite
 
 

@@ -4,36 +4,11 @@ import pygame
 import world as world_module
 
 from config import (
-    WIDTH, HEIGHT, TILE_SIZE, BG, GRID, WHITE, YELLOW, RED, GREEN, BLUE, PURPLE
+    WIDTH, HEIGHT, TILE_SIZE, BG, GRID, WHITE, YELLOW, RED, GREEN, BLUE
 )
 from entities import BuildingType, QubitState, DIR_VECTORS, state_color
 from sprites import get_building_sprite
 from world import world, get_tile, world_to_screen, screen_to_world
-
-
-def draw_arrow(surface, rect, direction, color=WHITE):
-    """Draw a directional arrow in the center of a rect."""
-    cx = rect.centerx
-    cy = rect.centery
-
-    if direction.value == 0:  # UP
-        points = [(cx, cy - 12), (cx - 10, cy + 8), (cx + 10, cy + 8)]
-    elif direction.value == 1:  # RIGHT
-        points = [(cx + 12, cy), (cx - 8, cy - 10), (cx - 8, cy + 10)]
-    elif direction.value == 2:  # DOWN
-        points = [(cx, cy + 12), (cx - 10, cy - 8), (cx + 10, cy - 8)]
-    else:  # LEFT
-        points = [(cx - 12, cy), (cx + 8, cy - 10), (cx + 8, cy + 10)]
-
-    pygame.draw.polygon(surface, color, points)
-
-
-def draw_building_label(surface, rect, label, color=WHITE):
-    """Draw a text label in the center of a rect."""
-    font = pygame.font.SysFont("consolas", 18)
-    text = font.render(label, True, color)
-    text_rect = text.get_rect(center=rect.center)
-    surface.blit(text, text_rect)
 
 
 def draw_measurement_histogram(surface, rect, tile):

@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Superposed — Sprite Designer</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0e0e12;
+    color: #e6e6e6;
+    font-family: 'Consolas', 'Courier New', monospace;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ── Left: tools panel ── */
+  .tools-panel {
+    width: 220px;
+    background: #16161c;
+    border-right: 1px solid #333;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+  }
+  .tools-panel h2 {
+    font-size: 14px;
+    color: #aa5aff;
+    border-bottom: 1px solid #333;
+    padding-bottom: 6px;
+  }
+  .tool-group { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tool-btn {
+    background: #222230;
+    border: 2px solid #444;
+    color: #ccc;
+    padding: 6px 10px;
+    cursor: pointer;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 12px;
+    transition: all 0.15s;
+  }
+  .tool-btn:hover { border-color: #888; }
+  .tool-btn.active { border-color: #aa5aff; color: #fff; background: #2a2040; }
+
+  /* Color swatches */
+  .swatch-grid { display: flex; flex-wrap: wrap; gap: 3px; }
+  .swatch {
+    width: 24px; height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.1s;
+  }
+  .swatch:hover { border-color: #aaa; }
+  .swatch.active { border-color: #fff; box-shadow: 0 0 6px rgba(170,90,255,0.5); }
+
+  .color-input-row {
+    display: flex; gap: 6px; align-items: center; margin-top: 4px;
+  }
+  .color-input-row input[type="color"] {
+    width: 32px; height: 26px; border: none; cursor: pointer;
+    background: transparent;
+  }
+  .color-input-row input[type="range"] {
+    flex: 1; accent-color: #aa5aff;
+  }
+  .color-input-row label { font-size: 11px; color: #999; width: 45px; }
+
+  /* Size inputs */
+  .size-row {
+    display: flex; gap: 6px; align-items: center;
+  }
+  .size-row label { font-size: 11px; color: #999; }
+  .size-row input {
+    width: 50px; background: #222; border: 1px solid #444;
+    color: #eee; padding: 3px 6px; border-radius: 4px;
+    font-family: inherit; font-size: 12px;
+  }
+
+  /* Action buttons */
+  .action-btn {
+    background: #2a2a3a;
+    border: 1px solid #555;
+    color: #ddd;
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .action-btn:hover { background: #3a3a4a; border-color: #aa5aff; }
+  .action-btn.danger { border-color: #a44; }
+  .action-btn.danger:hover { background: #3a2020; border-color: #e55; }
+  .action-btn.primary { background: #352060; border-color: #aa5aff; }
+  .action-btn.primary:hover { background: #452a80; }
+
+  /* ── Center: canvas ── */
+  .canvas-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .canvas-area h1 {
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 8px;
+  }
+  #editor-canvas {
+    border: 2px solid #444;
+    cursor: crosshair;
+    image-rendering: pixelated;
+  }
+  .coords-label {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    color: #666;
+  }
+
+  /* ── Right: preview panel ── */
+  .preview-panel {
+    width: 200px;
+    background: #16161c;
+    border-left: 1px solid #333;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .preview-panel h2 {
+    font-size: 14px;
+    color: #aa5aff;
+    border-bottom: 1px solid #333;
+    padding-bottom: 6px;
+  }
+  .preview-box {
+    background: #0a0a0f;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .preview-box canvas {
+    image-rendering: pixelated;
+    border: 1px solid #222;
+  }
+  .preview-box label { font-size: 11px; color: #888; }
+
+  /* Direction previews */
+  .direction-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .direction-grid .preview-box { padding: 4px; }
+
+  /* Layers */
+  .layer-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 6px; border-radius: 4px;
+    cursor: pointer; font-size: 12px;
+  }
+  .layer-item:hover { background: #222; }
+  .layer-item.active { background: #2a2040; }
+  .layer-eye { font-size: 14px; cursor: pointer; }
+
+  /* History */
+  .history-btns { display: flex; gap: 4px; }
+</style>
+</head>
+<body>
+
+<!-- ═══ LEFT PANEL ═══ -->
+<div class="tools-panel">
+  <h2>TOOLS</h2>
+  <div class="tool-group" id="tools">
+    <button class="tool-btn active" data-tool="pencil">Pencil</button>
+    <button class="tool-btn" data-tool="eraser">Eraser</button>
+    <button class="tool-btn" data-tool="fill">Fill</button>
+    <button class="tool-btn" data-tool="rect">Rect</button>
+    <button class="tool-btn" data-tool="circle">Circle</button>
+    <button class="tool-btn" data-tool="line">Line</button>
+    <button class="tool-btn" data-tool="picker">Picker</button>
+  </div>
+
+  <h2>GAME PALETTE</h2>
+  <div class="swatch-grid" id="swatches"></div>
+
+  <div class="color-input-row">
+    <input type="color" id="customColor" value="#aa5aff">
+    <label>Custom</label>
+  </div>
+  <div class="color-input-row">
+    <label>Alpha</label>
+    <input type="range" id="alphaSlider" min="0" max="255" value="255">
+    <span id="alphaVal" style="font-size:11px;color:#999;width:30px">255</span>
+  </div>
+
+  <h2>BRUSH</h2>
+  <div class="size-row">
+    <label>Size:</label>
+    <input type="number" id="brushSize" value="1" min="1" max="16">
+  </div>
+
+  <h2>CANVAS</h2>
+  <div class="size-row">
+    <label>W:</label>
+    <input type="number" id="canvasW" value="64" min="8" max="128">
+    <label>H:</label>
+    <input type="number" id="canvasH" value="64" min="8" max="128">
+    <button class="tool-btn" onclick="resizeCanvas()">Apply</button>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+    <input type="checkbox" id="gridToggle" checked>
+    <label for="gridToggle" style="font-size:12px;color:#999;cursor:pointer">Show grid</label>
+  </div>
+
+  <h2>HISTORY</h2>
+  <div class="history-btns">
+    <button class="action-btn" onclick="undo()" title="Ctrl+Z">Undo</button>
+    <button class="action-btn" onclick="redo()" title="Ctrl+Y">Redo</button>
+  </div>
+
+  <h2>ACTIONS</h2>
+  <button class="action-btn primary" onclick="exportPNG()">Export PNG</button>
+  <button class="action-btn" onclick="exportPygame()">Copy Pygame Code</button>
+  <button class="action-btn" onclick="importImage()">Import Image</button>
+  <button class="action-btn danger" onclick="clearCanvas()">Clear</button>
+
+  <input type="file" id="fileInput" accept="image/*" style="display:none">
+</div>
+
+<!-- ═══ CENTER: CANVAS ═══ -->
+<div class="canvas-area">
+  <h1>Sprite Designer — 64×64</h1>
+  <canvas id="editor-canvas" width="512" height="512"></canvas>
+  <div class="coords-label" id="coordsLabel">( — , — )</div>
+</div>
+
+<!-- ═══ RIGHT PANEL ═══ -->
+<div class="preview-panel">
+  <h2>PREVIEW</h2>
+  <div class="preview-box">
+    <canvas id="prev1x" width="64" height="64"></canvas>
+    <label>1× (64 px)</label>
+  </div>
+  <div class="preview-box">
+    <canvas id="prev2x" width="128" height="128"></canvas>
+    <label>2× (128 px)</label>
+  </div>
+
+  <h2>ROTATIONS</h2>
+  <div class="direction-grid">
+    <div class="preview-box"><canvas id="prevR" width="48" height="48"></canvas><label>RIGHT</label></div>
+    <div class="preview-box"><canvas id="prevD" width="48" height="48"></canvas><label>DOWN</label></div>
+    <div class="preview-box"><canvas id="prevL" width="48" height="48"></canvas><label>LEFT</label></div>
+    <div class="preview-box"><canvas id="prevU" width="48" height="48"></canvas><label>UP</label></div>
+  </div>
+
+  <h2>SPRITE NAME</h2>
+  <input type="text" id="spriteName" value="custom_gate"
+    style="background:#222;border:1px solid #444;color:#eee;padding:5px 8px;
+    border-radius:4px;font-family:inherit;font-size:13px;width:100%">
+  <div style="font-size:11px;color:#666;margin-top:2px">
+    Save as: <span id="fileNamePreview">custom_gate.png</span>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// State
+// ═══════════════════════════════════════════════════════════════════
+const GAME_PALETTE = [
+  { name: 'BG',         hex: '#0e0e12' },
+  { name: 'Grid',       hex: '#20202a' },
+  { name: 'White',      hex: '#e6e6e6' },
+  { name: 'Light Gray', hex: '#a0a0aa' },
+  { name: 'Dark Gray',  hex: '#3c3c46' },
+  { name: 'Yellow',     hex: '#ffdc5a' },
+  { name: 'Red',        hex: '#dc5050' },
+  { name: 'Green',      hex: '#64dc78' },
+  { name: 'Blue',       hex: '#64a0ff' },
+  { name: 'Orange',     hex: '#ffa050' },
+  { name: 'Purple',     hex: '#aa5aff' },
+  { name: 'Cyan',       hex: '#5adce6' },
+  { name: 'Teal',       hex: '#46c8be' },
+  { name: 'Pink',       hex: '#f078b4' },
+  { name: 'Gold',       hex: '#ffc83c' },
+  { name: 'Belt',       hex: '#5488d2' },
+  { name: 'Generator',  hex: '#6cdc88' },
+  { name: 'Hadamard',   hex: '#be87ff' },
+  { name: 'X Gate',     hex: '#73f0f0' },
+  { name: 'Z Gate',     hex: '#f078b4' },
+  { name: 'CNOT',       hex: '#ffb450' },
+  { name: 'Measure',    hex: '#ffd670' },
+  { name: 'Splitter',   hex: '#5adcc8' },
+  { name: 'Sink',       hex: '#dcc8ff' },
+  { name: 'Shadow',     hex: '#000000' },
+];
+
+let W = 64, H = 64;
+let scale = 8;  // canvas pixel = scale * sprite pixel
+let pixels; // Uint8ClampedArray  W*H*4
+let currentTool = 'pencil';
+let currentColor = [170, 90, 255, 255]; // RGBA
+let brushSize = 1;
+let showGrid = true;
+let drawing = false;
+let shapeStart = null; // {x,y} for rect/circle/line
+let history = [];
+let historyIdx = -1;
+const MAX_HISTORY = 80;
+
+// ═══════════════════════════════════════════════════════════════════
+// Init
+// ═══════════════════════════════════════════════════════════════════
+function init() {
+  pixels = new Uint8ClampedArray(W * H * 4); // all transparent
+  history = [];
+  historyIdx = -1;
+  pushHistory();
+  buildSwatches();
+  render();
+  updatePreviews();
+}
+
+function buildSwatches() {
+  const container = document.getElementById('swatches');
+  container.innerHTML = '';
+  GAME_PALETTE.forEach((c, i) => {
+    const el = document.createElement('div');
+    el.className = 'swatch' + (i === 10 ? ' active' : '');
+    el.style.background = c.hex;
+    el.title = c.name;
+    el.onclick = () => {
+      document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+      el.classList.add('active');
+      const rgb = hexToRgb(c.hex);
+      currentColor = [rgb[0], rgb[1], rgb[2], currentColor[3]];
+      document.getElementById('customColor').value = c.hex;
+    };
+    container.appendChild(el);
+  });
+}
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  return [r, g, b];
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// History
+// ═══════════════════════════════════════════════════════════════════
+function pushHistory() {
+  historyIdx++;
+  history.length = historyIdx;
+  history.push(new Uint8ClampedArray(pixels));
+  if (history.length > MAX_HISTORY) {
+    history.shift();
+    historyIdx--;
+  }
+}
+function undo() {
+  if (historyIdx > 0) {
+    historyIdx--;
+    pixels = new Uint8ClampedArray(history[historyIdx]);
+    render(); updatePreviews();
+  }
+}
+function redo() {
+  if (historyIdx < history.length - 1) {
+    historyIdx++;
+    pixels = new Uint8ClampedArray(history[historyIdx]);
+    render(); updatePreviews();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Pixel operations
+// ═══════════════════════════════════════════════════════════════════
+function getPixel(x, y) {
+  if (x < 0 || x >= W || y < 0 || y >= H) return [0,0,0,0];
+  const i = (y * W + x) * 4;
+  return [pixels[i], pixels[i+1], pixels[i+2], pixels[i+3]];
+}
+function setPixel(x, y, rgba) {
+  if (x < 0 || x >= W || y < 0 || y >= H) return;
+  const i = (y * W + x) * 4;
+  pixels[i] = rgba[0]; pixels[i+1] = rgba[1];
+  pixels[i+2] = rgba[2]; pixels[i+3] = rgba[3];
+}
+function colorsEqual(a, b) {
+  return a[0]===b[0] && a[1]===b[1] && a[2]===b[2] && a[3]===b[3];
+}
+
+function paintBrush(cx, cy) {
+  const s = brushSize;
+  const half = Math.floor(s / 2);
+  for (let dy = 0; dy < s; dy++) {
+    for (let dx = 0; dx < s; dx++) {
+      setPixel(cx - half + dx, cy - half + dy,
+        currentTool === 'eraser' ? [0,0,0,0] : currentColor);
+    }
+  }
+}
+
+function floodFill(sx, sy, target, replace) {
+  if (colorsEqual(target, replace)) return;
+  const stack = [[sx, sy]];
+  const visited = new Set();
+  while (stack.length) {
+    const [x, y] = stack.pop();
+    if (x < 0 || x >= W || y < 0 || y >= H) continue;
+    const key = y * W + x;
+    if (visited.has(key)) continue;
+    visited.add(key);
+    if (!colorsEqual(getPixel(x, y), target)) continue;
+    setPixel(x, y, replace);
+    stack.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);
+  }
+}
+
+function drawLine(x0, y0, x1, y1) {
+  const dx = Math.abs(x1-x0), dy = Math.abs(y1-y0);
+  const sx = x0<x1?1:-1, sy = y0<y1?1:-1;
+  let err = dx - dy;
+  while (true) {
+    paintBrush(x0, y0);
+    if (x0===x1 && y0===y1) break;
+    const e2 = 2*err;
+    if (e2 > -dy) { err -= dy; x0 += sx; }
+    if (e2 < dx) { err += dx; y0 += sy; }
+  }
+}
+
+function drawRect(x0, y0, x1, y1) {
+  const lx = Math.min(x0,x1), rx = Math.max(x0,x1);
+  const ly = Math.min(y0,y1), ry = Math.max(y0,y1);
+  for (let x = lx; x <= rx; x++) { paintBrush(x, ly); paintBrush(x, ry); }
+  for (let y = ly; y <= ry; y++) { paintBrush(lx, y); paintBrush(rx, y); }
+}
+
+function drawCircle(cx, cy, rx, ry) {
+  // Midpoint ellipse (outline only)
+  for (let a = 0; a < 360; a += 0.5) {
+    const rad = a * Math.PI / 180;
+    const x = Math.round(cx + rx * Math.cos(rad));
+    const y = Math.round(cy + ry * Math.sin(rad));
+    paintBrush(x, y);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Render
+// ═══════════════════════════════════════════════════════════════════
+const editorCanvas = document.getElementById('editor-canvas');
+const ctx = editorCanvas.getContext('2d');
+
+function render() {
+  editorCanvas.width = W * scale;
+  editorCanvas.height = H * scale;
+  ctx.clearRect(0, 0, editorCanvas.width, editorCanvas.height);
+
+  // Draw checkerboard (transparency indicator)
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const check = (Math.floor(x/4) + Math.floor(y/4)) % 2;
+      ctx.fillStyle = check ? '#1a1a22' : '#141418';
+      ctx.fillRect(x*scale, y*scale, scale, scale);
+    }
+  }
+
+  // Draw pixels
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const [r,g,b,a] = getPixel(x, y);
+      if (a > 0) {
+        ctx.fillStyle = `rgba(${r},${g},${b},${a/255})`;
+        ctx.fillRect(x*scale, y*scale, scale, scale);
+      }
+    }
+  }
+
+  // Grid
+  if (showGrid && scale >= 4) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 0.5;
+    for (let x = 0; x <= W; x++) {
+      ctx.beginPath(); ctx.moveTo(x*scale, 0); ctx.lineTo(x*scale, H*scale); ctx.stroke();
+    }
+    for (let y = 0; y <= H; y++) {
+      ctx.beginPath(); ctx.moveTo(0, y*scale); ctx.lineTo(W*scale, y*scale); ctx.stroke();
+    }
+    // Center crosshair
+    ctx.strokeStyle = 'rgba(170,90,255,0.15)';
+    ctx.beginPath(); ctx.moveTo(W/2*scale, 0); ctx.lineTo(W/2*scale, H*scale); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, H/2*scale); ctx.lineTo(W*scale, H/2*scale); ctx.stroke();
+  }
+}
+
+function updatePreviews() {
+  // Build an ImageData from pixels
+  const imgData = new ImageData(new Uint8ClampedArray(pixels), W, H);
+
+  // 1x
+  const c1 = document.getElementById('prev1x');
+  c1.width = W; c1.height = H;
+  c1.getContext('2d').putImageData(imgData, 0, 0);
+
+  // 2x
+  const c2 = document.getElementById('prev2x');
+  c2.width = W*2; c2.height = H*2;
+  const ctx2 = c2.getContext('2d');
+  ctx2.imageSmoothingEnabled = false;
+  ctx2.clearRect(0,0,c2.width,c2.height);
+  ctx2.drawImage(c1, 0, 0, W*2, H*2);
+
+  // Rotations
+  const dirs = [
+    { id: 'prevR', angle: 0 },
+    { id: 'prevD', angle: 90 },
+    { id: 'prevL', angle: 180 },
+    { id: 'prevU', angle: -90 },
+  ];
+  dirs.forEach(({id, angle}) => {
+    const c = document.getElementById(id);
+    c.width = 48; c.height = 48;
+    const cx = c.getContext('2d');
+    cx.imageSmoothingEnabled = false;
+    cx.clearRect(0,0,48,48);
+    cx.save();
+    cx.translate(24, 24);
+    cx.rotate(angle * Math.PI / 180);
+    cx.drawImage(c1, -24, -24, 48, 48);
+    cx.restore();
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Canvas events
+// ═══════════════════════════════════════════════════════════════════
+function canvasPos(e) {
+  const rect = editorCanvas.getBoundingClientRect();
+  const x = Math.floor((e.clientX - rect.left) / scale);
+  const y = Math.floor((e.clientY - rect.top) / scale);
+  return [x, y];
+}
+
+editorCanvas.addEventListener('mousedown', e => {
+  const [x, y] = canvasPos(e);
+  drawing = true;
+
+  if (currentTool === 'fill') {
+    floodFill(x, y, getPixel(x, y), [...currentColor]);
+    pushHistory(); render(); updatePreviews();
+    drawing = false;
+    return;
+  }
+  if (currentTool === 'picker') {
+    const c = getPixel(x, y);
+    currentColor = [...c];
+    document.getElementById('customColor').value =
+      '#' + [c[0],c[1],c[2]].map(v=>v.toString(16).padStart(2,'0')).join('');
+    document.getElementById('alphaSlider').value = c[3];
+    document.getElementById('alphaVal').textContent = c[3];
+    drawing = false;
+    return;
+  }
+  if (['rect','circle','line'].includes(currentTool)) {
+    shapeStart = {x, y};
+    return;
+  }
+  paintBrush(x, y);
+  render();
+});
+
+editorCanvas.addEventListener('mousemove', e => {
+  const [x, y] = canvasPos(e);
+  document.getElementById('coordsLabel').textContent = `( ${x} , ${y} )`;
+  if (!drawing) return;
+  if (['rect','circle','line'].includes(currentTool)) {
+    // Preview: restore history state, draw shape
+    pixels = new Uint8ClampedArray(history[historyIdx]);
+    if (currentTool === 'line') drawLine(shapeStart.x, shapeStart.y, x, y);
+    else if (currentTool === 'rect') drawRect(shapeStart.x, shapeStart.y, x, y);
+    else if (currentTool === 'circle') {
+      const rx = Math.abs(x - shapeStart.x);
+      const ry = Math.abs(y - shapeStart.y);
+      drawCircle(shapeStart.x, shapeStart.y, rx, ry);
+    }
+    render();
+    return;
+  }
+  paintBrush(x, y);
+  render();
+});
+
+editorCanvas.addEventListener('mouseup', e => {
+  if (!drawing) return;
+  drawing = false;
+  if (['rect','circle','line'].includes(currentTool) && shapeStart) {
+    shapeStart = null;
+  }
+  pushHistory();
+  updatePreviews();
+});
+
+editorCanvas.addEventListener('mouseleave', () => {
+  if (drawing) {
+    drawing = false;
+    if (shapeStart) shapeStart = null;
+    pushHistory();
+    updatePreviews();
+  }
+});
+
+// Zoom canvas
+editorCanvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  scale = Math.max(2, Math.min(16, scale + (e.deltaY < 0 ? 1 : -1)));
+  render();
+}, { passive: false });
+
+// ═══════════════════════════════════════════════════════════════════
+// Tool buttons
+// ═══════════════════════════════════════════════════════════════════
+document.querySelectorAll('[data-tool]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentTool = btn.dataset.tool;
+  });
+});
+
+// Color & alpha
+document.getElementById('customColor').addEventListener('input', e => {
+  const rgb = hexToRgb(e.target.value);
+  currentColor = [rgb[0], rgb[1], rgb[2], currentColor[3]];
+  document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+});
+document.getElementById('alphaSlider').addEventListener('input', e => {
+  currentColor[3] = parseInt(e.target.value);
+  document.getElementById('alphaVal').textContent = e.target.value;
+});
+document.getElementById('brushSize').addEventListener('input', e => {
+  brushSize = Math.max(1, parseInt(e.target.value) || 1);
+});
+document.getElementById('gridToggle').addEventListener('change', e => {
+  showGrid = e.target.checked;
+  render();
+});
+document.getElementById('spriteName').addEventListener('input', e => {
+  document.getElementById('fileNamePreview').textContent = e.target.value + '.png';
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// Actions
+// ═══════════════════════════════════════════════════════════════════
+function resizeCanvas() {
+  const nw = Math.max(8, Math.min(128, parseInt(document.getElementById('canvasW').value) || 64));
+  const nh = Math.max(8, Math.min(128, parseInt(document.getElementById('canvasH').value) || 64));
+  const old = new Uint8ClampedArray(pixels);
+  const oldW = W, oldH = H;
+  W = nw; H = nh;
+  pixels = new Uint8ClampedArray(W * H * 4);
+  // Copy what fits
+  for (let y = 0; y < Math.min(oldH, H); y++) {
+    for (let x = 0; x < Math.min(oldW, W); x++) {
+      const si = (y * oldW + x) * 4;
+      const di = (y * W + x) * 4;
+      pixels[di] = old[si]; pixels[di+1] = old[si+1];
+      pixels[di+2] = old[si+2]; pixels[di+3] = old[si+3];
+    }
+  }
+  document.querySelector('.canvas-area h1').textContent = `Sprite Designer — ${W}×${H}`;
+  pushHistory(); render(); updatePreviews();
+}
+
+function clearCanvas() {
+  if (!confirm('Clear the entire canvas?')) return;
+  pixels = new Uint8ClampedArray(W * H * 4);
+  pushHistory(); render(); updatePreviews();
+}
+
+function exportPNG() {
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(pixels), W, H), 0, 0);
+  const name = document.getElementById('spriteName').value || 'sprite';
+  const link = document.createElement('a');
+  link.download = name + '.png';
+  link.href = c.toDataURL('image/png');
+  link.click();
+}
+
+function exportPygame() {
+  // Generate pygame drawing code from non-transparent pixels
+  let code = `# Auto-generated sprite: ${document.getElementById('spriteName').value}\n`;
+  code += `import pygame\n\ndef draw_sprite(size=${W}):\n`;
+  code += `    s = pygame.Surface((size, size), pygame.SRCALPHA)\n`;
+  code += `    scale = size / ${W}\n`;
+
+  // Group pixels by color for efficiency
+  const colorGroups = {};
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const [r,g,b,a] = getPixel(x, y);
+      if (a === 0) continue;
+      const key = `${r},${g},${b},${a}`;
+      if (!colorGroups[key]) colorGroups[key] = [];
+      colorGroups[key].push([x, y]);
+    }
+  }
+
+  for (const [colorKey, points] of Object.entries(colorGroups)) {
+    const [r,g,b,a] = colorKey.split(',').map(Number);
+    const colorStr = a === 255 ? `(${r}, ${g}, ${b})` : `(${r}, ${g}, ${b}, ${a})`;
+    if (points.length > 10) {
+      code += `    color = ${colorStr}\n`;
+      code += `    for x, y in [${points.map(p=>`(${p[0]},${p[1]})`).join(',')}]:\n`;
+      code += `        pygame.draw.rect(s, color, (int(x*scale), int(y*scale), max(1,int(scale)), max(1,int(scale))))\n`;
+    } else {
+      for (const [px, py] of points) {
+        code += `    pygame.draw.rect(s, ${colorStr}, (int(${px}*scale), int(${py}*scale), max(1,int(scale)), max(1,int(scale))))\n`;
+      }
+    }
+  }
+  code += `    return s\n`;
+
+  navigator.clipboard.writeText(code).then(() => {
+    alert('Pygame code copied to clipboard!');
+  }).catch(() => {
+    // Fallback: show in a prompt
+    prompt('Copy the code below:', code);
+  });
+}
+
+function importImage() {
+  document.getElementById('fileInput').click();
+}
+
+document.getElementById('fileInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const img = new Image();
+  img.onload = () => {
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const cx = c.getContext('2d');
+    cx.imageSmoothingEnabled = false;
+    cx.drawImage(img, 0, 0, W, H);
+    const data = cx.getContext('2d').getImageData(0, 0, W, H).data;
+    pixels = new Uint8ClampedArray(data);
+    pushHistory(); render(); updatePreviews();
+  };
+  img.src = URL.createObjectURL(file);
+  e.target.value = '';
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.ctrlKey || e.metaKey) {
+    if (e.key === 'z') { e.preventDefault(); undo(); }
+    if (e.key === 'y') { e.preventDefault(); redo(); }
+    if (e.key === 's') { e.preventDefault(); exportPNG(); }
+  }
+  const toolKeys = {b:'pencil', e:'eraser', f:'fill', r:'rect', c:'circle', l:'line', i:'picker'};
+  if (toolKeys[e.key]) {
+    document.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('active'));
+    document.querySelector(`[data-tool="${toolKeys[e.key]}"]`).classList.add('active');
+    currentTool = toolKeys[e.key];
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// Boot
+// ═══════════════════════════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>

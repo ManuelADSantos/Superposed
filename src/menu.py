@@ -46,7 +46,7 @@ def draw_main_menu(screen):
     title = title_font.render("SUPERPOSED", True, _ACCENT)
     screen.blit(title, title.get_rect(center=(config.WIDTH // 2, config.HEIGHT // 2 - 120)))
 
-    sub = sub_font.render("A Quantum Factory Puzzle Game", True, LIGHT_GRAY)
+    sub = sub_font.render("A Quantum Computing Puzzle Game", True, LIGHT_GRAY)
     screen.blit(sub, sub.get_rect(center=(config.WIDTH // 2, config.HEIGHT // 2 - 70)))
 
     # Decorative line
@@ -148,7 +148,7 @@ def draw_level_select(screen):
         screen.set_clip(None)
 
         # Available buildings
-        avail = ", ".join(b.name.replace("_", " ").title() for b in lev["available"])
+        avail = ", ".join(gid.replace("_", " ").title() for gid in lev["available"])
         avail_txt = small_font.render(f"Tools: {avail}", True, DARK_GRAY)
         screen.blit(avail_txt, (cx + 10, cy + card_h - 22))
 

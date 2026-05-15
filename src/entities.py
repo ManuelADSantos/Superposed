@@ -1,4 +1,7 @@
-"""Game entities: qubits, tiles, and building types."""
+"""Game entities: qubits, tiles, and directions.
+
+Building types are now string IDs managed by gate_registry.
+"""
 
 import pygame
 from enum import Enum
@@ -32,17 +35,14 @@ def opposite_dir(d: Direction) -> Direction:
 
 
 def cw_dir(d: Direction) -> Direction:
-    """90° clockwise."""
     return Direction((d.value + 1) % 4)
 
 
 def ccw_dir(d: Direction) -> Direction:
-    """90° counter-clockwise."""
     return Direction((d.value - 1) % 4)
 
 
 def dir_from_delta(dx, dy) -> Optional[Direction]:
-    """Return Direction for a unit vector, or None."""
     for d, (vx, vy) in DIR_VECTORS.items():
         if (vx, vy) == (dx, dy):
             return d
@@ -50,62 +50,16 @@ def dir_from_delta(dx, dy) -> Optional[Direction]:
 
 
 # ---------------------------------------------------------------------------
-# Building types
-# ---------------------------------------------------------------------------
-
-class BuildingType(Enum):
-    """Factory building types."""
-    EMPTY = 0
-    BELT = 1
-    GENERATOR = 2
-    HADAMARD = 3
-    X_GATE = 4
-    MEASUREMENT = 5
-    Z_GATE = 6
-    CNOT = 7
-    SPLITTER = 8
-    OUTPUT_SINK = 9
-
-
-# Toolbar order and metadata
-BUILDING_INFO = {
-    BuildingType.BELT:        {"key": "1", "name": "Belt",        "tip": "Transports qubits"},
-    BuildingType.GENERATOR:   {"key": "2", "name": "Generator",   "tip": "Spawns |0⟩ qubits"},
-    BuildingType.HADAMARD:    {"key": "3", "name": "Hadamard",    "tip": "Creates superposition"},
-    BuildingType.X_GATE:      {"key": "4", "name": "X Gate",      "tip": "Flips |0⟩↔|1⟩"},
-    BuildingType.Z_GATE:      {"key": "5", "name": "Z Gate",      "tip": "Phase flip"},
-    BuildingType.CNOT:        {"key": "6", "name": "CNOT",        "tip": "Entangles two qubits"},
-    BuildingType.MEASUREMENT: {"key": "7", "name": "Measure",     "tip": "Collapses superposition"},
-    BuildingType.SPLITTER:    {"key": "8", "name": "Splitter",    "tip": "Routes by state"},
-    BuildingType.OUTPUT_SINK: {"key": "9", "name": "Sink",        "tip": "Collects output qubits"},
-}
-
-TOOLBAR_ORDER = [
-    BuildingType.BELT,
-    BuildingType.GENERATOR,
-    BuildingType.HADAMARD,
-    BuildingType.X_GATE,
-    BuildingType.Z_GATE,
-    BuildingType.CNOT,
-    BuildingType.MEASUREMENT,
-    BuildingType.SPLITTER,
-    BuildingType.OUTPUT_SINK,
-]
-
-
-# ---------------------------------------------------------------------------
 # Qubit
 # ---------------------------------------------------------------------------
 
 class QubitState(Enum):
-    """Visual / logical quantum states."""
     ZERO = 0
     ONE = 1
     SUPERPOSITION = 2
 
 
 def state_color(state):
-    """Return the display color for a qubit state."""
     if state == QubitState.ZERO:
         return RED
     if state == QubitState.ONE:
@@ -123,8 +77,8 @@ class QubitItem:
         self.uid = QubitItem._next_id
         self.progress = 0.0
         self.state = state
-        self.phase_flipped = False  # True = |−⟩ instead of |+⟩
-        self.entangle_group: Optional[int] = None  # shared group id
+        self.phase_flipped = False
+        self.entangle_group: Optional[int] = None
         self.is_disappearing = False
         self.disappear_time = 0.0
 
@@ -147,18 +101,17 @@ class QubitItem:
 # ---------------------------------------------------------------------------
 
 class Tile:
-    """A single grid tile containing a building and optionally items."""
+    """A single grid tile.  building is a string ID (see gate_registry)."""
 
     def __init__(self):
-        self.building = BuildingType.EMPTY
+        self.building = "empty"             # string gate ID
         self.direction = Direction.RIGHT
-        self.item: Optional[QubitItem] = None  # main / target slot
-        self.control_item: Optional[QubitItem] = None  # CNOT control slot
+        self.item: Optional[QubitItem] = None
+        self.control_item: Optional[QubitItem] = None
         self.spawn_timer = 0.0
-        self.process_timer = 0.0  # CNOT processing delay
+        self.process_timer = 0.0
         self.measurements = []
         self.measure_flash = 0.0
-        # Output sink stats
         self.sink_target: Optional[QubitState] = None
         self.sink_total = 0
         self.sink_match = 0

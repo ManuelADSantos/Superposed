@@ -7,13 +7,13 @@ Superposition collapses first (implicit measurement).
 from __future__ import annotations
 
 import random
-from gate_registry import register, GateDef, Category
+from ..gate_registry import register, GateDef, Category
 
 
 def _transform(sx, sy, tile, item, eject_fn):
     """Measure if needed, then route by state."""
-    from entities import QubitState, cw_dir, DIR_VECTORS
-    from world import get_entangled_partners, break_entanglement
+    from ...core.entities import QubitState, cw_dir, DIR_VECTORS
+    from ...core.world import get_entangled_partners, break_entanglement
 
     # Collapse superposition
     if item.state == QubitState.SUPERPOSITION:
@@ -38,9 +38,9 @@ def _transform(sx, sy, tile, item, eject_fn):
 
 def _sprite(d, size):
     import pygame
-    from sprites import _surf, _panel, _dir_mark, _arrow, _a
-    from config import WHITE
-    from entities import cw_dir
+    from ...ui.sprites import _surf, _panel, _dir_mark, _arrow, _a
+    from ...core.config import WHITE
+    from ...core.entities import cw_dir
     COLOR = (90, 220, 200)
     TEAL = (70, 200, 190)
     s = _surf(size)

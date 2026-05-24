@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import pygame
-import config
-from config import TILE_SIZE, TOOLBAR_HEIGHT, TOOLBAR_PAD
-from entities import Direction, QubitState
-from world import screen_to_world, get_tile, in_bounds
-from gate_registry import get_gate, active_toolbar, EMPTY, OUTPUT_SINK
-import world as W
+from ..core import config
+from ..core.config import TILE_SIZE, TOOLBAR_HEIGHT, TOOLBAR_PAD
+from ..core.entities import Direction, QubitState
+from ..core.world import screen_to_world, get_tile, in_bounds
+from ..engine.gate_registry import get_gate, active_toolbar, EMPTY, OUTPUT_SINK
+from ..core import world as W
 
 
 def _rotate_cw(d: Direction) -> Direction:

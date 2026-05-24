@@ -14,8 +14,8 @@ import os
 
 import pygame
 
-from config import RED, BLUE, PURPLE, WHITE, YELLOW, GOLD
-from entities import QubitState, Direction
+from ..core.config import RED, BLUE, PURPLE, WHITE, YELLOW, GOLD
+from ..core.entities import QubitState, Direction
 
 
 # ---------------------------------------------------------------------------
@@ -65,7 +65,7 @@ def _dir_mark(surface, d, rect, color):
 
 
 def _arrow(surface, cx, cy, d, color, length=10, width=3):
-    from entities import DIR_VECTORS
+    from ..core.entities import DIR_VECTORS
     dx, dy = DIR_VECTORS[d]
     ex, ey = cx + dx * length, cy + dy * length
     pygame.draw.line(surface, color, (cx, cy), (ex, ey), width)
@@ -82,7 +82,7 @@ def _arrow(surface, cx, cy, d, color, length=10, width=3):
 # Custom PNG loading
 # ---------------------------------------------------------------------------
 
-_SPRITE_DIR = os.path.join(os.path.dirname(__file__), '..', 'sprites')
+_SPRITE_DIR = os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'sprites')
 _ROTATION_ANGLE = {
     Direction.RIGHT: 0, Direction.UP: 90,
     Direction.LEFT: 180, Direction.DOWN: -90,
@@ -110,7 +110,7 @@ def _load_custom_png(gate_id, direction, size):
 
 def _generic_sprite(gate_id, direction, size):
     """Draw a labelled coloured box for gates with no sprite_fn or PNG."""
-    from gate_registry import get_gate
+    from ..engine.gate_registry import get_gate
     gate = get_gate(gate_id)
     color = gate.color if gate else (120, 120, 130)
     s = _surf(size)
@@ -183,7 +183,7 @@ def get_building_sprite(building_id, direction, size):
         return custom
 
     # 2. Registry sprite function
-    from gate_registry import get_gate
+    from ..engine.gate_registry import get_gate
     gate = get_gate(building_id)
     if gate and gate.sprite_fn:
         return gate.sprite_fn(direction, size)

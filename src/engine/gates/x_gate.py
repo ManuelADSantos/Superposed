@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from gate_registry import register, GateDef, Category
+from ..gate_registry import register, GateDef, Category
 
 
 def _transform(item):
-    from entities import QubitState
+    from ...core.entities import QubitState
     if item.state == QubitState.ZERO:
         item.state = QubitState.ONE
     elif item.state == QubitState.ONE:
@@ -15,8 +15,8 @@ def _transform(item):
 
 def _sprite(d, size):
     import pygame
-    from sprites import _surf, _panel, _dir_mark, _a
-    from config import WHITE, CYAN
+    from ...ui.sprites import _surf, _panel, _dir_mark, _a
+    from ...core.config import WHITE, CYAN
     COLOR = (115, 240, 240)
     s = _surf(size)
     b = pygame.Rect(4, 4, size - 8, size - 8)

@@ -5,12 +5,12 @@ from __future__ import annotations
 import pygame
 from enum import Enum
 
-import config
-from config import (
+from ..core import config
+from ..core.config import (
     BG, WHITE, LIGHT_GRAY, DARK_GRAY, YELLOW, GREEN,
     RED, BLUE, PURPLE, CYAN, GOLD, TEAL,
 )
-from levels import ALL_LEVELS
+from ..content.levels import ALL_LEVELS
 
 
 class GameState(Enum):
@@ -65,7 +65,8 @@ def draw_main_menu(screen):
     ], start_y=config.HEIGHT // 2 - 10)
 
     # Version / footer
-    ver = pygame.font.SysFont("consolas", 12).render("prototype v0.2", True, DARK_GRAY)
+    from .. import __version__
+    ver = pygame.font.SysFont("consolas", 12).render(f"v{__version__}", True, DARK_GRAY)
     screen.blit(ver, ver.get_rect(bottomright=(config.WIDTH - 12, config.HEIGHT - 8)))
 
     return buttons

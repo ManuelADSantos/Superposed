@@ -6,13 +6,13 @@ This is a CONSUMER: the qubit is absorbed and a histogram is updated.
 from __future__ import annotations
 
 import random
-from gate_registry import register, GateDef, Category
+from ..gate_registry import register, GateDef, Category
 
 
 def _transform(item, tile):
     """Measure the qubit, collapse entangled partners, update histogram."""
-    from entities import QubitState
-    from world import get_entangled_partners, break_entanglement
+    from ...core.entities import QubitState
+    from ...core.world import get_entangled_partners, break_entanglement
 
     if item.state == QubitState.SUPERPOSITION:
         result = random.choice([QubitState.ZERO, QubitState.ONE])
@@ -35,8 +35,8 @@ def _transform(item, tile):
 def _overlay(surface, rect, tile):
     """Draw histogram and timeline on the measurement tile."""
     import pygame
-    from config import WHITE, RED, BLUE
-    from entities import QubitState, state_color
+    from ...core.config import WHITE, RED, BLUE
+    from ...core.entities import QubitState, state_color
 
     if not tile.measurements:
         return
@@ -68,8 +68,8 @@ def _overlay(surface, rect, tile):
 
 def _sprite(d, size):
     import pygame
-    from sprites import _surf, _panel, _dir_mark, _a
-    from config import WHITE, RED, BLUE
+    from ...ui.sprites import _surf, _panel, _dir_mark, _a
+    from ...core.config import WHITE, RED, BLUE
     COLOR = (255, 214, 112)
     s = _surf(size)
     b = pygame.Rect(4, 4, size - 8, size - 8)

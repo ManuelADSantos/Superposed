@@ -2,19 +2,19 @@
 
 from __future__ import annotations
 
-from gate_registry import register, GateDef, Category
+from ..gate_registry import register, GateDef, Category
 
 
 def _transform(item):
-    from entities import QubitState
+    from ...core.entities import QubitState
     if item.state == QubitState.SUPERPOSITION:
         item.phase_flipped = not item.phase_flipped
 
 
 def _sprite(d, size):
     import pygame
-    from sprites import _surf, _panel, _dir_mark, _a
-    from config import WHITE, PINK
+    from ...ui.sprites import _surf, _panel, _dir_mark, _a
+    from ...core.config import WHITE, PINK
     COLOR = (240, 120, 180)
     s = _surf(size)
     b = pygame.Rect(4, 4, size - 8, size - 8)

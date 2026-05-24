@@ -7,13 +7,13 @@ since they are fundamental to factory mechanics.
 
 from __future__ import annotations
 
-from config import BELT_SPEED, GENERATOR_SPEED, CNOT_PROCESS_DELAY
-from entities import (
+from ..core.config import BELT_SPEED, GENERATOR_SPEED, CNOT_PROCESS_DELAY
+from ..core.entities import (
     QubitState, QubitItem, Direction,
     DIR_VECTORS, opposite_dir, cw_dir, ccw_dir,
 )
-from world import get_tile, in_bounds, world
-from gate_registry import (
+from ..core.world import get_tile, in_bounds, world
+from .gate_registry import (
     get_gate, Category,
     EMPTY, BELT, GENERATOR, OUTPUT_SINK,
 )

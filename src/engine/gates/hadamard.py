@@ -5,12 +5,12 @@ H|0⟩ = |+⟩,  H|1⟩ = |−⟩,  H|+⟩ = |0⟩,  H|−⟩ = |1⟩
 
 from __future__ import annotations
 
-from gate_registry import register, GateDef, Category
+from ..gate_registry import register, GateDef, Category
 
 
 def _transform(item):
-    from entities import QubitState
-    from world import break_entanglement
+    from ...core.entities import QubitState
+    from ...core.world import break_entanglement
     if item.state in (QubitState.ZERO, QubitState.ONE):
         item.phase_flipped = (item.state == QubitState.ONE)
         item.state = QubitState.SUPERPOSITION
@@ -25,8 +25,8 @@ def _transform(item):
 
 def _sprite(d, size):
     import pygame
-    from sprites import _surf, _panel, _dir_mark, _a
-    from config import WHITE
+    from ...ui.sprites import _surf, _panel, _dir_mark, _a
+    from ...core.config import WHITE
     COLOR = (190, 135, 255)
     s = _surf(size)
     b = pygame.Rect(4, 4, size - 8, size - 8)

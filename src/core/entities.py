@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from enum import Enum
 
-from config import RED, BLUE, PURPLE, WHITE
+from .config import RED, BLUE, PURPLE, WHITE
 
 
 # ---------------------------------------------------------------------------

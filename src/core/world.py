@@ -8,8 +8,8 @@ without changes.  Call ``reset_world()`` to reinitialise cleanly.
 
 from __future__ import annotations
 
-from entities import Tile, QubitItem, QubitState
-from gate_registry import EMPTY, OUTPUT_SINK
+from .entities import Tile, QubitItem, QubitState
+from ..engine.gate_registry import EMPTY, OUTPUT_SINK
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -155,7 +155,7 @@ def screen_to_world(sx, sy, tile_size):
 
 def _sync_from_state():
     """Copy scalar attributes from _state to module globals."""
-    import world as _self
+    from . import world as _self
     _self.camera_x      = _state.camera_x
     _self.camera_y      = _state.camera_y
     _self.zoom          = _state.zoom
@@ -169,7 +169,7 @@ def _sync_from_state():
 
 def _sync_to_state():
     """Copy module-global scalars back into _state (after external writes)."""
-    import world as _self
+    from . import world as _self
     _state.camera_x      = _self.camera_x
     _state.camera_y      = _self.camera_y
     _state.zoom          = _self.zoom
@@ -187,7 +187,7 @@ def reset_world():
     _state.__init__()                     # reinitialise everything
 
     # Re-bind the module-level mutable containers to the NEW dicts/sets
-    import world as _self
+    from . import world as _self
     _self.world           = _state.world
     _self.entangle_groups = _state.entangle_groups
     _self.entangle_lookup = _state.entangle_lookup
@@ -195,7 +195,7 @@ def reset_world():
     _sync_from_state()
 
     # Evict stale sprite caches from the previous session
-    from sprites import clear_sprite_caches
+    from ..ui.sprites import clear_sprite_caches
     clear_sprite_caches()
 
 
@@ -220,7 +220,7 @@ def load_level(level_def, level_index):
                 tile.sink_target = data[2]
 
     cx, cy = level_def.get("camera", (0, 0))
-    import config as _cfg
+    from . import config as _cfg
     _state.zoom     = 1.0
     _state.camera_x = cx * _cfg.TILE_SIZE - _cfg.WIDTH / 2
     _state.camera_y = cy * _cfg.TILE_SIZE - (_cfg.HEIGHT - _cfg.TOOLBAR_HEIGHT) / 2

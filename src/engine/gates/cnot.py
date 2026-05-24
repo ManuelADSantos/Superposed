@@ -10,13 +10,13 @@ Anti-correlated pairs are not modeled.  See world.py for details.
 
 from __future__ import annotations
 
-from gate_registry import register, GateDef, Category
+from ..gate_registry import register, GateDef, Category
 
 
 def _transform(control, target):
     """Apply CNOT: flip target if control is |1⟩; entangle if superposition."""
-    from entities import QubitState
-    from world import create_entangle_group, register_entangled
+    from ...core.entities import QubitState
+    from ...core.world import create_entangle_group, register_entangled
 
     if control.state == QubitState.ONE:
         # Flip target
@@ -34,9 +34,9 @@ def _transform(control, target):
 
 def _sprite(d, size):
     import pygame
-    from sprites import _surf, _panel, _dir_mark, _arrow, _a
-    from config import WHITE, GOLD
-    from entities import DIR_VECTORS, ccw_dir, cw_dir, opposite_dir
+    from ...ui.sprites import _surf, _panel, _dir_mark, _arrow, _a
+    from ...core.config import WHITE, GOLD
+    from ...core.entities import DIR_VECTORS, ccw_dir, cw_dir, opposite_dir
     COLOR = (255, 180, 80)
     s = _surf(size)
     b = pygame.Rect(4, 4, size - 8, size - 8)

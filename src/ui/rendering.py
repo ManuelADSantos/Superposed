@@ -3,21 +3,20 @@
 from __future__ import annotations
 
 import pygame
-import world as world_module
-import config
-
-from config import (
+from ..core import world as world_module
+from ..core import config
+from ..core.config import (
     TILE_SIZE, BG, GRID_COLOR, GRID_ORIGIN,
     WHITE, LIGHT_GRAY, DARK_GRAY, YELLOW, RED, GREEN, BLUE,
     TOOLBAR_HEIGHT, TOOLBAR_PAD, TOOLTIP_FONT_SIZE, UI_FONT_SIZE,
     GOLD, PURPLE, CYAN,
 )
-from entities import (
+from ..core.entities import (
     QubitState, QubitItem, Direction, DIR_VECTORS, state_color, ccw_dir,
 )
-from sprites import get_building_sprite, get_qubit_sprite
-from world import world, get_tile, world_to_screen, screen_to_world
-from gate_registry import (
+from .sprites import get_building_sprite, get_qubit_sprite
+from ..core.world import world, get_tile, world_to_screen, screen_to_world
+from ..engine.gate_registry import (
     get_gate, active_toolbar, Category,
     EMPTY, GENERATOR, OUTPUT_SINK,
 )

@@ -102,5 +102,5 @@ def load_gates():
         return
     for fname in sorted(os.listdir(gates_dir)):
         if fname.endswith(".py") and not fname.startswith("__"):
-            mod_name = f"gates.{fname[:-3]}"
+            mod_name = f"src.engine.gates.{fname[:-3]}"
             importlib.import_module(mod_name)

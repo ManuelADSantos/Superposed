@@ -6,17 +6,17 @@ Entry point — state-machine game loop with menu, levels, and sandbox.
 from __future__ import annotations
 
 import pygame
-import config
-from config import FPS, BG
+from .core import config
+from .core.config import FPS, BG
 
 # Load the gate registry BEFORE other game modules need it
-from gate_registry import load_gates, BELT, gate_ids
+from .engine.gate_registry import load_gates, BELT, gate_ids
 
-from entities import Direction
-from input_handler import handle_input
-from simulation import update_items
-from rendering import draw_grid, draw_ui
-from menu import (
+from .core.entities import Direction
+from .ui.input_handler import handle_input
+from .engine.simulation import update_items
+from .ui.rendering import draw_grid, draw_ui
+from .ui.menu import (
     GameState,
     draw_main_menu, handle_main_menu,
     draw_level_select, handle_level_select,
@@ -24,9 +24,9 @@ from menu import (
     draw_win_screen, handle_win_screen,
     completed_levels,
 )
-from levels import ALL_LEVELS
-from world import reset_world, load_level, check_win_condition
-import world as W
+from .content.levels import ALL_LEVELS
+from .core.world import reset_world, load_level, check_win_condition
+from .core import world as W
 
 
 def main():

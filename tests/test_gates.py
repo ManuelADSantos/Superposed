@@ -2,34 +2,26 @@
 
 from __future__ import annotations
 
-import sys
-import os
 import unittest
 import random
 
-# Ensure src/ is on the path
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+import pygame  # noqa: E402 — needed by sprite functions at registration time
 
-# Minimal pygame stub so modules that import pygame at top level don't fail
-# in headless environments.  Only needed for entities (which no longer
-# imports pygame) and rendering/sprites (not tested here).
-import pygame  # noqa: E402 — must be available
-
-from gate_registry import load_gates  # noqa: E402
+from src.engine.gate_registry import load_gates
 load_gates()
 
-from entities import QubitState, QubitItem, Direction, Tile  # noqa: E402
-from world import (  # noqa: E402
+from src.core.entities import QubitState, QubitItem, Direction, Tile
+from src.core.world import (
     reset_world,
     create_entangle_group, register_entangled,
     get_entangled_partners, break_entanglement,
 )
-from gates.hadamard import _transform as hadamard
-from gates.x_gate import _transform as x_gate
-from gates.z_gate import _transform as z_gate
-from gates.cnot import _transform as cnot
-from gates.measurement import _transform as measure
-from gates.splitter import _transform as splitter
+from src.engine.gates.hadamard import _transform as hadamard
+from src.engine.gates.x_gate import _transform as x_gate
+from src.engine.gates.z_gate import _transform as z_gate
+from src.engine.gates.cnot import _transform as cnot
+from src.engine.gates.measurement import _transform as measure
+from src.engine.gates.splitter import _transform as splitter
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────
@@ -379,8 +371,8 @@ class TestEntanglement(unittest.TestCase):
 class TestSafeTransform(unittest.TestCase):
 
     def test_broken_transform_does_not_crash(self):
-        from simulation import _safe_transform
-        from gate_registry import GateDef, Category
+        from src.engine.simulation import _safe_transform
+        from src.engine.gate_registry import GateDef, Category
 
         def bad_transform(item):
             raise ValueError("intentional test error")

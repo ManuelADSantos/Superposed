@@ -6,15 +6,15 @@ the toolbar, sprites, and levels all pick them up automatically.
 
 from __future__ import annotations
 
-from gate_registry import register, GateDef, Category, BELT, GENERATOR, OUTPUT_SINK
+from ..gate_registry import register, GateDef, Category, BELT, GENERATOR, OUTPUT_SINK
 
 
 # ── Sprite helpers (lazy-imported to avoid pygame at parse time) ──────────
 
 def _belt_sprite(d, size):
     import pygame
-    from sprites import _surf, _panel, _dir_mark, _arrow, _shine, _a
-    from config import WHITE
+    from ...ui.sprites import _surf, _panel, _dir_mark, _arrow, _shine, _a
+    from ...core.config import WHITE
     s = _surf(size)
     b = pygame.Rect(4, 4, size - 8, size - 8)
     _panel(s, b, (36, 60, 95), (84, 136, 210), 10)
@@ -29,8 +29,8 @@ def _belt_sprite(d, size):
 
 def _generator_sprite(d, size):
     import pygame
-    from sprites import _surf, _panel, _dir_mark, _shine, _a
-    from config import WHITE
+    from ...ui.sprites import _surf, _panel, _dir_mark, _shine, _a
+    from ...core.config import WHITE
     COLOR = (108, 220, 136)
     s = _surf(size)
     b = pygame.Rect(4, 4, size - 8, size - 8)
@@ -46,8 +46,8 @@ def _generator_sprite(d, size):
 
 def _sink_sprite(d, size):
     import pygame
-    from sprites import _surf, _panel, _dir_mark, _a
-    from config import WHITE
+    from ...ui.sprites import _surf, _panel, _dir_mark, _a
+    from ...core.config import WHITE
     COLOR = (220, 200, 255)
     s = _surf(size)
     b = pygame.Rect(4, 4, size - 8, size - 8)

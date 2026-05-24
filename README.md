@@ -6,10 +6,10 @@ A 2D quantum computing puzzle game built with pygame, inspired by factory builde
 
 Superposed models five core ideas from quantum computing, mapped to a visual factory metaphor:
 
-- **Basis states** — qubits flow as coloured particles: red for |0>, blue for |1>.
-- **Superposition** — the Hadamard gate puts a qubit into superposition (purple), meaning it is both |0> and |1> until observed.
+- **Basis states** — qubits flow as coloured particles: red for `|0>`, blue for `|1>`.
+- **Superposition** — the Hadamard gate puts a qubit into superposition (purple), meaning it is both `|0>` and `|1>` until observed.
 - **Phase flip** — the Z gate flips the internal phase of a superposed qubit, invisible until it interferes with another gate.
-- **Interference** — H then Z then H produces a deterministic |1>, demonstrating constructive/destructive interference via the `phase_flipped` flag.
+- **Interference** — H then Z then H produces a deterministic `|1>`, demonstrating constructive/destructive interference via the `phase_flipped` flag.
 - **Entanglement** — the CNOT gate entangles two qubits into a Bell pair. Measuring one instantly collapses the other to the same state.
 
 ## Getting Started
@@ -72,14 +72,14 @@ The game has two modes accessible from the main menu:
 | Gate | Category | What it does |
 |---|---|---|
 | **Belt** | Infrastructure | Moves qubits in the arrow direction |
-| **Generator** | Infrastructure | Spawns \|0> qubits at a fixed rate |
+| **Generator** | Infrastructure | Spawns `\|0>` qubits at a fixed rate |
 | **Output Sink** | Infrastructure | Collects qubits; tracks how many match the target state |
-| **Hadamard (H)** | Single-qubit | \|0> or \|1> becomes superposition; superposition collapses back based on phase |
-| **X (NOT)** | Single-qubit | Flips \|0> to \|1> and vice versa; superposition unchanged |
+| **Hadamard (H)** | Single-qubit | `\|0>` or `\|1>` becomes superposition; superposition collapses back based on phase |
+| **X (NOT)** | Single-qubit | Flips `\|0>` to `\|1>` and vice versa; superposition unchanged |
 | **Z (Phase)** | Single-qubit | Flips the phase of a superposed qubit; no visible effect on basis states |
-| **CNOT** | Two-qubit | Control from the side, target from behind. If control is \|1>, flips target. If superposed, entangles both |
-| **Measurement** | Consumer | Collapses superposition to \|0> or \|1> (50/50). Shows a histogram of results |
-| **Splitter** | Router | Measures then routes: \|0> goes straight, \|1> turns clockwise |
+| **CNOT** | Two-qubit | Control from the side, target from behind. If control is `\|1>`, flips target. If superposed, entangles both |
+| **Measurement** | Consumer | Collapses superposition to `\|0>` or `\|1>` (50/50). Shows a histogram of results |
+| **Splitter** | Router | Measures then routes: `\|0>` goes straight, `\|1>` turns clockwise |
 
 ## Project Structure
 

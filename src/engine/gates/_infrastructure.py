@@ -79,7 +79,7 @@ register(GateDef(
 register(GateDef(
     id=GENERATOR,
     name="Generator",
-    tip="Spawns |0⟩ qubits",
+    tip="Spawns |0> qubits",
     color=(108, 220, 136),
     category=Category.INFRASTRUCTURE,
     sprite_fn=_generator_sprite,

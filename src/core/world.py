@@ -29,9 +29,9 @@ class WorldState:
         self.zoom: float = 1.0
 
         # ── Entanglement registry ──────────────────────────────────────
-        # Simplified model: only same-state correlation (|00⟩ + |11⟩).
+        # Simplified model: only same-state correlation (|00> + |11>).
         # When one partner is measured, all others collapse to the SAME
-        # outcome.  Anti-correlated Bell states (|01⟩ + |10⟩) are not
+        # outcome.  Anti-correlated Bell states (|01> + |10>) are not
         # modeled.  Applying gates (e.g. X) to an entangled qubit
         # changes its local state but does NOT update the correlation
         # rule — a deliberate simplification for the tutorial scope.

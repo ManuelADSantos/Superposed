@@ -106,11 +106,11 @@ Each gate file follows the same pattern: define a `_transform` function, optiona
 
 - **_infrastructure.py** — Belt, Generator, Output Sink. These have no transform (simulation handles them directly) but provide sprite functions.
 - **hadamard.py** — Creates superposition from basis states, collapses superposition based on phase. Breaks entanglement on collapse.
-- **x_gate.py** — NOT gate, flips |0> and |1>. Superposition is unchanged.
+- **x_gate.py** — NOT gate, flips `|0>` and `|1>`. Superposition is unchanged.
 - **z_gate.py** — Phase gate, toggles `phase_flipped` on superposed qubits only.
-- **cnot.py** — Two-qubit gate. If control is |1>, flips target. If control is superposed, puts target into superposition and entangles both via the world's entanglement registry.
-- **measurement.py** — Consumer gate. Collapses superposition to |0> or |1> with 50/50 probability. Collapses entangled partners to the same state. Records results in a tile-level histogram (capped at 20 entries). Includes an overlay function that draws the histogram directly on the tile.
-- **splitter.py** — Router gate. Implicitly measures the qubit, then routes |0> straight ahead and |1> clockwise. Used to separate qubit states spatially.
+- **cnot.py** — Two-qubit gate. If control is `|1>`, flips target. If control is superposed, puts target into superposition and entangles both via the world's entanglement registry.
+- **measurement.py** — Consumer gate. Collapses superposition to `|0>` or `|1>` with 50/50 probability. Collapses entangled partners to the same state. Records results in a tile-level histogram (capped at 20 entries). Includes an overlay function that draws the histogram directly on the tile.
+- **splitter.py** — Router gate. Implicitly measures the qubit, then routes `|0>` straight ahead and `|1>` clockwise. Used to separate qubit states spatially.
 
 ## UI Subpackage
 
@@ -164,10 +164,10 @@ Seven tutorial levels, each defined as a dictionary with:
 The levels progress through the quantum concepts in order:
 
 1. **Transport** — basic belt routing.
-2. **Quantum NOT** — use X gate to flip |0> to |1>.
-3. **Superposition** — use H gate to create purple |+> particles.
+2. **Quantum NOT** — use X gate to flip `|0>` to `|1>`.
+3. **Superposition** — use H gate to create purple `|+>` particles.
 4. **Collapse** — measure superposition to see the 50/50 histogram.
-5. **Interference** — H then Z then H produces deterministic |1>.
+5. **Interference** — H then Z then H produces deterministic `|1>`.
 6. **Entanglement** — use CNOT to create correlated qubit pairs.
 7. **Quantum Router** — use the Splitter to route by state.
 
@@ -199,7 +199,7 @@ The test suite (`tests/test_gates.py`, 37 tests) covers:
 
 - Every gate transform (X, H, Z, CNOT, Measurement, Splitter) with basis states and superposition.
 - Double-application identity checks (X-X, H-H, Z-Z).
-- Interference sequence (H-Z-H = |1>).
+- Interference sequence (H-Z-H = `|1>`).
 - Entanglement creation, partner lookup, and breaking.
 - Measurement statistics over 200 trials (verifying roughly 50/50 distribution).
 - Splitter routing by state and direction.

@@ -1,4 +1,4 @@
-"""Z gate — phase flip.  |+⟩ ↔ |−⟩ (invisible on basis states)."""
+"""Z gate — phase flip.  |+> ↔ |−> (invisible on basis states)."""
 
 from __future__ import annotations
 

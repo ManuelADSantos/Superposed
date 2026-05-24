@@ -1,10 +1,10 @@
 """CNOT gate — two-qubit entangling gate.
 
 Control enters from CCW perpendicular, target enters from behind.
-If control is |1⟩, target is flipped.
+If control is |1>, target is flipped.
 If control is superposition, both become entangled.
 
-Note: entanglement uses same-state correlation only (|00⟩ + |11⟩).
+Note: entanglement uses same-state correlation only (|00> + |11>).
 Anti-correlated pairs are not modeled.  See world.py for details.
 """
 
@@ -14,7 +14,7 @@ from ..gate_registry import register, GateDef, Category
 
 
 def _transform(control, target):
-    """Apply CNOT: flip target if control is |1⟩; entangle if superposition."""
+    """Apply CNOT: flip target if control is |1>; entangle if superposition."""
     from ...core.entities import QubitState
     from ...core.world import create_entangle_group, register_entangled
 

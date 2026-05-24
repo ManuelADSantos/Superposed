@@ -28,7 +28,7 @@ LEVEL_1 = {
     "briefing": (
         "Welcome to Superposed!\n\n"
         "Your factory makes qubits — tiny quantum particles.\n"
-        "The green machine spawns |0⟩ qubits (red dots).\n\n"
+        "The green machine spawns |0> qubits (red dots).\n\n"
         "Goal: connect the generator to the output sink\n"
         "using conveyor belts.\n\n"
         "Left-click to place.  R to rotate.  Right-click to remove."
@@ -46,14 +46,14 @@ LEVEL_1 = {
 
 LEVEL_2 = {
     "name": "Quantum NOT",
-    "description": "Flip |0⟩ into |1⟩ using the X gate.",
+    "description": "Flip |0> into |1> using the X gate.",
     "briefing": (
         "The X gate is the quantum NOT gate.\n"
-        "It flips |0⟩ (red) into |1⟩ (blue) and vice versa.\n\n"
-        "The sink wants blue |1⟩ qubits, but the generator\n"
-        "only makes red |0⟩.  Use the X gate to flip them!"
+        "It flips |0> (red) into |1> (blue) and vice versa.\n\n"
+        "The sink wants blue |1> qubits, but the generator\n"
+        "only makes red |0>.  Use the X gate to flip them!"
     ),
-    "hint": "Place an X gate on the path to flip |0⟩ → |1⟩",
+    "hint": "Place an X gate on the path to flip |0> → |1>",
     "pre_placed": {
         (0, 2):  (GEN,  RIGHT, None),
         (7, 2):  (SINK, RIGHT, ONE),
@@ -69,12 +69,12 @@ LEVEL_3 = {
     "description": "Create a qubit that is both 0 and 1 at once.",
     "briefing": (
         "The Hadamard gate (H) puts a qubit into\n"
-        "superposition — it becomes both |0⟩ AND |1⟩\n"
+        "superposition — it becomes both |0> AND |1>\n"
         "at the same time!  It turns purple.\n\n"
         "Route qubits through H to make them purple,\n"
         "then deliver them to the sink."
     ),
-    "hint": "H gate turns red |0⟩ qubits purple (superposition)",
+    "hint": "H gate turns red |0> qubits purple (superposition)",
     "pre_placed": {
         (0, 2):  (GEN,  RIGHT, None),
         (7, 2):  (SINK, RIGHT, SUP),
@@ -90,8 +90,8 @@ LEVEL_4 = {
     "description": "Observe what happens when you measure superposition.",
     "briefing": (
         "Measurement collapses superposition!\n\n"
-        "A purple (superposed) qubit becomes either red |0⟩\n"
-        "or blue |1⟩ with equal probability — 50/50.\n"
+        "A purple (superposed) qubit becomes either red |0>\n"
+        "or blue |1> with equal probability — 50/50.\n"
         "You can never predict which.\n\n"
         "Route qubits through H then Measurement.\n"
         "Watch the histogram — it should be roughly even.\n"
@@ -110,16 +110,16 @@ LEVEL_4 = {
 
 LEVEL_5 = {
     "name": "Interference",
-    "description": "Discover how H → Z → H always produces |1⟩.",
+    "description": "Discover how H → Z → H always produces |1>.",
     "briefing": (
         "The Z gate flips the phase of a qubit.\n"
         "You can't see phase directly, but it matters!\n\n"
         "Try this: route qubits through  H → Z → H.\n"
         "Something remarkable happens — the output is\n"
-        "always |1⟩, never random.  This is interference.\n\n"
-        "The sink wants blue |1⟩ qubits.  Build the circuit!"
+        "always |1>, never random.  This is interference.\n\n"
+        "The sink wants blue |1> qubits.  Build the circuit!"
     ),
-    "hint": "H → Z → H = guaranteed |1⟩  (interference!)",
+    "hint": "H → Z → H = guaranteed |1>  (interference!)",
     "pre_placed": {
         (0, 2):  (GEN,  RIGHT, None),
         (9, 2):  (SINK, RIGHT, ONE),
@@ -159,11 +159,11 @@ LEVEL_6 = {
 
 LEVEL_7 = {
     "name": "Quantum Router",
-    "description": "Route qubits by state: |0⟩ and |1⟩ go different ways.",
+    "description": "Route qubits by state: |0> and |1> go different ways.",
     "briefing": (
         "The Splitter measures a qubit and routes it:\n"
-        "  |0⟩ (red) goes straight ahead\n"
-        "  |1⟩ (blue) goes to the side\n\n"
+        "  |0> (red) goes straight ahead\n"
+        "  |1> (blue) goes to the side\n\n"
         "Superposition qubits collapse when they hit\n"
         "the splitter — just like measurement.\n\n"
         "Route H → Splitter to split the stream 50/50\n"

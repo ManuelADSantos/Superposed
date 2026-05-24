@@ -142,12 +142,15 @@ def draw_level_select(screen):
         name = card_font.render(lev["name"], True, CYAN if hovered else WHITE)
         screen.blit(name, (cx + 10, cy + 28))
 
-        # Description (wrap)
-        desc = desc_font.render(lev["description"], True, LIGHT_GRAY)
-        # Clip to card width
-        clip = pygame.Rect(cx + 10, cy + 54, card_w - 20, card_h - 60)
+        # Description (word-wrapped, clipped to card)
+        desc_lines = _wrap_text(desc_font, lev["description"], card_w - 20)
+        clip = pygame.Rect(cx + 10, cy + 54, card_w - 20, card_h - 80)
         screen.set_clip(clip)
-        screen.blit(desc, (cx + 10, cy + 54))
+        dy = cy + 54
+        for dl in desc_lines:
+            if dl:
+                screen.blit(desc_font.render(dl, True, LIGHT_GRAY), (cx + 10, dy))
+            dy += 16
         screen.set_clip(None)
 
         # Available buildings
@@ -188,8 +191,52 @@ def handle_level_select(events, cards):
 # Briefing Overlay (shown before level starts)
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def _wrap_text(font, text, max_width):
+    """Word-wrap *text* to fit within *max_width* pixels.
+
+    Respects explicit newlines in the source string.
+    Returns a list of strings, one per rendered line.
+    """
+    wrapped: list[str] = []
+    for paragraph in text.split("\n"):
+        if not paragraph.strip():
+            wrapped.append("")
+            continue
+        words = paragraph.split(" ")
+        current = words[0]
+        for word in words[1:]:
+            test = f"{current} {word}"
+            if font.size(test)[0] <= max_width:
+                current = test
+            else:
+                wrapped.append(current)
+                current = word
+        wrapped.append(current)
+    return wrapped
+
+
 def draw_briefing(screen, level_index):
     lev = ALL_LEVELS[level_index]
+
+    # Fonts
+    tf = pygame.font.SysFont("consolas", 28, bold=True)
+    bf = pygame.font.SysFont("consolas", 15)
+    btn_font = pygame.font.SysFont("consolas", 22, bold=True)
+
+    # --- measure content to size the panel dynamically ---
+    pw = 520
+    pad_x = 24
+    text_area_w = pw - pad_x * 2
+    line_h = 22
+    title_h = 60          # space reserved for the title area
+    btn_h = 70            # space reserved for the button area
+
+    lines = _wrap_text(bf, lev["briefing"], text_area_w)
+    text_block_h = len(lines) * line_h
+
+    ph = title_h + text_block_h + btn_h
+    # Clamp so the panel never exceeds the screen
+    ph = min(ph, config.HEIGHT - 40)
 
     # Dim overlay
     overlay = pygame.Surface((config.WIDTH, config.HEIGHT), pygame.SRCALPHA)
@@ -197,26 +244,27 @@ def draw_briefing(screen, level_index):
     screen.blit(overlay, (0, 0))
 
     # Panel
-    pw, ph = 520, 380
     panel = pygame.Rect((config.WIDTH - pw) // 2, (config.HEIGHT - ph) // 2, pw, ph)
     pygame.draw.rect(screen, _PANEL, panel, border_radius=14)
     pygame.draw.rect(screen, _ACCENT, panel, 2, border_radius=14)
 
     # Title
-    tf = pygame.font.SysFont("consolas", 28, bold=True)
     title = tf.render(f"Level {level_index + 1}: {lev['name']}", True, CYAN)
     screen.blit(title, title.get_rect(midtop=(panel.centerx, panel.top + 18)))
 
-    # Briefing text
-    bf = pygame.font.SysFont("consolas", 15)
-    y = panel.top + 60
-    for line in lev["briefing"].split("\n"):
-        txt = bf.render(line, True, LIGHT_GRAY)
-        screen.blit(txt, (panel.left + 24, y))
-        y += 22
+    # Briefing text (word-wrapped, clipped to panel)
+    clip = pygame.Rect(panel.left + pad_x, panel.top + title_h,
+                       text_area_w, ph - title_h - btn_h)
+    screen.set_clip(clip)
+    y = panel.top + title_h
+    for line in lines:
+        if line:
+            txt = bf.render(line, True, LIGHT_GRAY)
+            screen.blit(txt, (panel.left + pad_x, y))
+        y += line_h
+    screen.set_clip(None)
 
     # Start button
-    btn_font = pygame.font.SysFont("consolas", 22, bold=True)
     btn_rect = pygame.Rect(0, 0, 180, 44)
     btn_rect.center = (panel.centerx, panel.bottom - 40)
 

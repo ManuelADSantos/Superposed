@@ -1,4 +1,4 @@
-"""X (NOT) gate — flips |0⟩ ↔ |1⟩."""
+"""X (NOT) gate — flips |0> ↔ |1>."""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ def _sprite(d, size):
 register(GateDef(
     id="x_gate",
     name="X Gate",
-    tip="Flips |0⟩↔|1⟩",
+    tip="Flips |0>↔|1>",
     color=(115, 240, 240),
     category=Category.SINGLE,
     transform=_transform,

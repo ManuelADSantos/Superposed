@@ -1,6 +1,6 @@
 """Splitter — routes qubits by measured state.
 
-|0⟩ goes straight (gate direction), |1⟩ goes CW perpendicular.
+|0> goes straight (gate direction), |1> goes CW perpendicular.
 Superposition collapses first (implicit measurement).
 """
 

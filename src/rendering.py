@@ -1,5 +1,7 @@
 """Rendering: grid, buildings, qubits, toolbar, HUD, and level overlays."""
 
+from __future__ import annotations
+
 import pygame
 import world as world_module
 import config
@@ -11,26 +13,14 @@ from config import (
     GOLD, PURPLE, CYAN,
 )
 from entities import (
-    QubitState, Direction, DIR_VECTORS, state_color,
+    QubitState, QubitItem, Direction, DIR_VECTORS, state_color, ccw_dir,
 )
-from sprites import get_building_sprite
+from sprites import get_building_sprite, get_qubit_sprite
 from world import world, get_tile, world_to_screen, screen_to_world
 from gate_registry import (
-    get_gate, toolbar_order, Category,
+    get_gate, active_toolbar, Category,
     EMPTY, GENERATOR, OUTPUT_SINK,
 )
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _active_toolbar():
-    """Return gate IDs available in the current mode."""
-    all_ids = [g.id for g in toolbar_order()]
-    if world_module.available_buildings is not None:
-        return [gid for gid in all_ids if gid in world_module.available_buildings]
-    return all_ids
 
 
 # ---------------------------------------------------------------------------
@@ -110,12 +100,26 @@ def draw_grid(surface):
                                    control=True)
 
 
+def draw_qubit_item(surface, item: QubitItem, x, y, size):
+    """Draw a qubit particle at (x, y).  Standalone replacement for the old
+    QubitItem.draw() method — avoids circular entities↔sprites dependency."""
+    if item.is_disappearing:
+        scale = max(0.18, item.disappear_time / 0.3)
+    else:
+        scale = 1.0
+    sprite_size = max(8, int(size * scale))
+    sprite = get_qubit_sprite(item.state, sprite_size,
+                              item.is_disappearing, scale,
+                              item.entangle_group is not None)
+    sprite_rect = sprite.get_rect(center=(x + size // 2, y + size // 2))
+    surface.blit(sprite, sprite_rect)
+
+
 def _draw_item_on_tile(surface, tile, item, sx, sy, size, control=False):
     dx, dy = DIR_VECTORS[tile.direction]
     if tile.building == GENERATOR:
         px, py = sx + size / 2, sy + size / 2
     elif control:
-        from entities import ccw_dir
         cd = ccw_dir(tile.direction)
         cdx, cdy = DIR_VECTORS[cd]
         px = sx + size / 2 + cdx * size * 0.2
@@ -123,7 +127,7 @@ def _draw_item_on_tile(surface, tile, item, sx, sy, size, control=False):
     else:
         px = sx + size / 2 + dx * item.progress * size * 0.4
         py = sy + size / 2 + dy * item.progress * size * 0.4
-    item.draw(surface, px - 10, py - 10, 20)
+    draw_qubit_item(surface, item, px - 10, py - 10, 20)
 
 
 # ---------------------------------------------------------------------------
@@ -160,7 +164,7 @@ def draw_toolbar(surface, selected_building, selected_rotation, paused):
     font = pygame.font.SysFont("consolas", UI_FONT_SIZE)
     small = pygame.font.SysFont("consolas", TOOLTIP_FONT_SIZE)
 
-    active = _active_toolbar()
+    active = active_toolbar(world_module.available_buildings)
     btn_size = TOOLBAR_HEIGHT - 2 * TOOLBAR_PAD
     total = len(active)
     start_x = max(TOOLBAR_PAD, (config.WIDTH - total * (btn_size + TOOLBAR_PAD)) // 2)
@@ -206,7 +210,7 @@ def draw_tooltip(surface, mouse_pos, selected_building):
     tb_y = config.HEIGHT - TOOLBAR_HEIGHT
     if my < tb_y:
         return
-    active = _active_toolbar()
+    active = active_toolbar(world_module.available_buildings)
     btn_size = TOOLBAR_HEIGHT - 2 * TOOLBAR_PAD
     start_x = max(TOOLBAR_PAD, (config.WIDTH - len(active) * (btn_size + TOOLBAR_PAD)) // 2)
     for i, gid in enumerate(active):

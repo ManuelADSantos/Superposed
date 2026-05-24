@@ -3,6 +3,8 @@
 Entry point — state-machine game loop with menu, levels, and sandbox.
 """
 
+from __future__ import annotations
+
 import pygame
 import config
 from config import FPS, BG
@@ -128,11 +130,9 @@ def main():
                 state = new_state
 
         elif state in (GameState.SANDBOX, GameState.LEVEL_PLAY):
-            for ev in events:
-                pygame.event.post(ev)
-
             result = handle_input(
-                dt, selected_building, selected_rotation, paused, step_requested
+                dt, selected_building, selected_rotation, paused, step_requested,
+                events=events,
             )
             run_ok, selected_building, selected_rotation, paused, step_requested, back_to_menu = result
 

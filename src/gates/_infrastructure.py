@@ -4,6 +4,8 @@ These have hardcoded simulation behaviour but are registered here so that
 the toolbar, sprites, and levels all pick them up automatically.
 """
 
+from __future__ import annotations
+
 from gate_registry import register, GateDef, Category, BELT, GENERATOR, OUTPUT_SINK
 
 

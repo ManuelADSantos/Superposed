@@ -4,6 +4,8 @@
 Superposition collapses first (implicit measurement).
 """
 
+from __future__ import annotations
+
 import random
 from gate_registry import register, GateDef, Category
 

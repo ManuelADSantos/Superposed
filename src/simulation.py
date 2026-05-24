@@ -5,6 +5,8 @@ buildings (belt, generator, sink) still have hardcoded logic here
 since they are fundamental to factory mechanics.
 """
 
+from __future__ import annotations
+
 from config import BELT_SPEED, GENERATOR_SPEED, CNOT_PROCESS_DELAY
 from entities import (
     QubitState, QubitItem, Direction,
@@ -36,6 +38,16 @@ def _collect_sink(tile, item):
         tile.sink_match += 1
 
 
+def _safe_transform(gate, *args):
+    """Call a gate's transform, catching errors from broken custom gates."""
+    try:
+        gate.transform(*args)
+    except Exception as exc:
+        import sys
+        print(f"[Superposed] gate '{gate.id}' transform error: {exc}",
+              file=sys.stderr)
+
+
 def _eject_qubit(src_x, src_y, nx, ny, qubit):
     """Try to place a qubit on the next tile; vanish if impossible."""
     qubit.progress = 0.0
@@ -45,7 +57,7 @@ def _eject_qubit(src_x, src_y, nx, ny, qubit):
     next_tile = get_tile(nx, ny)
     gate = get_gate(next_tile.building)
     if gate and gate.category == Category.CONSUMER:
-        gate.transform(qubit, next_tile)
+        _safe_transform(gate, qubit, next_tile)
         return
     if next_tile.building == OUTPUT_SINK:
         _collect_sink(next_tile, qubit)
@@ -127,7 +139,7 @@ def update_items(dt):
 
         # --- Consumer (measurement, etc.) ---
         if next_gate and next_gate.category == Category.CONSUMER:
-            next_gate.transform(item, next_tile)
+            _safe_transform(next_gate, item, next_tile)
             tile.item = None
             continue
 
@@ -139,7 +151,7 @@ def update_items(dt):
 
         # --- Router (splitter, etc.) ---
         if next_gate and next_gate.category == Category.ROUTER:
-            next_gate.transform(nx, ny, next_tile, item, _eject_qubit)
+            _safe_transform(next_gate, nx, ny, next_tile, item, _eject_qubit)
             tile.item = None
             continue
 
@@ -159,7 +171,7 @@ def update_items(dt):
         # --- Single-qubit gate ---
         if next_gate and next_gate.category == Category.SINGLE:
             if next_tile.item is None:
-                next_gate.transform(item)
+                _safe_transform(next_gate, item)
                 next_tile.item = item
                 tile.item = None
             continue
@@ -179,7 +191,7 @@ def update_items(dt):
 def _process_two_qubit(x, y, tile, gate):
     control = tile.control_item
     target = tile.item
-    gate.transform(control, target)
+    _safe_transform(gate, control, target)
 
     dx, dy = DIR_VECTORS[tile.direction]
     _eject_qubit(x, y, x + dx, y + dy, target)

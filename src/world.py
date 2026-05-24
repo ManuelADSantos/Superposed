@@ -1,125 +1,219 @@
-"""World grid, camera, entanglement registry, and level state."""
+"""World grid, camera, entanglement registry, and level state.
+
+All mutable state lives inside a WorldState instance.  The module exposes
+a single active instance (_state) and keeps module-level proxies so that
+every other module can keep using ``world.camera_x``, ``world.world``, etc.
+without changes.  Call ``reset_world()`` to reinitialise cleanly.
+"""
 
 from __future__ import annotations
+
 from entities import Tile, QubitItem, QubitState
 from gate_registry import EMPTY, OUTPUT_SINK
 
 
-# ---------------------------------------------------------------------------
-# Sparse infinite grid
-# ---------------------------------------------------------------------------
-world: dict[tuple[int, int], Tile] = {}
+# ═══════════════════════════════════════════════════════════════════════════
+# WorldState — all mutable game state in one place
+# ═══════════════════════════════════════════════════════════════════════════
 
-camera_x = 0.0
-camera_y = 0.0
-zoom = 1.0
+class WorldState:
+    """Encapsulates the entire mutable state of a game session."""
 
-# ---------------------------------------------------------------------------
-# Entanglement registry
-# ---------------------------------------------------------------------------
-_next_entangle_id = 0
-entangle_groups: dict[int, set[int]] = {}
-entangle_lookup: dict[int, QubitItem] = {}
+    def __init__(self):
+        # Sparse infinite grid
+        self.world: dict[tuple[int, int], Tile] = {}
 
+        # Camera
+        self.camera_x: float = 0.0
+        self.camera_y: float = 0.0
+        self.zoom: float = 1.0
+
+        # ── Entanglement registry ──────────────────────────────────────
+        # Simplified model: only same-state correlation (|00⟩ + |11⟩).
+        # When one partner is measured, all others collapse to the SAME
+        # outcome.  Anti-correlated Bell states (|01⟩ + |10⟩) are not
+        # modeled.  Applying gates (e.g. X) to an entangled qubit
+        # changes its local state but does NOT update the correlation
+        # rule — a deliberate simplification for the tutorial scope.
+        self._next_entangle_id: int = 0
+        self.entangle_groups: dict[int, set[int]] = {}
+        self.entangle_lookup: dict[int, QubitItem] = {}
+
+        # Level state
+        self.current_level_index: int | None = None
+        self.current_level_def: dict | None = None
+        self.locked_tiles: set[tuple[int, int]] = set()
+        self.available_buildings: list[str] | None = None
+
+    # ── Entanglement helpers ───────────────────────────────────────────
+
+    def create_entangle_group(self) -> int:
+        self._next_entangle_id += 1
+        self.entangle_groups[self._next_entangle_id] = set()
+        return self._next_entangle_id
+
+    def register_entangled(self, group_id: int, qubit: QubitItem):
+        qubit.entangle_group = group_id
+        self.entangle_groups.setdefault(group_id, set()).add(qubit.uid)
+        self.entangle_lookup[qubit.uid] = qubit
+
+    def get_entangled_partners(self, qubit: QubitItem) -> list[QubitItem]:
+        if qubit.entangle_group is None:
+            return []
+        return [
+            self.entangle_lookup[uid]
+            for uid in self.entangle_groups.get(qubit.entangle_group, set())
+            if uid != qubit.uid and uid in self.entangle_lookup
+        ]
+
+    def break_entanglement(self, qubit: QubitItem):
+        gid = qubit.entangle_group
+        if gid is not None and gid in self.entangle_groups:
+            self.entangle_groups[gid].discard(qubit.uid)
+            if not self.entangle_groups[gid]:
+                del self.entangle_groups[gid]
+        self.entangle_lookup.pop(qubit.uid, None)
+        qubit.entangle_group = None
+
+    # ── Tile helpers ───────────────────────────────────────────────────
+
+    def get_tile(self, x: int, y: int) -> Tile:
+        key = (x, y)
+        if key not in self.world:
+            self.world[key] = Tile()
+        return self.world[key]
+
+    @staticmethod
+    def in_bounds(x: int, y: int) -> bool:   # noqa: ARG004
+        return True
+
+    def world_to_screen(self, wx, wy, tile_size):
+        size = tile_size * self.zoom
+        return (wx * size) - self.camera_x, (wy * size) - self.camera_y
+
+    def screen_to_world(self, sx, sy, tile_size):
+        size = tile_size * self.zoom
+        return int((sx + self.camera_x) // size), int((sy + self.camera_y) // size)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Active instance + module-level proxies (backward compatibility)
+# ═══════════════════════════════════════════════════════════════════════════
+
+_state = WorldState()
+
+
+# --- direct attribute proxies (read/write via the module) ----------------
+# Other modules do  ``import world as W``  then  ``W.camera_x += 5``.
+# We keep that working by exposing the *same* mutable containers and by
+# providing reset / load functions that swap the inner values.
+
+world          = _state.world
+entangle_groups = _state.entangle_groups
+entangle_lookup = _state.entangle_lookup
+
+camera_x       = _state.camera_x
+camera_y       = _state.camera_y
+zoom           = _state.zoom
+
+current_level_index  = _state.current_level_index
+current_level_def    = _state.current_level_def
+locked_tiles         = _state.locked_tiles
+available_buildings  = _state.available_buildings
+
+
+# --- proxy functions (delegate to the active WorldState) -----------------
 
 def create_entangle_group() -> int:
-    global _next_entangle_id
-    _next_entangle_id += 1
-    entangle_groups[_next_entangle_id] = set()
-    return _next_entangle_id
-
+    return _state.create_entangle_group()
 
 def register_entangled(group_id: int, qubit: QubitItem):
-    qubit.entangle_group = group_id
-    entangle_groups.setdefault(group_id, set()).add(qubit.uid)
-    entangle_lookup[qubit.uid] = qubit
-
+    _state.register_entangled(group_id, qubit)
 
 def get_entangled_partners(qubit: QubitItem) -> list[QubitItem]:
-    if qubit.entangle_group is None:
-        return []
-    return [
-        entangle_lookup[uid]
-        for uid in entangle_groups.get(qubit.entangle_group, set())
-        if uid != qubit.uid and uid in entangle_lookup
-    ]
-
+    return _state.get_entangled_partners(qubit)
 
 def break_entanglement(qubit: QubitItem):
-    gid = qubit.entangle_group
-    if gid is not None and gid in entangle_groups:
-        entangle_groups[gid].discard(qubit.uid)
-        if not entangle_groups[gid]:
-            del entangle_groups[gid]
-    entangle_lookup.pop(qubit.uid, None)
-    qubit.entangle_group = None
-
-
-# ---------------------------------------------------------------------------
-# Tile helpers
-# ---------------------------------------------------------------------------
+    _state.break_entanglement(qubit)
 
 def get_tile(x, y) -> Tile:
-    key = (x, y)
-    if key not in world:
-        world[key] = Tile()
-    return world[key]
-
+    return _state.get_tile(x, y)
 
 def in_bounds(x, y) -> bool:
-    return True
-
+    return _state.in_bounds(x, y)
 
 def world_to_screen(wx, wy, tile_size):
-    size = tile_size * zoom
-    return (wx * size) - camera_x, (wy * size) - camera_y
-
+    return _state.world_to_screen(wx, wy, tile_size)
 
 def screen_to_world(sx, sy, tile_size):
-    size = tile_size * zoom
-    return int((sx + camera_x) // size), int((sy + camera_y) // size)
+    return _state.screen_to_world(sx, sy, tile_size)
 
 
-# ---------------------------------------------------------------------------
-# Level state
-# ---------------------------------------------------------------------------
-current_level_index: int | None = None
-current_level_def: dict | None = None
-locked_tiles: set[tuple[int, int]] = set()
-available_buildings: list[str] | None = None   # list of gate IDs, or None = all
+# ═══════════════════════════════════════════════════════════════════════════
+# Reset / Load — update module-level names so existing code sees changes
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _sync_from_state():
+    """Copy scalar attributes from _state to module globals."""
+    import world as _self
+    _self.camera_x      = _state.camera_x
+    _self.camera_y      = _state.camera_y
+    _self.zoom          = _state.zoom
+    _self.current_level_index = _state.current_level_index
+    _self.current_level_def   = _state.current_level_def
+    _self.locked_tiles        = _state.locked_tiles
+    _self.available_buildings = _state.available_buildings
+    # Mutable containers are the *same* objects, no copy needed:
+    # world, entangle_groups, entangle_lookup
+
+
+def _sync_to_state():
+    """Copy module-global scalars back into _state (after external writes)."""
+    import world as _self
+    _state.camera_x      = _self.camera_x
+    _state.camera_y      = _self.camera_y
+    _state.zoom          = _self.zoom
+    _state.current_level_index = _self.current_level_index
+    _state.current_level_def   = _self.current_level_def
+    _state.locked_tiles        = _self.locked_tiles
+    _state.available_buildings = _self.available_buildings
 
 
 def reset_world():
-    global camera_x, camera_y, zoom, _next_entangle_id
+    global camera_x, camera_y, zoom
     global current_level_index, current_level_def
     global locked_tiles, available_buildings
-    world.clear()
-    entangle_groups.clear()
-    entangle_lookup.clear()
-    _next_entangle_id = 0
-    camera_x = 0.0
-    camera_y = 0.0
-    zoom = 1.0
-    current_level_index = None
-    current_level_def = None
-    locked_tiles = set()
-    available_buildings = None
+
+    _state.__init__()                     # reinitialise everything
+
+    # Re-bind the module-level mutable containers to the NEW dicts/sets
+    import world as _self
+    _self.world           = _state.world
+    _self.entangle_groups = _state.entangle_groups
+    _self.entangle_lookup = _state.entangle_lookup
+
+    _sync_from_state()
+
+    # Evict stale sprite caches from the previous session
+    from sprites import clear_sprite_caches
+    clear_sprite_caches()
 
 
 def load_level(level_def, level_index):
+    global camera_x, camera_y, zoom
     global current_level_index, current_level_def
     global locked_tiles, available_buildings
-    global camera_x, camera_y, zoom
 
     reset_world()
-    current_level_index = level_index
-    current_level_def = level_def
-    locked_tiles = set(level_def.get("locked", set()))
-    available_buildings = list(level_def.get("available", []))
+
+    _state.current_level_index = level_index
+    _state.current_level_def   = level_def
+    _state.locked_tiles        = set(level_def.get("locked", set()))
+    _state.available_buildings = list(level_def.get("available", []))
 
     for (x, y), data in level_def.get("pre_placed", {}).items():
-        tile = get_tile(x, y)
-        tile.building = data[0]       # string gate ID
+        tile = _state.get_tile(x, y)
+        tile.building = data[0]
         tile.direction = data[1]
         if len(data) > 2 and data[2] is not None:
             if tile.building == OUTPUT_SINK:
@@ -127,17 +221,20 @@ def load_level(level_def, level_index):
 
     cx, cy = level_def.get("camera", (0, 0))
     import config as _cfg
-    zoom = 1.0
-    camera_x = cx * _cfg.TILE_SIZE - _cfg.WIDTH / 2
-    camera_y = cy * _cfg.TILE_SIZE - (_cfg.HEIGHT - _cfg.TOOLBAR_HEIGHT) / 2
+    _state.zoom     = 1.0
+    _state.camera_x = cx * _cfg.TILE_SIZE - _cfg.WIDTH / 2
+    _state.camera_y = cy * _cfg.TILE_SIZE - (_cfg.HEIGHT - _cfg.TOOLBAR_HEIGHT) / 2
+
+    _sync_from_state()
 
 
 def check_win_condition() -> bool:
-    if current_level_def is None:
+    _sync_to_state()
+    if _state.current_level_def is None:
         return False
-    win_count = current_level_def.get("win_count", 5)
-    for (x, y) in locked_tiles:
-        tile = get_tile(x, y)
+    win_count = _state.current_level_def.get("win_count", 5)
+    for (x, y) in _state.locked_tiles:
+        tile = _state.get_tile(x, y)
         if tile.building == OUTPUT_SINK:
             if tile.sink_target is None:
                 if tile.sink_total >= win_count:

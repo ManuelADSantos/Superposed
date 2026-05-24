@@ -1,5 +1,7 @@
 """Z gate — phase flip.  |+⟩ ↔ |−⟩ (invisible on basis states)."""
 
+from __future__ import annotations
+
 from gate_registry import register, GateDef, Category
 
 

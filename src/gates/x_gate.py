@@ -1,5 +1,7 @@
 """X (NOT) gate — flips |0⟩ ↔ |1⟩."""
 
+from __future__ import annotations
+
 from gate_registry import register, GateDef, Category
 
 

@@ -3,6 +3,8 @@
 This is a CONSUMER: the qubit is absorbed and a histogram is updated.
 """
 
+from __future__ import annotations
+
 import random
 from gate_registry import register, GateDef, Category
 

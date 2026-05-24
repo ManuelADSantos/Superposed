@@ -9,7 +9,7 @@ from __future__ import annotations
 import os
 import importlib
 from dataclasses import dataclass, field
-from typing import Callable, Optional
+from typing import Callable
 
 
 # ── Gate categories (controls how simulation handles the building) ────────
@@ -31,11 +31,11 @@ class GateDef:
     category: str                           # one of Category.*
 
     # --- behaviour ---
-    transform: Optional[Callable] = None    # see Category for signature
+    transform: Callable | None = None        # see Category for signature
 
     # --- visuals ---
-    sprite_fn: Optional[Callable] = None    # (direction, size) -> pygame.Surface
-    overlay_fn: Optional[Callable] = None   # (surface, rect, tile) -> None
+    sprite_fn: Callable | None = None       # (direction, size) -> pygame.Surface
+    overlay_fn: Callable | None = None      # (surface, rect, tile) -> None
 
     # --- ordering ---
     order: int = 100                        # lower = further left in toolbar
@@ -49,7 +49,7 @@ OUTPUT_SINK = "output_sink"
 
 # ── The registry ─────────────────────────────────────────────────────────
 GATES: dict[str, GateDef] = {}
-_toolbar_cache: Optional[list] = None
+_toolbar_cache: list | None = None
 
 
 def register(gate: GateDef):
@@ -59,7 +59,7 @@ def register(gate: GateDef):
     _toolbar_cache = None
 
 
-def get_gate(building_id: str) -> Optional[GateDef]:
+def get_gate(building_id: str) -> GateDef | None:
     """Look up a gate by its string id.  Returns None for EMPTY / unknown."""
     return GATES.get(building_id)
 
@@ -75,6 +75,18 @@ def toolbar_order() -> list[GateDef]:
 def gate_ids() -> list[str]:
     """All registered gate IDs in toolbar order."""
     return [g.id for g in toolbar_order()]
+
+
+def active_toolbar(available: list[str] | None = None) -> list[str]:
+    """Gate IDs available in the current mode.
+
+    If *available* is None (sandbox), return all IDs.
+    Otherwise filter to only those in the allowed list, preserving toolbar order.
+    """
+    all_ids = [g.id for g in toolbar_order()]
+    if available is not None:
+        return [gid for gid in all_ids if gid in available]
+    return all_ids
 
 
 # ── Auto-loader ──────────────────────────────────────────────────────────

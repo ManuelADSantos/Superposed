@@ -3,6 +3,8 @@
 Buildings are referenced by string gate IDs (see gate_registry).
 """
 
+from __future__ import annotations
+
 from entities import Direction as D, QubitState as Q
 
 UP, RIGHT, DOWN, LEFT = D.UP, D.RIGHT, D.DOWN, D.LEFT

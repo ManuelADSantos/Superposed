@@ -3,7 +3,10 @@
 Gate-specific colours now live in each gate file under gates/.
 """
 
-# Display settings
+from __future__ import annotations
+
+# Display settings — WIDTH and HEIGHT are fallback defaults.
+# main.py overwrites them at startup with the actual display size.
 WIDTH = 1280
 HEIGHT = 720
 FPS = 60

@@ -7,6 +7,8 @@ get_building_sprite() reads from the gate_registry:
   3. Return a generic fallback
 """
 
+from __future__ import annotations
+
 from functools import lru_cache
 import os
 
@@ -160,6 +162,10 @@ def _draw_qubit(state, size, disappearing=False, progress=1.0, entangled=False):
 
 # ---------------------------------------------------------------------------
 # Public cache wrappers
+#
+# Sprites are cached by (building_id, direction, size) or (state, size, …).
+# Call clear_sprite_caches() when resetting the world so that stale entries
+# from previous zoom levels don't accumulate unbounded.
 # ---------------------------------------------------------------------------
 
 @lru_cache(maxsize=512)
@@ -189,3 +195,9 @@ def get_building_sprite(building_id, direction, size):
 @lru_cache(maxsize=512)
 def get_qubit_sprite(state, size, disappearing=False, progress=1.0, entangled=False):
     return _draw_qubit(state, size, disappearing, progress, entangled)
+
+
+def clear_sprite_caches():
+    """Evict all cached sprites.  Called on world reset."""
+    get_building_sprite.cache_clear()
+    get_qubit_sprite.cache_clear()

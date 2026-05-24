@@ -1,11 +1,13 @@
 """Input handling: keyboard, mouse, and toolbar interaction."""
 
+from __future__ import annotations
+
 import pygame
 import config
 from config import TILE_SIZE, TOOLBAR_HEIGHT, TOOLBAR_PAD
 from entities import Direction, QubitState
 from world import screen_to_world, get_tile, in_bounds
-from gate_registry import get_gate, toolbar_order, EMPTY, OUTPUT_SINK
+from gate_registry import get_gate, active_toolbar, EMPTY, OUTPUT_SINK
 import world as W
 
 
@@ -13,18 +15,11 @@ def _rotate_cw(d: Direction) -> Direction:
     return Direction((d.value + 1) % 4)
 
 
-def _active_toolbar():
-    all_ids = [g.id for g in toolbar_order()]
-    if W.available_buildings is not None:
-        return [gid for gid in all_ids if gid in W.available_buildings]
-    return all_ids
-
-
 def _toolbar_hit(mx, my):
     tb_y = config.HEIGHT - TOOLBAR_HEIGHT
     if my < tb_y:
         return None
-    active = _active_toolbar()
+    active = active_toolbar(W.available_buildings)
     btn_size = TOOLBAR_HEIGHT - 2 * TOOLBAR_PAD
     start_x = max(TOOLBAR_PAD, (config.WIDTH - len(active) * (btn_size + TOOLBAR_PAD)) // 2)
     for i, gid in enumerate(active):
@@ -37,7 +32,7 @@ def _toolbar_hit(mx, my):
 
 
 def _build_key_map():
-    active = _active_toolbar()
+    active = active_toolbar(W.available_buildings)
     km = {}
     for idx, gid in enumerate(active):
         key_code = getattr(pygame, f"K_{idx + 1}", None)
@@ -46,7 +41,14 @@ def _build_key_map():
     return km
 
 
-def handle_input(dt, selected_building, selected_rotation, paused, step_requested):
+def handle_input(dt, selected_building, selected_rotation, paused, step_requested,
+                 events=None):
+    """Process keyboard/mouse input.
+
+    *events* is the list of pygame events for this frame.  If ``None``
+    (legacy call), events are pulled from the pygame queue — but passing
+    them explicitly is preferred so the main loop doesn't need to re-post.
+    """
     back_to_menu = False
 
     keys = pygame.key.get_pressed()
@@ -62,7 +64,10 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
 
     key_map = _build_key_map()
 
-    for event in pygame.event.get():
+    if events is None:
+        events = pygame.event.get()
+
+    for event in events:
         if event.type == pygame.QUIT:
             return False, selected_building, selected_rotation, paused, step_requested, False
 
@@ -136,7 +141,7 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
                             tile.sink_total = 0
                             tile.sink_match = 0
 
-    active = _active_toolbar()
+    active = active_toolbar(W.available_buildings)
     if active and selected_building not in active:
         selected_building = active[0]
 

@@ -1,5 +1,7 @@
 """Menu screens: main menu, level select, briefing overlay, and win screen."""
 
+from __future__ import annotations
+
 import pygame
 from enum import Enum
 

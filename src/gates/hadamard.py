@@ -3,6 +3,8 @@
 H|0⟩ = |+⟩,  H|1⟩ = |−⟩,  H|+⟩ = |0⟩,  H|−⟩ = |1⟩
 """
 
+from __future__ import annotations
+
 from gate_registry import register, GateDef, Category
 
 

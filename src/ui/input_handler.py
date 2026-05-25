@@ -8,6 +8,8 @@ from ..core.config import TILE_SIZE, TOOLBAR_HEIGHT, TOOLBAR_PAD
 from ..core.entities import Direction, QubitState
 from ..core.world import screen_to_world, get_tile, in_bounds
 from ..engine.gate_registry import get_gate, active_toolbar, EMPTY, OUTPUT_SINK
+from ..engine.circuit_export import export_circuit
+from .rendering import get_export_button_rect, show_toast
 from ..core import world as W
 
 
@@ -100,6 +102,15 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             mx, my = pygame.mouse.get_pos()
+
+            # Export button
+            if event.button == 1 and get_export_button_rect().collidepoint(mx, my):
+                try:
+                    path = export_circuit()
+                    show_toast(f"Exported to {path}")
+                except Exception as exc:
+                    show_toast(f"Export failed: {exc}")
+                continue
 
             tb_hit = _toolbar_hit(mx, my)
             if tb_hit is not None:

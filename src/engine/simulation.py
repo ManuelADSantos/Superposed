@@ -12,7 +12,8 @@ from ..core.entities import (
     QubitState, QubitItem, Direction,
     DIR_VECTORS, opposite_dir, cw_dir, ccw_dir,
 )
-from ..core.world import get_tile, in_bounds, world
+from ..core import world as _world_mod
+from ..core.world import get_tile, in_bounds
 from .gate_registry import (
     get_gate, Category,
     EMPTY, BELT, GENERATOR, OUTPUT_SINK,
@@ -76,7 +77,7 @@ def update_items(dt):
     ready_to_move = []
 
     # --- Pass 1: tick timers, spawn, advance progress ----------------------
-    for (x, y), tile in list(world.items()):
+    for (x, y), tile in list(_world_mod.world.items()):
         if tile.measure_flash > 0:
             tile.measure_flash = max(0.0, tile.measure_flash - dt)
 

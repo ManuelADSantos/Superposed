@@ -15,7 +15,7 @@ from ..core.entities import (
     QubitState, QubitItem, Direction, DIR_VECTORS, state_color, ccw_dir,
 )
 from .sprites import get_building_sprite, get_qubit_sprite
-from ..core.world import world, get_tile, world_to_screen, screen_to_world
+from ..core.world import get_tile, world_to_screen, screen_to_world
 from ..engine.gate_registry import (
     get_gate, active_toolbar, Category,
     EMPTY, GENERATOR, OUTPUT_SINK,
@@ -191,7 +191,20 @@ def draw_toolbar(surface, selected_building, selected_rotation, paused):
         key_txt = small.render(str(i + 1), True, accent if is_sel else LIGHT_GRAY)
         surface.blit(key_txt, (bx + 3, by + 2))
 
-    rx = config.WIDTH - 10
+    # ── Export button (left side of status area) ──
+    export_font = pygame.font.SysFont("consolas", 13, bold=True)
+    export_w, export_h = 80, 26
+    export_rect = pygame.Rect(config.WIDTH - export_w - 12, tb_y + 6, export_w, export_h)
+    mx, my = pygame.mouse.get_pos()
+    export_hover = export_rect.collidepoint(mx, my)
+    bg_col = (60, 40, 100) if export_hover else (40, 30, 60)
+    pygame.draw.rect(surface, bg_col, export_rect, border_radius=6)
+    pygame.draw.rect(surface, PURPLE if export_hover else (80, 60, 120),
+                     export_rect, 1, border_radius=6)
+    et = export_font.render("Export", True, WHITE if export_hover else LIGHT_GRAY)
+    surface.blit(et, et.get_rect(center=export_rect.center))
+
+    rx = export_rect.left - 10
     st = font.render("PAUSED" if paused else "RUNNING", True, RED if paused else GREEN)
     surface.blit(st, st.get_rect(topright=(rx, tb_y + 8)))
     rot = font.render(f"Dir: {selected_rotation.name}", True, LIGHT_GRAY)
@@ -282,6 +295,57 @@ def draw_hud(surface):
         surface.blit(txt, txt.get_rect(topright=(config.WIDTH - 10, 8)))
 
 
+# ---------------------------------------------------------------------------
+# Notification toast
+# ---------------------------------------------------------------------------
+
+_toast_text: str = ""
+_toast_timer: float = 0.0
+
+
+def show_toast(message: str, duration: float = 3.0):
+    """Display a temporary notification on screen."""
+    global _toast_text, _toast_timer
+    _toast_text = message
+    _toast_timer = duration
+
+
+def tick_toast(dt: float):
+    """Decrease toast timer each frame."""
+    global _toast_timer
+    if _toast_timer > 0:
+        _toast_timer = max(0.0, _toast_timer - dt)
+
+
+def _draw_toast(surface):
+    if _toast_timer <= 0:
+        return
+    font = pygame.font.SysFont("consolas", 15)
+    txt = font.render(_toast_text, True, WHITE)
+    padding = 12
+    tw, th = txt.get_size()
+    box = pygame.Rect(0, 0, tw + padding * 2, th + padding)
+    box.midtop = (config.WIDTH // 2, 60)
+    alpha = min(1.0, _toast_timer / 0.5) * 220     # fade out in last 0.5s
+    bg = pygame.Surface(box.size, pygame.SRCALPHA)
+    bg.fill((30, 20, 50, int(alpha)))
+    surface.blit(bg, box.topleft)
+    pygame.draw.rect(surface, (*PURPLE[:3], int(alpha)), box, 1, border_radius=6)
+    txt.set_alpha(int(alpha))
+    surface.blit(txt, txt.get_rect(center=box.center))
+
+
+# ---------------------------------------------------------------------------
+# Export button hit-test (used by input_handler)
+# ---------------------------------------------------------------------------
+
+def get_export_button_rect():
+    """Return the Rect of the Export button in the toolbar."""
+    tb_y = config.HEIGHT - TOOLBAR_HEIGHT
+    export_w, export_h = 80, 26
+    return pygame.Rect(config.WIDTH - export_w - 12, tb_y + 6, export_w, export_h)
+
+
 def draw_ui(surface, selected_building, selected_rotation, paused):
     mouse_pos = pygame.mouse.get_pos()
     draw_ghost(surface, selected_building, selected_rotation, mouse_pos)
@@ -289,3 +353,4 @@ def draw_ui(surface, selected_building, selected_rotation, paused):
     draw_tooltip(surface, mouse_pos, selected_building)
     draw_level_hud(surface)
     draw_hud(surface)
+    _draw_toast(surface)

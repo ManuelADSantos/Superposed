@@ -15,7 +15,7 @@ from .engine.gate_registry import load_gates, BELT, gate_ids
 from .core.entities import Direction
 from .ui.input_handler import handle_input
 from .engine.simulation import update_items
-from .ui.rendering import draw_grid, draw_ui
+from .ui.rendering import draw_grid, draw_ui, tick_toast
 from .ui.menu import (
     GameState,
     draw_main_menu, handle_main_menu,
@@ -69,6 +69,8 @@ def main():
 
         if not running:
             break
+
+        tick_toast(dt)
 
         if state == GameState.MAIN_MENU:
             buttons = draw_main_menu(screen)

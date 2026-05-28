@@ -110,7 +110,7 @@ LEVEL_4 = {
 
 LEVEL_5 = {
     "name": "Interference",
-    "description": "Discover how H → Z → H always produces |1>.",
+    "description": "Discover how H -> Z -> H always produces |1>.",
     "briefing": (
         "The Z gate flips the phase of a qubit.\n"
         "You can't see phase directly, but it matters!\n\n"

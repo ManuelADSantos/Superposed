@@ -119,7 +119,7 @@ LEVEL_5 = {
         "always |1>, never random.  This is interference.\n\n"
         "The sink wants blue |1> qubits.  Build the circuit!"
     ),
-    "hint": "H → Z → H = guaranteed |1>  (interference!)",
+    "hint": "H -> Z -> H = guaranteed |1>  (interference!)",
     "pre_placed": {
         (0, 2):  (GEN,  RIGHT, None),
         (9, 2):  (SINK, RIGHT, ONE),

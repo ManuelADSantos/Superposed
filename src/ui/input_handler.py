@@ -56,13 +56,13 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
     keys = pygame.key.get_pressed()
     speed = 600 * dt
     if keys[pygame.K_w] or keys[pygame.K_UP]:
-        W.camera_y -= speed
+        W._state.camera_y -= speed
     if keys[pygame.K_s] or keys[pygame.K_DOWN]:
-        W.camera_y += speed
+        W._state.camera_y += speed
     if keys[pygame.K_a] or keys[pygame.K_LEFT]:
-        W.camera_x -= speed
+        W._state.camera_x -= speed
     if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-        W.camera_x += speed
+        W._state.camera_x += speed
 
     key_map = _build_key_map()
 
@@ -94,11 +94,11 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
 
         if event.type == pygame.MOUSEWHEEL:
             mx, my = pygame.mouse.get_pos()
-            old_zoom = W.zoom
-            W.zoom = max(0.3, min(3.0, W.zoom + event.y * 0.12))
-            factor = W.zoom / old_zoom
-            W.camera_x = mx + (W.camera_x - mx) * factor
-            W.camera_y = my + (W.camera_y - my) * factor
+            old_zoom = W._state.zoom
+            W._state.zoom = max(0.3, min(3.0, W._state.zoom + event.y * 0.12))
+            factor = W._state.zoom / old_zoom
+            W._state.camera_x = mx + (W._state.camera_x - mx) * factor
+            W._state.camera_y = my + (W._state.camera_y - my) * factor
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             mx, my = pygame.mouse.get_pos()

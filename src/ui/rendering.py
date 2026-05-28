@@ -57,12 +57,12 @@ def _draw_locked_indicator(surface, rect):
 # ---------------------------------------------------------------------------
 
 def draw_grid(surface):
-    size = TILE_SIZE * world_module.zoom
+    size = TILE_SIZE * world_module._state.zoom
     playable_h = config.HEIGHT - TOOLBAR_HEIGHT
-    sx_start = int(world_module.camera_x // size)
-    sx_end = int((world_module.camera_x + config.WIDTH) // size) + 2
-    sy_start = int(world_module.camera_y // size)
-    sy_end = int((world_module.camera_y + playable_h) // size) + 2
+    sx_start = int(world_module._state.camera_x // size)
+    sx_end = int((world_module._state.camera_x + config.WIDTH) // size) + 2
+    sy_start = int(world_module._state.camera_y // size)
+    sy_end = int((world_module._state.camera_y + playable_h) // size) + 2
 
     for wx in range(sx_start, sx_end):
         for wy in range(sy_start, sy_end):
@@ -143,7 +143,7 @@ def draw_ghost(surface, selected_building, selected_rotation, mouse_pos):
     if (wx, wy) in world_module.locked_tiles:
         return
     sx, sy = world_to_screen(wx, wy, TILE_SIZE)
-    size = int(TILE_SIZE * world_module.zoom)
+    size = int(TILE_SIZE * world_module._state.zoom)
     sprite = get_building_sprite(selected_building, selected_rotation, size)
     if sprite:
         ghost = sprite.copy()

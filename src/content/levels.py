@@ -16,8 +16,11 @@ GEN = "generator"
 SINK = "output_sink"
 H = "hadamard"
 X = "x_gate"
+Y = "y_gate"
 Z = "z_gate"
 CNOT = "cnot"
+CZ = "cz"
+SWAP = "swap"
 MEAS = "measurement"
 SPLIT = "splitter"
 
@@ -335,7 +338,116 @@ LEVEL_13 = {
 }
 
 
+LEVEL_14 = {
+    "name": "Pauli Y",
+    "description": "Meet the Y gate — bit flip AND phase flip in one.",
+    "briefing": (
+        "The Y gate is the third Pauli gate.\n\n"
+        "Like X, it flips bits:  Y|0> = |1>,  Y|1> = |0>.\n"
+        "Unlike X, it also flips the phase of superposition:\n"
+        "  Y|+> = |->   and   Y|-> = |+>\n\n"
+        "The sink wants |1> and the generator makes |0>.\n"
+        "Route the qubit through Y to flip it.\n\n"
+        "Note: Y alone looks like X here — the phase difference\n"
+        "only shows up in interference.  That comes next."
+    ),
+    "hint": "Place a Y gate on the path — it flips |0> to |1>",
+    "pre_placed": {
+        (0, 2):  (GEN,  RIGHT, None),
+        (8, 2):  (SINK, RIGHT, ONE),
+    },
+    "locked": {(0, 2), (8, 2)},
+    "available": [BELT, Y],
+    "win_count": 5,
+    "camera": (4, 2),
+}
+
+LEVEL_15 = {
+    "name": "Phase Kickback",
+    "description": "A |1> target kicks its phase back onto a superposition control.",
+    "briefing": (
+        "CZ is Controlled-Z: if the control qubit is |1>,\n"
+        "it applies Z to the target.  But something stranger\n"
+        "happens when the ROLES are reversed.\n\n"
+        "If the TARGET is |1> and the CONTROL is in superposition:\n"
+        "  the control's own phase gets flipped — |+> becomes |->.\n"
+        "This is called PHASE KICKBACK.\n\n"
+        "Circuit to build:\n"
+        "  Horizontal stream (target): X before CZ → |1>\n"
+        "  Vertical stream (control):  H before CZ → |+>\n"
+        "After CZ: control is |-> — apply H to collapse it to |1>.\n"
+        "Both sinks want |1>."
+    ),
+    "hint": "H on horizontal, X on vertical, CZ at crossing, H after CZ on vertical",
+    "pre_placed": {
+        (-1, 3):  (GEN,  RIGHT, None),
+        (5,  -1): (GEN,  DOWN,  None),
+        (10, 3):  (SINK, RIGHT, ONE),
+        (5,  9):  (SINK, DOWN,  ONE),
+    },
+    "locked": {(-1, 3), (5, -1), (10, 3), (5, 9)},
+    "available": [BELT, H, X, CZ],
+    "win_count": 5,
+    "camera": (5, 4),
+}
+
+LEVEL_16 = {
+    "name": "Stream Crossing",
+    "description": "SWAP exchanges the states of two qubit streams.",
+    "briefing": (
+        "The SWAP gate exchanges the quantum states of two qubits.\n"
+        "After a SWAP, each qubit carries the other's original state.\n\n"
+        "Two streams cross at a SWAP gate:\n"
+        "  Horizontal stream: |0> (straight from the generator)\n"
+        "  Vertical stream:   |1> (flip it with X first)\n\n"
+        "After the SWAP:\n"
+        "  Horizontal exit carries the vertical stream's state → |1>\n"
+        "  Vertical exit carries the horizontal stream's state → |0>\n\n"
+        "Route each exit to the matching sink."
+    ),
+    "hint": "X on the vertical path, SWAP at the crossing, belt the exits to sinks",
+    "pre_placed": {
+        (-1, 3):  (GEN,  RIGHT, None),
+        (5,  -1): (GEN,  DOWN,  None),
+        (10, 3):  (SINK, RIGHT, ONE),
+        (5,  9):  (SINK, DOWN,  ZERO),
+    },
+    "locked": {(-1, 3), (5, -1), (10, 3), (5, 9)},
+    "available": [BELT, X, SWAP],
+    "win_count": 5,
+    "camera": (5, 4),
+}
+
+LEVEL_17 = {
+    "name": "Y Sandwiched",
+    "description": "Two locked H gates — what do you place between them to get |1>?",
+    "briefing": (
+        "Two Hadamard gates are locked in place.\n"
+        "Every qubit passes through both of them.\n\n"
+        "H·H = identity → if nothing is between them, you get |0> back.\n"
+        "The sink wants |1>.  Just belts won't work.\n\n"
+        "Experiment: what happens when Y sits between two H gates?\n"
+        "  H|0> = |+>,  Y|+> = |->,  H|-> = |1>\n\n"
+        "Place Y between the two locked H gates to create\n"
+        "the H·Y·H interference circuit."
+    ),
+    "hint": "Place one Y gate between the two locked H gates",
+    "pre_placed": {
+        (0, 2):  (GEN,  RIGHT, None),
+        (3, 2):  (H,    RIGHT, None),   # locked — forces qubit into superposition
+        (8, 2):  (H,    RIGHT, None),   # locked — collapses superposition
+        (11, 2): (SINK, RIGHT, ONE),
+    },
+    "locked": {(0, 2), (3, 2), (8, 2), (11, 2)},
+    "available": [BELT, Y],
+    "win_count": 5,
+    "camera": (5, 2),
+}
+
+
 ALL_LEVELS = [
-    LEVEL_1, LEVEL_2, LEVEL_3, LEVEL_4, LEVEL_5, LEVEL_6, LEVEL_7,
-    LEVEL_8, LEVEL_9, LEVEL_10, LEVEL_11, LEVEL_12, LEVEL_13,
+    LEVEL_1,  LEVEL_2,  LEVEL_3,  LEVEL_4,  LEVEL_5,
+    LEVEL_6,  LEVEL_7,  LEVEL_8,  LEVEL_9,  LEVEL_10,
+    LEVEL_11, LEVEL_12, LEVEL_13, LEVEL_14, LEVEL_15,
+    LEVEL_16, LEVEL_17,
 ]

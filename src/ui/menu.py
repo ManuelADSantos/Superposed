@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import random
 import pygame
 from enum import Enum
 
@@ -11,6 +12,40 @@ from ..core.config import (
     RED, BLUE, PURPLE, CYAN, GOLD, TEAL,
 )
 from ..content.levels import CHAPTERS, COMING_SOON, ALL_LEVELS, chapter_level_offset
+
+
+# ── Background particles ──
+_PARTICLE_COLORS = [(220, 80, 80), (100, 160, 255), (170, 90, 255)]
+_particles: list[list] = []  # [x, y, vx, vy, radius, color_idx]
+_last_size = (0, 0)
+
+
+def _draw_particles(screen):
+    global _last_size
+    w, h = config.WIDTH, config.HEIGHT
+    n = 400
+    if not _particles or (w, h) != _last_size:
+        _particles.clear()
+        for _ in range(n):
+            _particles.append([
+                random.uniform(0, w), random.uniform(0, h),
+                random.uniform(-0.4, 0.4), random.uniform(-0.4, 0.4),
+                random.randint(3, 7), random.randint(0, 2),
+            ])
+        _last_size = (w, h)
+    surf = pygame.Surface((w, h), pygame.SRCALPHA)
+    for p in _particles:
+        p[0] += p[2]
+        p[1] += p[3]
+        if p[0] < 0 or p[0] > w:
+            p[2] = -p[2]
+            p[0] = max(0, min(w, p[0]))
+        if p[1] < 0 or p[1] > h:
+            p[3] = -p[3]
+            p[1] = max(0, min(h, p[1]))
+        r, g, b = _PARTICLE_COLORS[p[5]]
+        pygame.draw.circle(surf, (r, g, b, 30), (int(p[0]), int(p[1])), int(p[4]))
+    screen.blit(surf, (0, 0))
 
 
 class GameState(Enum):
@@ -107,6 +142,7 @@ def _draw_menu_buttons(screen, font, labels_colors, start_y, btn_w=260, btn_h=52
 
 def draw_main_menu(screen):
     screen.fill(_BG_MENU)
+    _draw_particles(screen)
 
     title_font = pygame.font.SysFont("consolas", 62, bold=True)
     sub_font = pygame.font.SysFont("consolas", 18)
@@ -159,6 +195,7 @@ def handle_main_menu(events, buttons):
 
 def draw_chapter_select(screen):
     screen.fill(_BG_MENU)
+    _draw_particles(screen)
 
     header_font = pygame.font.SysFont("consolas", 36, bold=True)
     header = header_font.render("CAMPAIGN", True, WHITE)
@@ -271,6 +308,7 @@ def handle_chapter_select(events, cards):
 def draw_concept_intro(screen, chapter_index):
     ch = CHAPTERS[chapter_index]
     screen.fill(_BG_MENU)
+    _draw_particles(screen)
 
     tf = pygame.font.SysFont("consolas", 30, bold=True)
     sf = pygame.font.SysFont("consolas", 14)
@@ -342,6 +380,7 @@ def handle_concept_intro(events, btn_rect, chapter_index):
 def draw_level_select(screen, chapter_index):
     ch = CHAPTERS[chapter_index]
     screen.fill(_BG_MENU)
+    _draw_particles(screen)
 
     header_font = pygame.font.SysFont("consolas", 28, bold=True)
     sub_font = pygame.font.SysFont("consolas", 14)

@@ -1,9 +1,10 @@
 """World grid, camera, entanglement registry, and level state.
 
-All mutable state lives inside a WorldState instance.  The module exposes
-a single active instance (_state) and keeps module-level proxies so that
-every other module can keep using ``world.camera_x``, ``world.world``, etc.
-without changes.  Call ``reset_world()`` to reinitialise cleanly.
+All mutable state lives in a single WorldState instance (_state).
+Camera/zoom are always accessed via ``_state`` directly.
+Module-level names expose mutable containers (world, entangle_groups,
+locked_tiles, available_buildings) and are re-bound on reset/load.
+Call ``reset_world()`` to reinitialise cleanly.
 """
 
 from __future__ import annotations
@@ -103,18 +104,11 @@ class WorldState:
 _state = WorldState()
 
 
-# --- direct attribute proxies (read/write via the module) ----------------
-# Other modules do  ``import world as W``  then  ``W.camera_x += 5``.
-# We keep that working by exposing the *same* mutable containers and by
-# providing reset / load functions that swap the inner values.
+# --- module-level names (re-bound on reset/load) -------------------------
 
 world          = _state.world
 entangle_groups = _state.entangle_groups
 entangle_lookup = _state.entangle_lookup
-
-camera_x       = _state.camera_x
-camera_y       = _state.camera_y
-zoom           = _state.zoom
 
 current_level_index  = _state.current_level_index
 current_level_def    = _state.current_level_def
@@ -154,33 +148,15 @@ def screen_to_world(sx, sy, tile_size):
 # ═══════════════════════════════════════════════════════════════════════════
 
 def _sync_from_state():
-    """Copy scalar attributes from _state to module globals."""
+    """Copy level/lock/available attributes from _state to module globals."""
     from . import world as _self
-    _self.camera_x      = _state.camera_x
-    _self.camera_y      = _state.camera_y
-    _self.zoom          = _state.zoom
     _self.current_level_index = _state.current_level_index
     _self.current_level_def   = _state.current_level_def
     _self.locked_tiles        = _state.locked_tiles
     _self.available_buildings = _state.available_buildings
-    # Mutable containers are the *same* objects, no copy needed:
-    # world, entangle_groups, entangle_lookup
-
-
-def _sync_to_state():
-    """Copy module-global scalars back into _state (after external writes)."""
-    from . import world as _self
-    _state.camera_x      = _self.camera_x
-    _state.camera_y      = _self.camera_y
-    _state.zoom          = _self.zoom
-    _state.current_level_index = _self.current_level_index
-    _state.current_level_def   = _self.current_level_def
-    _state.locked_tiles        = _self.locked_tiles
-    _state.available_buildings = _self.available_buildings
 
 
 def reset_world():
-    global camera_x, camera_y, zoom
     global current_level_index, current_level_def
     global locked_tiles, available_buildings
 
@@ -200,7 +176,6 @@ def reset_world():
 
 
 def load_level(level_def, level_index):
-    global camera_x, camera_y, zoom
     global current_level_index, current_level_def
     global locked_tiles, available_buildings
 
@@ -229,7 +204,6 @@ def load_level(level_def, level_index):
 
 
 def check_win_condition() -> bool:
-    _sync_to_state()
     if _state.current_level_def is None:
         return False
     win_count = _state.current_level_def.get("win_count", 5)

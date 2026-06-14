@@ -34,7 +34,10 @@ class PathStep:
 _SINGLE_MAP = {
     "hadamard":  "h",
     "x_gate":    "x",
+    "y_gate":    "y",
     "z_gate":    "z",
+    "cz":        "cz",
+    "swap":      "swap",
 }
 
 

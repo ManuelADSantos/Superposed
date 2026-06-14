@@ -129,7 +129,7 @@ class TestZGate(unittest.TestCase):
         self.assertFalse(q.phase_flipped)
 
 
-# Interference: H → Z → H = deterministic |1⟩
+# Interference: H → Z → H = deterministic |1>
 
 class TestInterference(unittest.TestCase):
 
@@ -142,7 +142,7 @@ class TestInterference(unittest.TestCase):
         self.assertFalse(q.phase_flipped)
 
     def test_hh_gives_zero(self):
-        """H→H with no Z in between should return to |0⟩."""
+        """H→H with no Z in between should return to |0>."""
         q = _qubit(QubitState.ZERO)
         hadamard(q)
         hadamard(q)
@@ -183,7 +183,7 @@ class TestCNOT(unittest.TestCase):
         self.assertEqual(c.entangle_group, t.entangle_group)
 
     def test_control_superposition_target_already_one(self):
-        """Superposed control + |1⟩ target — target becomes superposition and entangled."""
+        """Superposed control + |1> target — target becomes superposition and entangled."""
         c = _qubit(QubitState.SUPERPOSITION)
         t = _qubit(QubitState.ONE)
         cnot(c, t)
@@ -308,7 +308,7 @@ class TestSplitter(unittest.TestCase):
         self.assertLess(straight, 150)
 
     def test_direction_down_routes_correctly(self):
-        """When gate faces DOWN, |0⟩ goes (0,1) and |1⟩ goes (-1,0)."""
+        """When gate faces DOWN, |0> goes (0,1) and |1> goes (-1,0)."""
         _, ej_zero = self._run_splitter(QubitState.ZERO, Direction.DOWN)
         self.assertEqual(ej_zero[0][:2], (0, 1))
         _, ej_one = self._run_splitter(QubitState.ONE, Direction.DOWN)
@@ -340,7 +340,7 @@ class TestEntanglement(unittest.TestCase):
         gid = create_entangle_group()
         register_entangled(gid, q1)
         register_entangled(gid, q2)
-        hadamard(q1)  # H|+⟩ = |0⟩, breaks entanglement
+        hadamard(q1)  # H|+> = |0>, breaks entanglement
         self.assertIsNone(q1.entangle_group)
 
 

@@ -4,10 +4,10 @@ Applies Z to the target when control is |1>.
 Because Z only affects phase, the most visible effect is on superposition.
 
 Key behaviours:
-  control=|1>,  target=|+>  →  target becomes |->  (phase flip)
-  control=|+>,  target=|1>  →  control becomes |->  (phase kickback!)
-  control=|+>,  target=|+>  →  entangled Bell-like state
-  control=|0>               →  nothing happens (Z|anything> when c=0 = identity)
+  control=|1>,  target=|+>  ->  target becomes |->  (phase flip)
+  control=|+>,  target=|1>  ->  control becomes |->  (phase kickback!)
+  control=|+>,  target=|+>  ->  entangled Bell-like state
+  control=|0>               ->  nothing happens (Z|anything> when c=0 = identity)
 
 Unlike CNOT (which flips bits), CZ flips phases — all its effects are invisible
 on pure |0>/|1> states and only show up through interference.
@@ -36,7 +36,7 @@ def _transform(control, target):
             # Phase kickback: Z kicks back onto the control qubit's phase
             control.phase_flipped = not control.phase_flipped
         elif target.state == QubitState.SUPERPOSITION:
-            # Both in superposition → entangle
+            # Both in superposition -> entangle
             gid = create_entangle_group()
             register_entangled(gid, control)
             register_entangled(gid, target)

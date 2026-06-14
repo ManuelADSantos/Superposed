@@ -194,7 +194,7 @@ def generate_qiskit_script(grid: dict | None = None) -> str:
                     )
 
             elif step.building == OUTPUT_SINK:
-                ops.append(f"# → output sink at ({step.x},{step.y})")
+                ops.append(f"# -> output sink at ({step.x},{step.y})")
 
     header = [
         '"""Qiskit circuit exported from Superposed.',

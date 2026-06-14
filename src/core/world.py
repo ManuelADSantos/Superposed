@@ -19,7 +19,7 @@ class WorldState:
         self.camera_y: float = 0.0
         self.zoom: float = 1.0
 
-        # Entanglement: same-state correlation only (|00⟩ + |11⟩).
+        # Entanglement: same-state correlation only (|00> + |11>).
         self._next_entangle_id: int = 0
         self.entangle_groups: dict[int, set[int]] = {}
         self.entangle_lookup: dict[int, QubitItem] = {}

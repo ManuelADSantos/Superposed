@@ -288,7 +288,7 @@ def draw_concept_intro(screen, chapter_index):
     text_h = len(lines) * line_h
     title_h = 80
     btn_h = 70
-    ph = min(title_h + text_h + btn_h + 20, config.HEIGHT - 60)
+    ph = min(title_h + text_h + btn_h + 20, config.HEIGHT - 20)
 
     panel = pygame.Rect((config.WIDTH - pw) // 2, (config.HEIGHT - ph) // 2, pw, ph)
     pygame.draw.rect(screen, _PANEL, panel, border_radius=14)

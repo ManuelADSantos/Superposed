@@ -47,7 +47,7 @@ superposed
 
 The game has two modes accessible from the main menu:
 
-**Levels** — seven tutorial puzzles that introduce one concept at a time, from basic belt transport through quantum routing. Each level locks certain tiles and restricts which gates you can use, with a target number of qubits to deliver to the output sink.
+**Campaign** — a chapter-based progression with 15 tutorial levels across 6 chapters. The campaign introduces one concept at a time, from basic belt transport through entanglement and multi-qubit routing. Each level locks certain tiles and restricts which gates you can use, with a target number of qubits to deliver to the output sink.
 
 **Sandbox** — an open canvas with every gate unlocked and no win condition, for free experimentation.
 
@@ -76,8 +76,11 @@ The game has two modes accessible from the main menu:
 | **Output Sink** | Infrastructure | Collects qubits; tracks how many match the target state |
 | **Hadamard (H)** | Single-qubit | `\|0>` or `\|1>` becomes superposition; superposition collapses back based on phase |
 | **X (NOT)** | Single-qubit | Flips `\|0>` to `\|1>` and vice versa; superposition unchanged |
+| **Y (Pauli-Y)** | Single-qubit | Flips `\|0>` and `\|1>`, and toggles phase on superposition |
 | **Z (Phase)** | Single-qubit | Flips the phase of a superposed qubit; no visible effect on basis states |
 | **CNOT** | Two-qubit | Control from the side, target from behind. If control is `\|1>`, flips target. If superposed, entangles both |
+| **CZ** | Two-qubit | Controlled phase flip; useful for phase kickback and interference |
+| **SWAP** | Two-qubit | Exchanges the states of two qubits |
 | **Measurement** | Consumer | Collapses superposition to `\|0>` or `\|1>` (50/50). Shows a histogram of results |
 | **Splitter** | Router | Measures then routes: `\|0>` goes straight, `\|1>` turns clockwise |
 
@@ -112,7 +115,7 @@ Superposed/
 │   │   ├── menu.py         # Main menu, level select, briefing, win screen
 │   │   └── input_handler.py    # Keyboard, mouse, zoom
 │   └── content/            # Game content
-│       └── levels.py       # 7 tutorial level definitions
+│       └── levels.py       # 15 tutorial level definitions across 6 chapters
 ├── assets/sprites/         # Custom gate PNGs (optional overrides)
 ├── tests/
 │   └── test_gates.py       # 37 unit tests

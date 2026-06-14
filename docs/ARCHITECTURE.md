@@ -15,6 +15,8 @@ Superposed is a single-threaded pygame application structured as a proper Python
 
 The dependency flow is strictly top-down: `main.py` imports from all four subpackages, `engine/` and `ui/` import from `core/`, and `content/` imports entity types from `core/` and gate IDs from `engine/`. There are no circular dependencies.
 
+The current campaign is organized into 6 chapters and 15 levels, and the menu flow includes chapter select and concept intro screens before level play.
+
 ## Entry Points
 
 There are three ways to start the game, and all of them call the same `main()` function in `src/main.py`:
@@ -28,9 +30,9 @@ There are three ways to start the game, and all of them call the same `main()` f
 `main.py` runs the game loop with a state machine driven by the `GameState` enum (defined in `ui/menu.py`). The states are:
 
 ```
-MAIN_MENU → LEVEL_SELECT → BRIEFING → LEVEL_PLAY → WIN_SCREEN
-                                                  ↓
-MAIN_MENU → SANDBOX ←──────────────────── (Tab key)
+MAIN_MENU → CHAPTER_SELECT → CONCEPT_INTRO → LEVEL_SELECT → BRIEFING → LEVEL_PLAY → WIN_SCREEN
+                                                               ↓
+MAIN_MENU → SANDBOX ←─────────────────────────────────── (Tab key)
 ```
 
 Each frame follows the same sequence: process input, update simulation (if not paused), render everything. The state determines which input handler and renderer are active — for example, `MAIN_MENU` only draws the menu and listens for button clicks, while `LEVEL_PLAY` runs the full simulation loop.
@@ -107,10 +109,13 @@ Each gate file follows the same pattern: define a `_transform` function, optiona
 - **_infrastructure.py** — Belt, Generator, Output Sink. These have no transform (simulation handles them directly) but provide sprite functions.
 - **hadamard.py** — Creates superposition from basis states, collapses superposition based on phase. Breaks entanglement on collapse.
 - **x_gate.py** — NOT gate, flips `|0>` and `|1>`. Superposition is unchanged.
+- **y_gate.py** — Pauli-Y gate, flips bits and toggles phase on superposition.
 - **z_gate.py** — Phase gate, toggles `phase_flipped` on superposed qubits only.
 - **cnot.py** — Two-qubit gate. If control is `|1>`, flips target. If control is superposed, puts target into superposition and entangles both via the world's entanglement registry.
+- **cz.py** — Two-qubit gate. Applies controlled phase flip behavior and supports phase kickback.
 - **measurement.py** — Consumer gate. Collapses superposition to `|0>` or `|1>` with 50/50 probability. Collapses entangled partners to the same state. Records results in a tile-level histogram (capped at 20 entries). Includes an overlay function that draws the histogram directly on the tile.
 - **splitter.py** — Router gate. Implicitly measures the qubit, then routes `|0>` straight ahead and `|1>` clockwise. Used to separate qubit states spatially.
+- **swap.py** — Two-qubit gate that exchanges the state and phase of two qubits.
 
 ## UI Subpackage
 
@@ -137,12 +142,14 @@ The file also exports public drawing primitives (`_panel`, `_arrow`, `_shadow`, 
 
 ### menu.py (343 lines)
 
-Implements four screens as draw/handle function pairs:
+Implements the menu flow as draw/handle function pairs:
 
-- **Main menu** — title, subtitle, two buttons (Levels, Sandbox), version number in the corner.
-- **Level select** — 4-column grid of level cards with completion badges (stored in a module-level `completed_levels` set).
+- **Main menu** — title, subtitle, three buttons (Campaign, Sandbox, Exit), version number in the corner.
+- **Chapter select** — chapter cards plus campaign progress overview.
+- **Concept intro** — chapter summary screen before the level list.
+- **Level select** — grid of level cards with completion badges (stored in a module-level `completed_levels` set).
 - **Briefing** — overlay before a level starts, showing the level name, description, and a START button.
-- **Win screen** — overlay after completing a level, with MENU and NEXT LEVEL buttons.
+- **Win screen** — overlay after completing a level, with CHAPTERS and NEXT buttons.
 
 ### input_handler.py
 
@@ -152,7 +159,7 @@ Translates pygame events into game actions. Returns an updated `(selected_buildi
 
 ### levels.py
 
-Seven tutorial levels, each defined as a dictionary with:
+Fifteen tutorial levels across 6 chapters, each defined as a dictionary with:
 
 - `name`, `description`, `briefing` — text shown to the player.
 - `pre_placed` — list of `(x, y, building_id, direction)` tuples for tiles the level starts with.
@@ -170,6 +177,8 @@ The levels progress through the quantum concepts in order:
 5. **Interference** — H then Z then H produces deterministic `|1>`.
 6. **Entanglement** — use CNOT to create correlated qubit pairs.
 7. **Quantum Router** — use the Splitter to route by state.
+8. **Phase Kickback** — use CZ to shift phase through the control qubit.
+9. **Stream Crossing** — use SWAP to exchange two qubit streams.
 
 ## Design Decisions
 

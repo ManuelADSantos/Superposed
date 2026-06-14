@@ -148,6 +148,32 @@ def draw_ghost(surface, selected_building, selected_rotation, mouse_pos):
         surface.blit(ghost, ghost.get_rect(center=(sx + size // 2, sy + size // 2)))
 
 
+def _draw_help_tooltip(surface, anchor_rect):
+    font = pygame.font.SysFont("consolas", 13)
+    lines = [
+        "R  Rotate direction",
+        "P  Pause / Resume",
+        "N  Step (while paused)",
+        "B  Show briefing",
+        "C  Clear all placed",
+        "WASD  Pan camera",
+        "Scroll  Zoom",
+        "ESC  Back to menu",
+    ]
+    rendered = [font.render(l, True, WHITE) for l in lines]
+    lh = font.get_linesize()
+    pad = 10
+    w = max(r.get_width() for r in rendered) + pad * 2
+    h = lh * len(rendered) + pad * 2
+    box = pygame.Rect(anchor_rect.right - w, anchor_rect.top - h - 6, w, h)
+    bg = pygame.Surface(box.size, pygame.SRCALPHA)
+    bg.fill((20, 18, 30, 240))
+    surface.blit(bg, box.topleft)
+    pygame.draw.rect(surface, CYAN, box, 1, border_radius=6)
+    for i, r in enumerate(rendered):
+        surface.blit(r, (box.left + pad, box.top + pad + i * lh))
+
+
 def draw_toolbar(surface, selected_building, selected_rotation, paused):
     tb_y = config.HEIGHT - TOOLBAR_HEIGHT
     pygame.draw.rect(surface, (22, 22, 28), (0, tb_y, config.WIDTH, TOOLBAR_HEIGHT))
@@ -173,8 +199,6 @@ def draw_toolbar(surface, selected_building, selected_rotation, paused):
         if mini:
             surface.blit(mini, mini.get_rect(center=rect.center))
 
-        key_txt = small.render(str(i + 1), True, accent if is_sel else LIGHT_GRAY)
-        surface.blit(key_txt, (rect.left + 3, rect.top + 2))
 
     export_font = pygame.font.SysFont("consolas", 13, bold=True)
     export_rect = get_export_button_rect()
@@ -187,22 +211,28 @@ def draw_toolbar(surface, selected_building, selected_rotation, paused):
     et = export_font.render("Export", True, WHITE if export_hover else LIGHT_GRAY)
     surface.blit(et, et.get_rect(center=export_rect.center))
 
-    speed_rect = get_speed_button_rect()
-    speed_hover = speed_rect.collidepoint(mx, my)
-    speed_bg = (60, 40, 100) if speed_hover else (40, 30, 60)
-    pygame.draw.rect(surface, speed_bg, speed_rect, border_radius=6)
-    pygame.draw.rect(surface, CYAN if speed_hover else (80, 60, 120),
-                     speed_rect, 1, border_radius=6)
-    speed_label = small.render(f"{config.SPEED_MULT}x", True, WHITE if speed_hover else LIGHT_GRAY)
-    surface.blit(speed_label, speed_label.get_rect(center=speed_rect.center))
+    def _draw_ctrl_btn(rect, label, color, hover):
+        bg = (60, 40, 100) if hover else (40, 30, 60)
+        pygame.draw.rect(surface, bg, rect, border_radius=6)
+        pygame.draw.rect(surface, color if hover else (80, 60, 120), rect, 1, border_radius=6)
+        t = small.render(label, True, WHITE if hover else LIGHT_GRAY)
+        surface.blit(t, t.get_rect(center=rect.center))
 
-    rx = export_rect.left - 10
-    st = font.render("PAUSED" if paused else "RUNNING", True, RED if paused else GREEN)
-    surface.blit(st, st.get_rect(topright=(rx, tb_y + 8)))
-    rot = font.render(f"Dir: {selected_rotation.name}", True, LIGHT_GRAY)
-    surface.blit(rot, rot.get_rect(topright=(rx, tb_y + 28)))
-    ctrl = small.render("R Rotate | P Pause | N Step | B Briefing | WASD Pan | Scroll Zoom | ESC Menu", True, DARK_GRAY)
-    surface.blit(ctrl, ctrl.get_rect(topright=(rx, tb_y + 48)))
+    speed_rect = get_speed_button_rect()
+    _draw_ctrl_btn(speed_rect, f"{config.SPEED_MULT}x", CYAN, speed_rect.collidepoint(mx, my))
+
+    pause_rect = get_pause_button_rect()
+    p_label = "| |" if not paused else ">"
+    p_color = RED if paused else GREEN
+    _draw_ctrl_btn(pause_rect, p_label, p_color, pause_rect.collidepoint(mx, my))
+
+    help_rect = get_help_button_rect()
+    help_hover = help_rect.collidepoint(mx, my)
+    _draw_ctrl_btn(help_rect, "?", CYAN, help_hover)
+
+    if help_hover:
+        _draw_help_tooltip(surface, help_rect)
+
 
 
 def draw_tooltip(surface, mouse_pos, selected_building):
@@ -267,13 +297,32 @@ def draw_level_hud(surface):
     surface.blit(et, et.get_rect(topright=(config.WIDTH - 12, 28)))
 
 
-def draw_hud(surface):
+def _draw_compass(surface, direction, cx, cy):
+    import math
+    r = 20
+    pygame.draw.circle(surface, (30, 30, 38), (cx, cy), r)
+    pygame.draw.circle(surface, DARK_GRAY, (cx, cy), r, 1)
+    angles = {Direction.RIGHT: 0, Direction.UP: -90, Direction.LEFT: 180, Direction.DOWN: 90}
+    angle = math.radians(angles[direction])
+    ex = cx + int(r * 0.7 * math.cos(angle))
+    ey = cy + int(r * 0.7 * math.sin(angle))
+    pygame.draw.line(surface, CYAN, (cx, cy), (ex, ey), 2)
+    pygame.draw.circle(surface, CYAN, (ex, ey), 3)
+    font = pygame.font.SysFont("consolas", 10)
+    label = font.render(direction.name[0], True, CYAN)
+    surface.blit(label, label.get_rect(center=(cx, cy + r + 10)))
+
+
+def draw_hud(surface, selected_rotation):
     font = pygame.font.SysFont("consolas", UI_FONT_SIZE)
     mx, my = pygame.mouse.get_pos()
     wx, wy = screen_to_world(mx, my, TILE_SIZE)
-    if world_module.current_level_def is None:
-        txt = font.render(f"({wx}, {wy})", True, DARK_GRAY)
-        surface.blit(txt, txt.get_rect(topright=(config.WIDTH - 10, 8)))
+    coord = font.render(f"({wx}, {wy})", True, DARK_GRAY)
+    compass_cy = 34
+    compass_r = 20
+    _draw_compass(surface, selected_rotation, config.WIDTH - 10 - coord.get_width() // 2, compass_cy)
+    coord_rect = coord.get_rect(topright=(config.WIDTH - 10, compass_cy + compass_r + 20))
+    surface.blit(coord, coord_rect)
 
 
 _toast_text: str = ""
@@ -349,12 +398,22 @@ def _draw_briefing_overlay(surface):
 def get_export_button_rect():
     tb_y = config.HEIGHT - TOOLBAR_HEIGHT
     export_w, export_h = 80, 26
-    return pygame.Rect(config.WIDTH - export_w - 12, tb_y + 6, export_w, export_h)
+    return pygame.Rect(config.WIDTH - export_w - 46, tb_y + 6, export_w, export_h)
 
 
 def get_speed_button_rect():
     tb_y = config.HEIGHT - TOOLBAR_HEIGHT
     return pygame.Rect(12, tb_y + 6, 50, 26)
+
+
+def get_pause_button_rect():
+    tb_y = config.HEIGHT - TOOLBAR_HEIGHT
+    return pygame.Rect(68, tb_y + 6, 50, 26)
+
+
+def get_help_button_rect():
+    r = get_export_button_rect()
+    return pygame.Rect(r.right + 6, r.top, 26, r.height)
 
 
 def draw_ui(surface, selected_building, selected_rotation, paused):
@@ -363,6 +422,6 @@ def draw_ui(surface, selected_building, selected_rotation, paused):
     draw_toolbar(surface, selected_building, selected_rotation, paused)
     draw_tooltip(surface, mouse_pos, selected_building)
     draw_level_hud(surface)
-    draw_hud(surface)
+    draw_hud(surface, selected_rotation)
     _draw_briefing_overlay(surface)
     _draw_toast(surface)

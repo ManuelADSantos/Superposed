@@ -30,15 +30,11 @@ _PANEL_HOVER = (34, 34, 44)
 _PANEL_BORDER = (55, 55, 70)
 _ACCENT = PURPLE
 _ACCENT_DIM = (120, 60, 180)
-# ponytail: SDL2 X1=4, some Linux HID drivers report 8
-_MOUSE_BACK = (4, 8)
-
 completed_levels: set[int] = set()
 
 
 def _is_back(event):
-    return ((event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE)
-            or (event.type == pygame.MOUSEBUTTONDOWN and event.button in _MOUSE_BACK))
+    return event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE
 
 
 def is_chapter_unlocked(ch_idx):
@@ -112,7 +108,7 @@ def _draw_menu_buttons(screen, font, labels_colors, start_y, btn_w=260, btn_h=52
 def draw_main_menu(screen):
     screen.fill(_BG_MENU)
 
-    title_font = pygame.font.SysFont("consolas", 52, bold=True)
+    title_font = pygame.font.SysFont("consolas", 62, bold=True)
     sub_font = pygame.font.SysFont("consolas", 18)
 
     title = title_font.render("SUPERPOSED", True, _ACCENT)
@@ -174,7 +170,7 @@ def draw_chapter_select(screen):
 
     cards = []
     cols = 2
-    card_w, card_h = 320, 100
+    card_w, card_h = 320, 118
     gap = 20
     total_w = cols * card_w + (cols - 1) * gap
     start_x = (config.WIDTH - total_w) // 2
@@ -226,8 +222,9 @@ def draw_chapter_select(screen):
         name = card_font.render(ch["name"], True, name_color)
         screen.blit(name, (cx + 12, cy + 28))
 
-        subtitle = sub_font.render(ch.get("subtitle", ""), True, LIGHT_GRAY if unlocked else DARK_GRAY)
-        screen.blit(subtitle, (cx + 12, cy + 52))
+        sub_color = LIGHT_GRAY if unlocked else DARK_GRAY
+        for si, sl in enumerate(_wrap_text(sub_font, ch.get("subtitle", ""), card_w - 24)):
+            screen.blit(sub_font.render(sl, True, sub_color), (cx + 12, cy + 52 + si * 16))
 
         if playable and unlocked:
             done, total = chapter_progress(ch_idx)
@@ -245,7 +242,7 @@ def draw_chapter_select(screen):
             cards.append((rect, ch_idx))
 
     back_font = pygame.font.SysFont("consolas", 18)
-    back_txt = back_font.render("← Back", True, LIGHT_GRAY)
+    back_txt = back_font.render("<< Back", True, LIGHT_GRAY)
     back_rect = back_txt.get_rect(topleft=(20, config.HEIGHT - 40))
     screen.blit(back_txt, back_rect)
     cards.append((back_rect, -1))
@@ -282,23 +279,23 @@ def draw_concept_intro(screen, chapter_index):
     pw = 580
     pad = 28
     text_w = pw - pad * 2
-    line_h = 22
+    line_h = 19
 
     lines = _wrap_text(sf, ch["concept"], text_w)
     text_h = len(lines) * line_h
-    title_h = 80
-    btn_h = 70
-    ph = min(title_h + text_h + btn_h + 20, config.HEIGHT - 20)
+    title_h = 64
+    btn_h = 58
+    ph = min(title_h + text_h + btn_h, config.HEIGHT - 20)
 
-    panel = pygame.Rect((config.WIDTH - pw) // 2, (config.HEIGHT - ph) // 2, pw, ph)
+    panel = pygame.Rect((config.WIDTH - pw) // 2, max(10, (config.HEIGHT - ph) // 2), pw, ph)
     pygame.draw.rect(screen, _PANEL, panel, border_radius=14)
     pygame.draw.rect(screen, ch.get("color", _ACCENT), panel, 2, border_radius=14)
 
     ch_label = sf.render(f"Chapter {chapter_index + 1}", True, DARK_GRAY)
-    screen.blit(ch_label, ch_label.get_rect(midtop=(panel.centerx, panel.top + 14)))
+    screen.blit(ch_label, ch_label.get_rect(midtop=(panel.centerx, panel.top + 10)))
 
     title = tf.render(ch["name"], True, ch.get("color", CYAN))
-    screen.blit(title, title.get_rect(midtop=(panel.centerx, panel.top + 34)))
+    screen.blit(title, title.get_rect(midtop=(panel.centerx, panel.top + 28)))
 
     clip = pygame.Rect(panel.left + pad, panel.top + title_h,
                        text_w, ph - title_h - btn_h)
@@ -311,8 +308,8 @@ def draw_concept_intro(screen, chapter_index):
         y += line_h
     screen.set_clip(None)
 
-    btn_rect = pygame.Rect(0, 0, 200, 44)
-    btn_rect.center = (panel.centerx, panel.bottom - 40)
+    btn_rect = pygame.Rect(0, 0, 200, 40)
+    btn_rect.center = (panel.centerx, panel.bottom - 30)
 
     mx, my = pygame.mouse.get_pos()
     hovered = btn_rect.collidepoint(mx, my)
@@ -411,7 +408,7 @@ def draw_level_select(screen, chapter_index):
         cards.append((rect, global_idx))
 
     back_font = pygame.font.SysFont("consolas", 18)
-    back_txt = back_font.render("← Back to chapters", True, LIGHT_GRAY)
+    back_txt = back_font.render("<< Back to chapters", True, LIGHT_GRAY)
     back_rect = back_txt.get_rect(topleft=(20, config.HEIGHT - 40))
     screen.blit(back_txt, back_rect)
     cards.append((back_rect, -1))

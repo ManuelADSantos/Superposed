@@ -11,7 +11,7 @@ from .engine.gate_registry import load_gates, BELT
 from .core.entities import Direction
 from .ui.input_handler import handle_input
 from .engine.simulation import update_items
-from .ui.rendering import draw_grid, draw_ui, tick_toast
+from .ui.rendering import draw_grid, draw_ui, tick_toast, reset_briefing
 from .ui.menu import (
     GameState,
     draw_main_menu, handle_main_menu,
@@ -122,6 +122,7 @@ def main():
                 running = False
             elif new_state == GameState.LEVEL_PLAY:
                 load_level(ALL_LEVELS[level_index], level_index)
+                reset_briefing()
                 selected_building = BELT
                 paused = False
                 avail = W.available_buildings

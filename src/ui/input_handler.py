@@ -77,14 +77,18 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
                 selected_rotation = cw_dir(selected_rotation)
             elif event.key == pygame.K_p:
                 paused = not paused
-            elif event.key == pygame.K_n and paused:
-                step_requested = True
             elif event.key == pygame.K_c:
                 for pos in list(W.world.keys()):
                     if pos not in W.locked_tiles:
                         del W.world[pos]
             elif event.key == pygame.K_b:
                 toggle_briefing()
+            elif event.key == pygame.K_o:
+                ldef = W._state.current_level_def
+                cx, cy = (ldef or {}).get("camera", (0, 0))
+                W._state.camera_x = cx * TILE_SIZE - config.WIDTH / 2
+                W._state.camera_y = cy * TILE_SIZE - (config.HEIGHT - TOOLBAR_HEIGHT) / 2
+                W._state.zoom = 1.0
             elif event.key == pygame.K_TAB:
                 back_to_menu = True
 
@@ -100,7 +104,7 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
             mx, my = pygame.mouse.get_pos()
 
             if event.button == 1 and get_speed_button_rect().collidepoint(mx, my):
-                config.SPEED_MULT = {1: 2, 2: 4, 4: 1}[config.SPEED_MULT]
+                config.SPEED_MULT = {0.5: 1, 1: 2, 2: 4, 4: 0.5}[config.SPEED_MULT]
                 continue
 
             if event.button == 1 and get_pause_button_rect().collidepoint(mx, my):

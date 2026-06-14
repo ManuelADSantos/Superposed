@@ -74,8 +74,7 @@ def draw_grid(surface):
             rect = pygame.Rect(sx, sy, size, size)
             if sy >= playable_h:
                 continue
-            line_color = GRID_ORIGIN if (wx == 0 or wy == 0) else GRID_COLOR
-            pygame.draw.rect(surface, line_color, rect, 1)
+            pygame.draw.rect(surface, GRID_COLOR, rect, 1)
 
             tile = get_tile(wx, wy)
 
@@ -153,13 +152,14 @@ def _draw_help_tooltip(surface, anchor_rect):
     lines = [
         "R  Rotate direction",
         "P  Pause / Resume",
-        "N  Step (while paused)",
-        "B  Show briefing",
         "C  Clear all placed",
+        "O  Recenter camera",
         "WASD  Pan camera",
         "Scroll  Zoom",
         "ESC  Back to menu",
     ]
+    if world_module.current_level_index is not None:
+        lines.insert(2, "B  Show briefing")
     rendered = [font.render(l, True, WHITE) for l in lines]
     lh = font.get_linesize()
     pad = 10
@@ -318,7 +318,7 @@ def draw_hud(surface, selected_rotation):
     mx, my = pygame.mouse.get_pos()
     wx, wy = screen_to_world(mx, my, TILE_SIZE)
     coord = font.render(f"({wx}, {wy})", True, DARK_GRAY)
-    compass_cy = 34
+    compass_cy = 68
     compass_r = 20
     _draw_compass(surface, selected_rotation, config.WIDTH - 10 - coord.get_width() // 2, compass_cy)
     coord_rect = coord.get_rect(topright=(config.WIDTH - 10, compass_cy + compass_r + 20))
@@ -365,6 +365,11 @@ _show_briefing = False
 def toggle_briefing():
     global _show_briefing
     _show_briefing = not _show_briefing
+
+
+def reset_briefing():
+    global _show_briefing
+    _show_briefing = False
 
 
 def _draw_briefing_overlay(surface):

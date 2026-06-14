@@ -163,13 +163,20 @@ def check_win_condition() -> bool:
     if _state.current_level_def is None:
         return False
     win_count = _state.current_level_def.get("win_count", 5)
+
+    if _state.current_level_def.get("win_type") == "measure":
+        total = sum(len(t.measurements) for t in _state.world.values()
+                    if t.building == "measurement")
+        return total >= win_count
+
+    sinks = []
     for (x, y) in _state.locked_tiles:
         tile = _state.get_tile(x, y)
         if tile.building == OUTPUT_SINK:
-            if tile.sink_target is None:
-                if tile.sink_total >= win_count:
-                    return True
-            else:
-                if tile.sink_match >= win_count:
-                    return True
-    return False
+            sinks.append(tile)
+    if not sinks:
+        return False
+    return all(
+        (t.sink_total if t.sink_target is None else t.sink_match) >= win_count
+        for t in sinks
+    )

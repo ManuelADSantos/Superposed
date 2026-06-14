@@ -15,10 +15,12 @@ from .ui.rendering import draw_grid, draw_ui, tick_toast
 from .ui.menu import (
     GameState,
     draw_main_menu, handle_main_menu,
+    draw_chapter_select, handle_chapter_select,
+    draw_concept_intro, handle_concept_intro,
     draw_level_select, handle_level_select,
     draw_briefing, handle_briefing,
     draw_win_screen, handle_win_screen,
-    completed_levels,
+    completed_levels, _find_chapter,
 )
 from .content.levels import ALL_LEVELS
 from .core.world import reset_world, load_level, check_win_condition
@@ -43,6 +45,7 @@ def main():
 
     state = GameState.MAIN_MENU
     level_index = 0
+    chapter_index = 0
     selected_building = BELT
     selected_rotation = Direction.RIGHT
     paused = False
@@ -79,9 +82,30 @@ def main():
             elif new_state != state:
                 state = new_state
 
+        elif state == GameState.CHAPTER_SELECT:
+            cards = draw_chapter_select(screen)
+            new_state, idx = handle_chapter_select(events, cards)
+            if new_state is None:
+                running = False
+            elif new_state == GameState.CONCEPT_INTRO:
+                chapter_index = idx
+                state = GameState.CONCEPT_INTRO
+            elif new_state != state:
+                state = new_state
+
+        elif state == GameState.CONCEPT_INTRO:
+            btn = draw_concept_intro(screen, chapter_index)
+            new_state, idx = handle_concept_intro(events, btn, chapter_index)
+            if new_state is None:
+                running = False
+            elif new_state == GameState.LEVEL_SELECT:
+                state = GameState.LEVEL_SELECT
+            elif new_state != state:
+                state = new_state
+
         elif state == GameState.LEVEL_SELECT:
-            cards = draw_level_select(screen)
-            new_state, idx = handle_level_select(events, cards)
+            cards = draw_level_select(screen, chapter_index)
+            new_state, idx = handle_level_select(events, cards, chapter_index)
             if new_state is None:
                 running = False
             elif new_state == GameState.BRIEFING:
@@ -104,9 +128,9 @@ def main():
                 if avail and selected_building not in avail:
                     selected_building = avail[0]
                 state = GameState.LEVEL_PLAY
+            elif new_state == GameState.LEVEL_SELECT:
+                state = GameState.LEVEL_SELECT
             elif new_state != state:
-                if idx is not None:
-                    level_index = idx
                 state = new_state
 
         elif state == GameState.WIN_SCREEN:
@@ -119,9 +143,12 @@ def main():
                 running = False
             elif new_state == GameState.BRIEFING:
                 level_index = idx
+                ch_idx, _ = _find_chapter(level_index)
+                if ch_idx is not None:
+                    chapter_index = ch_idx
                 state = GameState.BRIEFING
-            elif new_state == GameState.LEVEL_SELECT:
-                state = GameState.LEVEL_SELECT
+            elif new_state == GameState.CHAPTER_SELECT:
+                state = GameState.CHAPTER_SELECT
             elif new_state != state:
                 state = new_state
 
@@ -133,17 +160,17 @@ def main():
             run_ok, selected_building, selected_rotation, paused, step_requested, back_to_menu = result
 
             if not run_ok:
-                state = GameState.LEVEL_SELECT if state == GameState.LEVEL_PLAY else GameState.MAIN_MENU
+                state = GameState.CHAPTER_SELECT if state == GameState.LEVEL_PLAY else GameState.MAIN_MENU
                 if state == GameState.MAIN_MENU:
                     running = False
                 continue
 
             if back_to_menu:
-                state = GameState.LEVEL_SELECT if state == GameState.LEVEL_PLAY else GameState.MAIN_MENU
+                state = GameState.CHAPTER_SELECT if state == GameState.LEVEL_PLAY else GameState.MAIN_MENU
                 continue
 
             if not paused or step_requested:
-                update_items(dt)
+                update_items(dt * config.SPEED_MULT)
                 step_requested = False
 
             if state == GameState.LEVEL_PLAY and check_win_condition():

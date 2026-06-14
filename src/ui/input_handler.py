@@ -10,7 +10,7 @@ from ..core.entities import Direction, QubitState, cw_dir
 from ..core.world import screen_to_world, get_tile
 from ..engine.gate_registry import get_gate, active_toolbar, EMPTY, OUTPUT_SINK
 from ..engine.circuit_export import export_circuit
-from .rendering import get_export_button_rect, show_toast, toolbar_button_rects
+from .rendering import get_export_button_rect, get_speed_button_rect, show_toast, toolbar_button_rects, toggle_briefing
 from ..core import world as W
 
 
@@ -80,6 +80,8 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
                 for pos in list(W.world.keys()):
                     if pos not in W.locked_tiles:
                         del W.world[pos]
+            elif event.key == pygame.K_b:
+                toggle_briefing()
             elif event.key == pygame.K_TAB:
                 back_to_menu = True
 
@@ -94,7 +96,10 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
         if event.type == pygame.MOUSEBUTTONDOWN:
             mx, my = pygame.mouse.get_pos()
 
-            # Export button
+            if event.button == 1 and get_speed_button_rect().collidepoint(mx, my):
+                config.SPEED_MULT = {1: 2, 2: 4, 4: 1}[config.SPEED_MULT]
+                continue
+
             if event.button == 1 and get_export_button_rect().collidepoint(mx, my):
                 try:
                     path = export_circuit()

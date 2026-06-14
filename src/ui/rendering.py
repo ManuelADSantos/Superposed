@@ -109,7 +109,8 @@ def draw_qubit_item(surface, item: QubitItem, x, y, size):
     sprite_size = max(8, int(size * scale))
     sprite = get_qubit_sprite(item.state, sprite_size,
                               item.is_disappearing, scale,
-                              item.entangle_group is not None)
+                              item.entangle_group is not None,
+                              item.phase_flipped)
     sprite_rect = sprite.get_rect(center=(x + size // 2, y + size // 2))
     surface.blit(sprite, sprite_rect)
 
@@ -186,12 +187,21 @@ def draw_toolbar(surface, selected_building, selected_rotation, paused):
     et = export_font.render("Export", True, WHITE if export_hover else LIGHT_GRAY)
     surface.blit(et, et.get_rect(center=export_rect.center))
 
+    speed_rect = get_speed_button_rect()
+    speed_hover = speed_rect.collidepoint(mx, my)
+    speed_bg = (60, 40, 100) if speed_hover else (40, 30, 60)
+    pygame.draw.rect(surface, speed_bg, speed_rect, border_radius=6)
+    pygame.draw.rect(surface, CYAN if speed_hover else (80, 60, 120),
+                     speed_rect, 1, border_radius=6)
+    speed_label = small.render(f"{config.SPEED_MULT}x", True, WHITE if speed_hover else LIGHT_GRAY)
+    surface.blit(speed_label, speed_label.get_rect(center=speed_rect.center))
+
     rx = export_rect.left - 10
     st = font.render("PAUSED" if paused else "RUNNING", True, RED if paused else GREEN)
     surface.blit(st, st.get_rect(topright=(rx, tb_y + 8)))
     rot = font.render(f"Dir: {selected_rotation.name}", True, LIGHT_GRAY)
     surface.blit(rot, rot.get_rect(topright=(rx, tb_y + 28)))
-    ctrl = small.render("R Rotate | P Pause | N Step | WASD Pan | Scroll Zoom | ESC Menu", True, DARK_GRAY)
+    ctrl = small.render("R Rotate | P Pause | N Step | B Briefing | WASD Pan | Scroll Zoom | ESC Menu", True, DARK_GRAY)
     surface.blit(ctrl, ctrl.get_rect(topright=(rx, tb_y + 48)))
 
 
@@ -222,14 +232,17 @@ def draw_level_hud(surface):
         return
     idx = world_module.current_level_index
     win_count = lev.get("win_count", 5)
-    best = 0
-    for (x, y) in world_module.locked_tiles:
-        tile = get_tile(x, y)
-        if tile.building == OUTPUT_SINK:
-            if tile.sink_target is None:
-                best = max(best, tile.sink_total)
-            else:
-                best = max(best, tile.sink_match)
+    if lev.get("win_type") == "measure":
+        best = sum(len(t.measurements) for t in world_module.world.values()
+                   if t.building == "measurement")
+    else:
+        sink_counts = []
+        for (x, y) in world_module.locked_tiles:
+            tile = get_tile(x, y)
+            if tile.building == OUTPUT_SINK:
+                c = tile.sink_total if tile.sink_target is None else tile.sink_match
+                sink_counts.append(c)
+        best = min(sink_counts) if sink_counts else 0
     bar_h = 44
     bar = pygame.Surface((config.WIDTH, bar_h), pygame.SRCALPHA)
     bar.fill((10, 10, 14, 200))
@@ -297,10 +310,51 @@ def _draw_toast(surface):
     surface.blit(txt, txt.get_rect(center=box.center))
 
 
+_show_briefing = False
+
+
+def toggle_briefing():
+    global _show_briefing
+    _show_briefing = not _show_briefing
+
+
+def _draw_briefing_overlay(surface):
+    if not _show_briefing:
+        return
+    lev = world_module.current_level_def
+    if lev is None:
+        return
+    text = lev.get("briefing", "")
+    if not text:
+        return
+    font = pygame.font.SysFont("consolas", 15)
+    lines = text.split("\n")
+    rendered = [font.render(line, True, WHITE) for line in lines]
+    line_h = font.get_linesize()
+    pad = 20
+    w = max(r.get_width() for r in rendered) + pad * 2
+    h = line_h * len(rendered) + pad * 2
+    box = pygame.Rect(0, 0, w, h)
+    box.center = (config.WIDTH // 2, (config.HEIGHT - TOOLBAR_HEIGHT) // 2)
+    bg = pygame.Surface(box.size, pygame.SRCALPHA)
+    bg.fill((15, 12, 25, 230))
+    surface.blit(bg, box.topleft)
+    pygame.draw.rect(surface, CYAN, box, 1, border_radius=8)
+    for i, r in enumerate(rendered):
+        surface.blit(r, (box.left + pad, box.top + pad + i * line_h))
+    hint = font.render("Press B to close", True, DARK_GRAY)
+    surface.blit(hint, hint.get_rect(midtop=(box.centerx, box.bottom + 4)))
+
+
 def get_export_button_rect():
     tb_y = config.HEIGHT - TOOLBAR_HEIGHT
     export_w, export_h = 80, 26
     return pygame.Rect(config.WIDTH - export_w - 12, tb_y + 6, export_w, export_h)
+
+
+def get_speed_button_rect():
+    tb_y = config.HEIGHT - TOOLBAR_HEIGHT
+    return pygame.Rect(12, tb_y + 6, 50, 26)
 
 
 def draw_ui(surface, selected_building, selected_rotation, paused):
@@ -310,4 +364,5 @@ def draw_ui(surface, selected_building, selected_rotation, paused):
     draw_tooltip(surface, mouse_pos, selected_building)
     draw_level_hud(surface)
     draw_hud(surface)
+    _draw_briefing_overlay(surface)
     _draw_toast(surface)

@@ -39,3 +39,6 @@ CYAN = (90, 220, 230)
 TEAL = (70, 200, 190)
 PINK = (240, 120, 180)
 GOLD = (255, 200, 60)
+
+# Simulation speed multiplier (toggled by UI button)
+SPEED_MULT = 1

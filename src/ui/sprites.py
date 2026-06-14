@@ -10,7 +10,7 @@ import os
 
 import pygame
 
-from ..core.config import RED, BLUE, PURPLE, WHITE, YELLOW, GOLD
+from ..core.config import RED, BLUE, PURPLE, WHITE, YELLOW, GOLD, PINK
 from ..core.entities import QubitState, Direction
 
 
@@ -107,7 +107,7 @@ def _generic_sprite(gate_id, direction, size):
     return s
 
 
-def _draw_qubit(state, size, disappearing=False, progress=1.0, entangled=False):
+def _draw_qubit(state, size, disappearing=False, progress=1.0, entangled=False, phase_flipped=False):
     s = _surf(size)
     cx, cy = size / 2, size / 2
     if disappearing:
@@ -132,11 +132,22 @@ def _draw_qubit(state, size, disappearing=False, progress=1.0, entangled=False):
         pygame.draw.circle(s, GOLD, (int(cx), int(cy)), radius + 2, 2)
         pygame.draw.circle(s, _a(GOLD, 100), (int(cx), int(cy)), radius + 5, 1)
     elif state == QubitState.SUPERPOSITION:
-        pygame.draw.circle(s, WHITE, (int(cx), int(cy)), radius + 1, 2)
-        pygame.draw.circle(s, _a(YELLOW, 140), (int(cx), int(cy)), max(2, radius // 2), 1)
+        if phase_flipped:
+            pygame.draw.circle(s, PINK, (int(cx), int(cy)), radius + 1, 2)
+            d = max(2, radius // 2)
+            pygame.draw.line(s, _a(WHITE, 200),
+                             (int(cx) - d, int(cy)), (int(cx) + d, int(cy)), 2)
+        else:
+            pygame.draw.circle(s, WHITE, (int(cx), int(cy)), radius + 1, 2)
+            pygame.draw.circle(s, _a(YELLOW, 140), (int(cx), int(cy)), max(2, radius // 2), 1)
     else:
         pygame.draw.circle(s, _a(WHITE, 130), (int(cx), int(cy)), radius + 1, 1)
     return s
+
+
+@lru_cache(maxsize=512)
+def get_qubit_sprite(state, size, disappearing=False, progress=1.0, entangled=False, phase_flipped=False):
+    return _draw_qubit(state, size, disappearing, progress, entangled, phase_flipped)
 
 
 @lru_cache(maxsize=512)
@@ -151,11 +162,6 @@ def get_building_sprite(building_id, direction, size):
     if gate and gate.sprite_fn:
         return gate.sprite_fn(direction, size)
     return _generic_sprite(building_id, direction, size)
-
-
-@lru_cache(maxsize=512)
-def get_qubit_sprite(state, size, disappearing=False, progress=1.0, entangled=False):
-    return _draw_qubit(state, size, disappearing, progress, entangled)
 
 
 def clear_sprite_caches():

@@ -42,13 +42,6 @@ def ccw_dir(d: Direction) -> Direction:
     return Direction((d.value - 1) % 4)
 
 
-def dir_from_delta(dx, dy) -> Direction | None:
-    for d, (vx, vy) in DIR_VECTORS.items():
-        if (vx, vy) == (dx, dy):
-            return d
-    return None
-
-
 # ---------------------------------------------------------------------------
 # Qubit
 # ---------------------------------------------------------------------------

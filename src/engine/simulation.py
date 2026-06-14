@@ -24,10 +24,6 @@ from .gate_registry import (
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _arrival_dir(src_dir: Direction) -> Direction:
-    return opposite_dir(src_dir)
-
-
 def _start_disappear(item):
     item.is_disappearing = True
     item.disappear_time = 0.3
@@ -158,7 +154,7 @@ def update_items(dt):
 
         # --- Two-qubit gate (CNOT, etc.) ---
         if next_gate and next_gate.category == Category.TWO_QUBIT:
-            arrival = _arrival_dir(tile.direction)
+            arrival = opposite_dir(tile.direction)
             target_input = opposite_dir(next_tile.direction)
             control_input = ccw_dir(next_tile.direction)
             if arrival == target_input and next_tile.item is None:

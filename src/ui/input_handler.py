@@ -5,16 +5,12 @@ from __future__ import annotations
 import pygame
 from ..core import config
 from ..core.config import TILE_SIZE, TOOLBAR_HEIGHT, TOOLBAR_PAD
-from ..core.entities import Direction, QubitState
+from ..core.entities import Direction, QubitState, cw_dir
 from ..core.world import screen_to_world, get_tile, in_bounds
 from ..engine.gate_registry import get_gate, active_toolbar, EMPTY, OUTPUT_SINK
 from ..engine.circuit_export import export_circuit
 from .rendering import get_export_button_rect, show_toast
 from ..core import world as W
-
-
-def _rotate_cw(d: Direction) -> Direction:
-    return Direction((d.value + 1) % 4)
 
 
 def _toolbar_hit(mx, my):
@@ -80,7 +76,7 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
             if event.key in key_map:
                 selected_building = key_map[event.key]
             elif event.key == pygame.K_r:
-                selected_rotation = _rotate_cw(selected_rotation)
+                selected_rotation = cw_dir(selected_rotation)
             elif event.key == pygame.K_p:
                 paused = not paused
             elif event.key == pygame.K_n and paused:

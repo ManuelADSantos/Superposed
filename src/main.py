@@ -10,7 +10,7 @@ from .core import config
 from .core.config import FPS, BG
 
 # Load the gate registry BEFORE other game modules need it
-from .engine.gate_registry import load_gates, BELT, gate_ids
+from .engine.gate_registry import load_gates, BELT
 
 from .core.entities import Direction
 from .ui.input_handler import handle_input

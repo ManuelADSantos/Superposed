@@ -71,6 +71,7 @@ def _arrow(surface, cx, cy, d, color, length=10, width=3):
 
 
 _SPRITE_DIR = os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'sprites')
+_GATES_SPRITE_DIR = os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'gates_sprites')
 _ROTATION_ANGLE = {
     Direction.RIGHT: 0, Direction.UP: 90,
     Direction.LEFT: 180, Direction.DOWN: -90,
@@ -79,6 +80,8 @@ _ROTATION_ANGLE = {
 
 def _load_custom_png(gate_id, direction, size):
     path = os.path.join(_SPRITE_DIR, f'{gate_id}.png')
+    if not os.path.isfile(path):
+        path = os.path.join(_GATES_SPRITE_DIR, f'{gate_id}.png')
     if not os.path.isfile(path):
         return None
     try:

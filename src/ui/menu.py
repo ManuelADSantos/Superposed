@@ -30,12 +30,19 @@ _PANEL_HOVER = (34, 34, 44)
 _PANEL_BORDER = (55, 55, 70)
 _ACCENT = PURPLE
 _ACCENT_DIM = (120, 60, 180)
+# ponytail: SDL2 X1=4, some Linux HID drivers report 8
+_MOUSE_BACK = (4, 8)
 
 completed_levels: set[int] = set()
 
 
+def _is_back(event):
+    return ((event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE)
+            or (event.type == pygame.MOUSEBUTTONDOWN and event.button in _MOUSE_BACK))
+
+
 def is_chapter_unlocked(ch_idx):
-    if ch_idx == 0:
+    if config.ADMIN_MODE or ch_idx == 0:
         return True
     prev = ch_idx - 1
     if prev >= len(CHAPTERS):
@@ -123,6 +130,7 @@ def draw_main_menu(screen):
     buttons = _draw_menu_buttons(screen, btn_font, [
         ("Campaign", CYAN),
         ("Sandbox", GREEN),
+        ("Exit", DARK_GRAY),
     ], start_y=config.HEIGHT // 2 - 10)
 
     from .. import __version__
@@ -137,7 +145,7 @@ def handle_main_menu(events, buttons):
     for event in events:
         if event.type == pygame.QUIT:
             return None, None
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+        if _is_back(event):
             return None, None
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             for rect, label in buttons:
@@ -146,6 +154,8 @@ def handle_main_menu(events, buttons):
                         return GameState.SANDBOX, None
                     elif label == "Campaign":
                         return GameState.CHAPTER_SELECT, None
+                    elif label == "Exit":
+                        return None, None
     return GameState.MAIN_MENU, None
 
 
@@ -248,7 +258,7 @@ def handle_chapter_select(events, cards):
     for event in events:
         if event.type == pygame.QUIT:
             return None, None
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+        if _is_back(event):
             return GameState.MAIN_MENU, None
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             for rect, idx in cards:
@@ -414,7 +424,7 @@ def handle_level_select(events, cards, chapter_index):
     for event in events:
         if event.type == pygame.QUIT:
             return None, None
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+        if _is_back(event):
             return GameState.CHAPTER_SELECT, None
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             for rect, idx in cards:

@@ -11,6 +11,7 @@ from ..core.world import screen_to_world, get_tile
 from ..engine.gate_registry import get_gate, active_toolbar, EMPTY, OUTPUT_SINK
 from ..engine.circuit_export import export_circuit
 from .rendering import get_export_button_rect, get_speed_button_rect, show_toast, toolbar_button_rects, toggle_briefing
+from .menu import _MOUSE_BACK
 from ..core import world as W
 
 
@@ -63,6 +64,9 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
     for event in events:
         if event.type == pygame.QUIT:
             return False, selected_building, selected_rotation, paused, step_requested, False
+
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button in _MOUSE_BACK:
+            return True, selected_building, selected_rotation, paused, step_requested, True
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:

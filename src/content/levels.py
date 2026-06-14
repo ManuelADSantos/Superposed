@@ -409,22 +409,24 @@ CH5_L2 = {
         "When the control is in superposition:\n"
         "  CNOT doesn't flip or not-flip — it does BOTH.\n"
         "  The two qubits become entangled.\n\n"
-        "Entangled qubits share their fate:\n"
-        "  if one collapses to |0⟩, the other does too.\n"
-        "  if one collapses to |1⟩, so does the other.\n\n"
+        "A locked Measurement gate sits on the horizontal exit.\n"
+        "When one entangled qubit is measured, watch what\n"
+        "happens to its partner on the vertical path —\n"
+        "it collapses to the same value instantly!\n\n"
         "Watch for the golden ring — it marks entanglement.\n"
-        "Place the CNOT yourself this time."
+        "Place the CNOT yourself."
     ),
-    "hint": "H on the control (top) path, CNOT at the crossing",
+    "hint": "H on the control (top) path, CNOT at the crossing — watch the collapse",
     "pre_placed": {
         (-1, 3): (GEN, RIGHT, None),
         (5, -1): (GEN, DOWN, None),
-        (10, 3): (SINK, RIGHT, None),
+        (8, 3): (MEAS, RIGHT, None),
         (5, 8): (SINK, DOWN, None),
     },
-    "locked": {(-1, 3), (5, -1), (10, 3), (5, 8)},
+    "locked": {(-1, 3), (5, -1), (8, 3), (5, 8)},
     "available": [BELT, H, CNOT],
     "win_count": 5,
+    "win_type": "measure",
     "camera": (5, 3),
 }
 

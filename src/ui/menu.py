@@ -9,7 +9,7 @@ from enum import Enum
 from ..core import config
 from ..core.config import (
     BG, WHITE, LIGHT_GRAY, DARK_GRAY, YELLOW, GREEN,
-    RED, BLUE, PURPLE, CYAN, GOLD, TEAL,
+    RED, BLUE, PURPLE, CYAN, GOLD,
 )
 from ..content.levels import CHAPTERS, COMING_SOON, ALL_LEVELS, chapter_level_offset
 

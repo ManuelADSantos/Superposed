@@ -57,10 +57,6 @@ def toolbar_order() -> list[GateDef]:
     return _toolbar_cache
 
 
-def gate_ids() -> list[str]:
-    return [g.id for g in toolbar_order()]
-
-
 def active_toolbar(available: list[str] | None = None) -> list[str]:
     all_ids = [g.id for g in toolbar_order()]
     if available is not None:

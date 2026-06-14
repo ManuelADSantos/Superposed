@@ -1,10 +1,6 @@
 """Sprite generation and caching.
 
-Drawing primitives are public so gate files can import them.
-get_building_sprite() reads from the gate_registry:
-  1. Try custom PNG from ../sprites/<gate_id>.png
-  2. Try gate.sprite_fn from the registry
-  3. Return a generic fallback
+Resolution order: custom PNG → gate.sprite_fn → generic fallback.
 """
 
 from __future__ import annotations
@@ -17,10 +13,6 @@ import pygame
 from ..core.config import RED, BLUE, PURPLE, WHITE, YELLOW, GOLD
 from ..core.entities import QubitState, Direction
 
-
-# ---------------------------------------------------------------------------
-# Public drawing primitives (used by gate sprite functions)
-# ---------------------------------------------------------------------------
 
 def _a(color, alpha):
     return (*color[:3], alpha)
@@ -78,10 +70,6 @@ def _arrow(surface, cx, cy, d, color, length=10, width=3):
     ])
 
 
-# ---------------------------------------------------------------------------
-# Custom PNG loading
-# ---------------------------------------------------------------------------
-
 _SPRITE_DIR = os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'sprites')
 _ROTATION_ANGLE = {
     Direction.RIGHT: 0, Direction.UP: 90,
@@ -104,12 +92,7 @@ def _load_custom_png(gate_id, direction, size):
         return None
 
 
-# ---------------------------------------------------------------------------
-# Generic fallback sprite
-# ---------------------------------------------------------------------------
-
 def _generic_sprite(gate_id, direction, size):
-    """Draw a labelled coloured box for gates with no sprite_fn or PNG."""
     from ..engine.gate_registry import get_gate
     gate = get_gate(gate_id)
     color = gate.color if gate else (120, 120, 130)
@@ -123,10 +106,6 @@ def _generic_sprite(gate_id, direction, size):
     _dir_mark(s, direction, b, color)
     return s
 
-
-# ---------------------------------------------------------------------------
-# Qubit sprite
-# ---------------------------------------------------------------------------
 
 def _draw_qubit(state, size, disappearing=False, progress=1.0, entangled=False):
     s = _surf(size)
@@ -160,35 +139,17 @@ def _draw_qubit(state, size, disappearing=False, progress=1.0, entangled=False):
     return s
 
 
-# ---------------------------------------------------------------------------
-# Public cache wrappers
-#
-# Sprites are cached by (building_id, direction, size) or (state, size, …).
-# Call clear_sprite_caches() when resetting the world so that stale entries
-# from previous zoom levels don't accumulate unbounded.
-# ---------------------------------------------------------------------------
-
 @lru_cache(maxsize=512)
 def get_building_sprite(building_id, direction, size):
-    """Return a sprite for any registered building.
-
-    Resolution order: custom PNG → gate.sprite_fn → generic fallback.
-    """
     if building_id == "empty":
         return None
-
-    # 1. Custom PNG
     custom = _load_custom_png(building_id, direction, size)
     if custom is not None:
         return custom
-
-    # 2. Registry sprite function
     from ..engine.gate_registry import get_gate
     gate = get_gate(building_id)
     if gate and gate.sprite_fn:
         return gate.sprite_fn(direction, size)
-
-    # 3. Generic fallback
     return _generic_sprite(building_id, direction, size)
 
 
@@ -198,6 +159,5 @@ def get_qubit_sprite(state, size, disappearing=False, progress=1.0, entangled=Fa
 
 
 def clear_sprite_caches():
-    """Evict all cached sprites.  Called on world reset."""
     get_building_sprite.cache_clear()
     get_qubit_sprite.cache_clear()

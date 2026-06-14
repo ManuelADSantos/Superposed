@@ -24,8 +24,6 @@ from src.engine.gates.measurement import _transform as measure
 from src.engine.gates.splitter import _transform as splitter
 
 
-# ── Helpers ────────────────────────────────────────────────────────────────
-
 def _qubit(state=QubitState.ZERO, phase=False):
     q = QubitItem(state)
     q.phase_flipped = phase
@@ -38,10 +36,6 @@ def _tile(**kw):
         setattr(t, k, v)
     return t
 
-
-# ══════════════════════════════════════════════════════════════════════════
-# X gate
-# ══════════════════════════════════════════════════════════════════════════
 
 class TestXGate(unittest.TestCase):
 
@@ -67,9 +61,7 @@ class TestXGate(unittest.TestCase):
         self.assertEqual(q.state, QubitState.ZERO)
 
 
-# ══════════════════════════════════════════════════════════════════════════
 # Hadamard gate
-# ══════════════════════════════════════════════════════════════════════════
 
 class TestHadamard(unittest.TestCase):
 
@@ -110,9 +102,7 @@ class TestHadamard(unittest.TestCase):
         self.assertEqual(q.state, QubitState.ONE)
 
 
-# ══════════════════════════════════════════════════════════════════════════
 # Z gate
-# ══════════════════════════════════════════════════════════════════════════
 
 class TestZGate(unittest.TestCase):
 
@@ -139,9 +129,7 @@ class TestZGate(unittest.TestCase):
         self.assertFalse(q.phase_flipped)
 
 
-# ══════════════════════════════════════════════════════════════════════════
 # Interference: H → Z → H = deterministic |1⟩
-# ══════════════════════════════════════════════════════════════════════════
 
 class TestInterference(unittest.TestCase):
 
@@ -161,9 +149,7 @@ class TestInterference(unittest.TestCase):
         self.assertEqual(q.state, QubitState.ZERO)
 
 
-# ══════════════════════════════════════════════════════════════════════════
 # CNOT gate
-# ══════════════════════════════════════════════════════════════════════════
 
 class TestCNOT(unittest.TestCase):
 
@@ -214,9 +200,7 @@ class TestCNOT(unittest.TestCase):
         self.assertEqual(partners[0].uid, t.uid)
 
 
-# ══════════════════════════════════════════════════════════════════════════
 # Measurement
-# ══════════════════════════════════════════════════════════════════════════
 
 class TestMeasurement(unittest.TestCase):
 
@@ -281,9 +265,7 @@ class TestMeasurement(unittest.TestCase):
         self.assertAlmostEqual(tile.measure_flash, 0.35)
 
 
-# ══════════════════════════════════════════════════════════════════════════
 # Splitter
-# ══════════════════════════════════════════════════════════════════════════
 
 class TestSplitter(unittest.TestCase):
 
@@ -333,9 +315,7 @@ class TestSplitter(unittest.TestCase):
         self.assertEqual(ej_one[0][:2], (-1, 0))
 
 
-# ══════════════════════════════════════════════════════════════════════════
 # Entanglement registry
-# ══════════════════════════════════════════════════════════════════════════
 
 class TestEntanglement(unittest.TestCase):
 
@@ -364,9 +344,7 @@ class TestEntanglement(unittest.TestCase):
         self.assertIsNone(q1.entangle_group)
 
 
-# ══════════════════════════════════════════════════════════════════════════
 # Safe transform (error handling in simulation)
-# ══════════════════════════════════════════════════════════════════════════
 
 class TestSafeTransform(unittest.TestCase):
 

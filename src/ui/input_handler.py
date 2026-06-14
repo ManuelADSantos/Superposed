@@ -10,21 +10,14 @@ from ..core.entities import Direction, QubitState, cw_dir
 from ..core.world import screen_to_world, get_tile
 from ..engine.gate_registry import get_gate, active_toolbar, EMPTY, OUTPUT_SINK
 from ..engine.circuit_export import export_circuit
-from .rendering import get_export_button_rect, show_toast
+from .rendering import get_export_button_rect, show_toast, toolbar_button_rects
 from ..core import world as W
 
 
 def _toolbar_hit(mx, my):
-    tb_y = config.HEIGHT - TOOLBAR_HEIGHT
-    if my < tb_y:
+    if my < config.HEIGHT - TOOLBAR_HEIGHT:
         return None
-    active = active_toolbar(W.available_buildings)
-    btn_size = TOOLBAR_HEIGHT - 2 * TOOLBAR_PAD
-    start_x = max(TOOLBAR_PAD, (config.WIDTH - len(active) * (btn_size + TOOLBAR_PAD)) // 2)
-    for i, gid in enumerate(active):
-        bx = start_x + i * (btn_size + TOOLBAR_PAD)
-        by = tb_y + TOOLBAR_PAD
-        rect = pygame.Rect(bx, by, btn_size, btn_size)
+    for rect, gid in toolbar_button_rects(W.available_buildings):
         if rect.collidepoint(mx, my):
             return gid
     return None

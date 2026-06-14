@@ -22,9 +22,17 @@ from ..engine.gate_registry import (
 )
 
 
-# ---------------------------------------------------------------------------
-# Output sink overlay
-# ---------------------------------------------------------------------------
+def toolbar_button_rects(available=None):
+    """Yield (rect, gate_id) for each toolbar button."""
+    active = active_toolbar(available)
+    btn_size = TOOLBAR_HEIGHT - 2 * TOOLBAR_PAD
+    start_x = max(TOOLBAR_PAD, (config.WIDTH - len(active) * (btn_size + TOOLBAR_PAD)) // 2)
+    tb_y = config.HEIGHT - TOOLBAR_HEIGHT
+    for i, gid in enumerate(active):
+        bx = start_x + i * (btn_size + TOOLBAR_PAD)
+        by = tb_y + TOOLBAR_PAD
+        yield pygame.Rect(bx, by, btn_size, btn_size), gid
+
 
 def _draw_sink_status(surface, rect, tile):
     font = pygame.font.SysFont("consolas", max(10, int(rect.height * 0.18)))
@@ -52,10 +60,6 @@ def _draw_locked_indicator(surface, rect):
     surface.blit(s, rect.topleft)
 
 
-# ---------------------------------------------------------------------------
-# Grid
-# ---------------------------------------------------------------------------
-
 def draw_grid(surface):
     size = TILE_SIZE * world_module._state.zoom
     playable_h = config.HEIGHT - TOOLBAR_HEIGHT
@@ -80,12 +84,10 @@ def draw_grid(surface):
                 if sprite:
                     surface.blit(sprite, sprite.get_rect(center=rect.center))
 
-                # Gate-specific overlay (e.g. measurement histogram)
                 gate = get_gate(tile.building)
                 if gate and gate.overlay_fn:
                     gate.overlay_fn(surface, rect, tile)
 
-                # Sink status
                 if tile.building == OUTPUT_SINK:
                     _draw_sink_status(surface, rect, tile)
 
@@ -100,8 +102,6 @@ def draw_grid(surface):
 
 
 def draw_qubit_item(surface, item: QubitItem, x, y, size):
-    """Draw a qubit particle at (x, y).  Standalone replacement for the old
-    QubitItem.draw() method — avoids circular entities↔sprites dependency."""
     if item.is_disappearing:
         scale = max(0.18, item.disappear_time / 0.3)
     else:
@@ -129,10 +129,6 @@ def _draw_item_on_tile(surface, tile, item, sx, sy, size, control=False):
     draw_qubit_item(surface, item, px - 10, py - 10, 20)
 
 
-# ---------------------------------------------------------------------------
-# Ghost preview
-# ---------------------------------------------------------------------------
-
 def draw_ghost(surface, selected_building, selected_rotation, mouse_pos):
     if selected_building == EMPTY:
         return
@@ -151,10 +147,6 @@ def draw_ghost(surface, selected_building, selected_rotation, mouse_pos):
         surface.blit(ghost, ghost.get_rect(center=(sx + size // 2, sy + size // 2)))
 
 
-# ---------------------------------------------------------------------------
-# Toolbar
-# ---------------------------------------------------------------------------
-
 def draw_toolbar(surface, selected_building, selected_rotation, paused):
     tb_y = config.HEIGHT - TOOLBAR_HEIGHT
     pygame.draw.rect(surface, (22, 22, 28), (0, tb_y, config.WIDTH, TOOLBAR_HEIGHT))
@@ -163,16 +155,7 @@ def draw_toolbar(surface, selected_building, selected_rotation, paused):
     font = pygame.font.SysFont("consolas", UI_FONT_SIZE)
     small = pygame.font.SysFont("consolas", TOOLTIP_FONT_SIZE)
 
-    active = active_toolbar(world_module.available_buildings)
-    btn_size = TOOLBAR_HEIGHT - 2 * TOOLBAR_PAD
-    total = len(active)
-    start_x = max(TOOLBAR_PAD, (config.WIDTH - total * (btn_size + TOOLBAR_PAD)) // 2)
-
-    for i, gid in enumerate(active):
-        bx = start_x + i * (btn_size + TOOLBAR_PAD)
-        by = tb_y + TOOLBAR_PAD
-        rect = pygame.Rect(bx, by, btn_size, btn_size)
-
+    for i, (rect, gid) in enumerate(toolbar_button_rects(world_module.available_buildings)):
         gate = get_gate(gid)
         accent = gate.color if gate else WHITE
         is_sel = gid == selected_building
@@ -184,14 +167,14 @@ def draw_toolbar(surface, selected_building, selected_rotation, paused):
             pygame.draw.rect(surface, (35, 35, 42), rect, border_radius=8)
             pygame.draw.rect(surface, DARK_GRAY, rect, 1, border_radius=8)
 
+        btn_size = rect.width
         mini = get_building_sprite(gid, Direction.RIGHT, btn_size - 8)
         if mini:
             surface.blit(mini, mini.get_rect(center=rect.center))
 
         key_txt = small.render(str(i + 1), True, accent if is_sel else LIGHT_GRAY)
-        surface.blit(key_txt, (bx + 3, by + 2))
+        surface.blit(key_txt, (rect.left + 3, rect.top + 2))
 
-    # ── Export button (left side of status area) ──
     export_font = pygame.font.SysFont("consolas", 13, bold=True)
     export_rect = get_export_button_rect()
     mx, my = pygame.mouse.get_pos()
@@ -212,27 +195,17 @@ def draw_toolbar(surface, selected_building, selected_rotation, paused):
     surface.blit(ctrl, ctrl.get_rect(topright=(rx, tb_y + 48)))
 
 
-# ---------------------------------------------------------------------------
-# Tooltip
-# ---------------------------------------------------------------------------
-
 def draw_tooltip(surface, mouse_pos, selected_building):
     mx, my = mouse_pos
-    tb_y = config.HEIGHT - TOOLBAR_HEIGHT
-    if my < tb_y:
+    if my < config.HEIGHT - TOOLBAR_HEIGHT:
         return
-    active = active_toolbar(world_module.available_buildings)
-    btn_size = TOOLBAR_HEIGHT - 2 * TOOLBAR_PAD
-    start_x = max(TOOLBAR_PAD, (config.WIDTH - len(active) * (btn_size + TOOLBAR_PAD)) // 2)
-    for i, gid in enumerate(active):
-        bx = start_x + i * (btn_size + TOOLBAR_PAD)
-        by = tb_y + TOOLBAR_PAD
-        rect = pygame.Rect(bx, by, btn_size, btn_size)
+    for rect, gid in toolbar_button_rects(world_module.available_buildings):
         if rect.collidepoint(mx, my):
             gate = get_gate(gid)
             if gate:
                 font = pygame.font.SysFont("consolas", TOOLTIP_FONT_SIZE)
                 tip = font.render(f"{gate.name}: {gate.tip}", True, WHITE)
+                tb_y = config.HEIGHT - TOOLBAR_HEIGHT
                 tip_rect = tip.get_rect(midbottom=(rect.centerx, tb_y - 4))
                 tip_rect.left = max(4, tip_rect.left)
                 tip_rect.right = min(config.WIDTH - 4, tip_rect.right)
@@ -242,10 +215,6 @@ def draw_tooltip(surface, mouse_pos, selected_building):
                 surface.blit(tip, tip_rect)
             break
 
-
-# ---------------------------------------------------------------------------
-# Level HUD
-# ---------------------------------------------------------------------------
 
 def draw_level_hud(surface):
     lev = world_module.current_level_def
@@ -294,23 +263,17 @@ def draw_hud(surface):
         surface.blit(txt, txt.get_rect(topright=(config.WIDTH - 10, 8)))
 
 
-# ---------------------------------------------------------------------------
-# Notification toast
-# ---------------------------------------------------------------------------
-
 _toast_text: str = ""
 _toast_timer: float = 0.0
 
 
 def show_toast(message: str, duration: float = 3.0):
-    """Display a temporary notification on screen."""
     global _toast_text, _toast_timer
     _toast_text = message
     _toast_timer = duration
 
 
 def tick_toast(dt: float):
-    """Decrease toast timer each frame."""
     global _toast_timer
     if _toast_timer > 0:
         _toast_timer = max(0.0, _toast_timer - dt)
@@ -325,7 +288,7 @@ def _draw_toast(surface):
     tw, th = txt.get_size()
     box = pygame.Rect(0, 0, tw + padding * 2, th + padding)
     box.midtop = (config.WIDTH // 2, 60)
-    alpha = min(1.0, _toast_timer / 0.5) * 220     # fade out in last 0.5s
+    alpha = min(1.0, _toast_timer / 0.5) * 220
     bg = pygame.Surface(box.size, pygame.SRCALPHA)
     bg.fill((30, 20, 50, int(alpha)))
     surface.blit(bg, box.topleft)
@@ -334,12 +297,7 @@ def _draw_toast(surface):
     surface.blit(txt, txt.get_rect(center=box.center))
 
 
-# ---------------------------------------------------------------------------
-# Export button hit-test (used by input_handler)
-# ---------------------------------------------------------------------------
-
 def get_export_button_rect():
-    """Return the Rect of the Export button in the toolbar."""
     tb_y = config.HEIGHT - TOOLBAR_HEIGHT
     export_w, export_h = 80, 26
     return pygame.Rect(config.WIDTH - export_w - 12, tb_y + 6, export_w, export_h)

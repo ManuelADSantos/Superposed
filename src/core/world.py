@@ -1,10 +1,9 @@
 """World grid, camera, entanglement registry, and level state.
 
 All mutable state lives in a single WorldState instance (_state).
-Camera/zoom are always accessed via ``_state`` directly.
-Module-level names expose mutable containers (world, entangle_groups,
-locked_tiles, available_buildings) and are re-bound on reset/load.
-Call ``reset_world()`` to reinitialise cleanly.
+Module-level names (world, locked_tiles, etc.) are re-bound on
+reset/load so that `import world as W; W.world` always resolves
+to the current dict.
 """
 
 from __future__ import annotations
@@ -13,40 +12,22 @@ from .entities import Tile, QubitItem, QubitState
 from ..engine.gate_registry import EMPTY, OUTPUT_SINK
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# WorldState — all mutable game state in one place
-# ═══════════════════════════════════════════════════════════════════════════
-
 class WorldState:
-    """Encapsulates the entire mutable state of a game session."""
-
     def __init__(self):
-        # Sparse infinite grid
         self.world: dict[tuple[int, int], Tile] = {}
-
-        # Camera
         self.camera_x: float = 0.0
         self.camera_y: float = 0.0
         self.zoom: float = 1.0
 
-        # ── Entanglement registry ──────────────────────────────────────
-        # Simplified model: only same-state correlation (|00> + |11>).
-        # When one partner is measured, all others collapse to the SAME
-        # outcome.  Anti-correlated Bell states (|01> + |10>) are not
-        # modeled.  Applying gates (e.g. X) to an entangled qubit
-        # changes its local state but does NOT update the correlation
-        # rule — a deliberate simplification for the tutorial scope.
+        # Entanglement: same-state correlation only (|00⟩ + |11⟩).
         self._next_entangle_id: int = 0
         self.entangle_groups: dict[int, set[int]] = {}
         self.entangle_lookup: dict[int, QubitItem] = {}
 
-        # Level state
         self.current_level_index: int | None = None
         self.current_level_def: dict | None = None
         self.locked_tiles: set[tuple[int, int]] = set()
         self.available_buildings: list[str] | None = None
-
-    # ── Entanglement helpers ───────────────────────────────────────────
 
     def create_entangle_group(self) -> int:
         self._next_entangle_id += 1
@@ -76,8 +57,6 @@ class WorldState:
         self.entangle_lookup.pop(qubit.uid, None)
         qubit.entangle_group = None
 
-    # ── Tile helpers ───────────────────────────────────────────────────
-
     def get_tile(self, x: int, y: int) -> Tile:
         key = (x, y)
         if key not in self.world:
@@ -93,27 +72,19 @@ class WorldState:
         return int((sx + self.camera_x) // size), int((sy + self.camera_y) // size)
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# Active instance + module-level proxies (backward compatibility)
-# ═══════════════════════════════════════════════════════════════════════════
-
 _state = WorldState()
 
-
-# --- module-level names (re-bound on reset/load) -------------------------
-
-world          = _state.world
+# Module-level aliases — re-bound on reset/load, accessed as W.world etc.
+world           = _state.world
 entangle_groups = _state.entangle_groups
 entangle_lookup = _state.entangle_lookup
-
 current_level_index  = _state.current_level_index
 current_level_def    = _state.current_level_def
 locked_tiles         = _state.locked_tiles
 available_buildings  = _state.available_buildings
 
 
-# --- proxy functions (delegate to the active WorldState) -----------------
-
+# Proxy functions — delegate to _state
 def create_entangle_group() -> int:
     return _state.create_entangle_group()
 
@@ -136,12 +107,7 @@ def screen_to_world(sx, sy, tile_size):
     return _state.screen_to_world(sx, sy, tile_size)
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# Reset / Load — update module-level names so existing code sees changes
-# ═══════════════════════════════════════════════════════════════════════════
-
 def _sync_from_state():
-    """Copy level/lock/available attributes from _state to module globals."""
     from . import world as _self
     _self.current_level_index = _state.current_level_index
     _self.current_level_def   = _state.current_level_def
@@ -153,17 +119,14 @@ def reset_world():
     global current_level_index, current_level_def
     global locked_tiles, available_buildings
 
-    _state.__init__()                     # reinitialise everything
+    _state.__init__()
 
-    # Re-bind the module-level mutable containers to the NEW dicts/sets
     from . import world as _self
     _self.world           = _state.world
     _self.entangle_groups = _state.entangle_groups
     _self.entangle_lookup = _state.entangle_lookup
-
     _sync_from_state()
 
-    # Evict stale sprite caches from the previous session
     from ..ui.sprites import clear_sprite_caches
     clear_sprite_caches()
 

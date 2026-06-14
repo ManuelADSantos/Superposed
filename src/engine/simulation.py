@@ -1,9 +1,4 @@
-"""Simulation: qubit movement, gate processing, and factory logic.
-
-All gate behaviour is driven by the gate_registry.  Infrastructure
-buildings (belt, generator, sink) still have hardcoded logic here
-since they are fundamental to factory mechanics.
-"""
+"""Simulation: qubit movement, gate processing, and factory logic."""
 
 from __future__ import annotations
 
@@ -20,10 +15,6 @@ from .gate_registry import (
 )
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
 def _start_disappear(item):
     item.is_disappearing = True
     item.disappear_time = 0.3
@@ -36,7 +27,6 @@ def _collect_sink(tile, item):
 
 
 def _safe_transform(gate, *args):
-    """Call a gate's transform, catching errors from broken custom gates."""
     try:
         gate.transform(*args)
     except Exception as exc:
@@ -46,7 +36,6 @@ def _safe_transform(gate, *args):
 
 
 def _eject_qubit(src_x, src_y, nx, ny, qubit):
-    """Try to place a qubit on the next tile; vanish if impossible."""
     qubit.progress = 0.0
     next_tile = get_tile(nx, ny)
     gate = get_gate(next_tile.building)
@@ -62,14 +51,9 @@ def _eject_qubit(src_x, src_y, nx, ny, qubit):
         _start_disappear(qubit)
 
 
-# ---------------------------------------------------------------------------
-# Main update
-# ---------------------------------------------------------------------------
-
 def update_items(dt):
     ready_to_move = []
 
-    # --- Pass 1: tick timers, spawn, advance progress ----------------------
     for (x, y), tile in list(_world_mod.world.items()):
         if tile.measure_flash > 0:
             tile.measure_flash = max(0.0, tile.measure_flash - dt)
@@ -81,14 +65,12 @@ def update_items(dt):
                 if q.disappear_time <= 0:
                     setattr(tile, slot, None)
 
-        # Generator spawning
         if tile.building == GENERATOR:
             tile.spawn_timer += dt
             if tile.spawn_timer >= GENERATOR_SPEED and tile.item is None:
                 tile.spawn_timer = 0.0
                 tile.item = QubitItem(QubitState.ZERO)
 
-        # Two-qubit gate processing (CNOT-like)
         gate = get_gate(tile.building)
         if gate and gate.category == Category.TWO_QUBIT:
             if tile.item and tile.control_item:
@@ -99,7 +81,6 @@ def update_items(dt):
             else:
                 tile.process_timer = 0.0
 
-        # Advance main item
         if tile.item and not tile.item.is_disappearing:
             should_advance = True
             if gate and gate.category == Category.TWO_QUBIT and tile.control_item:
@@ -109,11 +90,9 @@ def update_items(dt):
                 if tile.item.progress >= 1.0:
                     ready_to_move.append((x, y, "item"))
 
-        # Advance control item
         if tile.control_item and not tile.control_item.is_disappearing:
             tile.control_item.progress += BELT_SPEED * dt
 
-    # --- Pass 2: move items to next tile -----------------------------------
     for x, y, slot in ready_to_move:
         tile = get_tile(x, y)
         item = getattr(tile, slot)
@@ -127,25 +106,21 @@ def update_items(dt):
         next_tile = get_tile(nx, ny)
         next_gate = get_gate(next_tile.building)
 
-        # --- Consumer (measurement, etc.) ---
         if next_gate and next_gate.category == Category.CONSUMER:
             _safe_transform(next_gate, item, next_tile)
             tile.item = None
             continue
 
-        # --- Output sink ---
         if next_tile.building == OUTPUT_SINK:
             _collect_sink(next_tile, item)
             tile.item = None
             continue
 
-        # --- Router (splitter, etc.) ---
         if next_gate and next_gate.category == Category.ROUTER:
             _safe_transform(next_gate, nx, ny, next_tile, item, _eject_qubit)
             tile.item = None
             continue
 
-        # --- Two-qubit gate (CNOT, etc.) ---
         if next_gate and next_gate.category == Category.TWO_QUBIT:
             arrival = opposite_dir(tile.direction)
             target_input = opposite_dir(next_tile.direction)
@@ -158,7 +133,6 @@ def update_items(dt):
                 tile.item = None
             continue
 
-        # --- Single-qubit gate ---
         if next_gate and next_gate.category == Category.SINGLE:
             if next_tile.item is None:
                 _safe_transform(next_gate, item)
@@ -166,17 +140,12 @@ def update_items(dt):
                 tile.item = None
             continue
 
-        # --- Belt / generator / other infrastructure ---
         if next_tile.building != EMPTY and next_tile.item is None:
             next_tile.item = item
             tile.item = None
         elif next_tile.building == EMPTY:
             _start_disappear(item)
 
-
-# ---------------------------------------------------------------------------
-# Two-qubit processing
-# ---------------------------------------------------------------------------
 
 def _process_two_qubit(x, y, tile, gate):
     control = tile.control_item

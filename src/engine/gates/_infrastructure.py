@@ -1,15 +1,10 @@
-"""Infrastructure buildings: belt, generator, output sink.
-
-These have hardcoded simulation behaviour but are registered here so that
-the toolbar, sprites, and levels all pick them up automatically.
-"""
+"""Infrastructure buildings: belt, generator, output sink."""
 
 from __future__ import annotations
 
 from ..gate_registry import register, GateDef, Category, BELT, GENERATOR, OUTPUT_SINK
 
 
-# ── Sprite helpers (lazy-imported to avoid pygame at parse time) ──────────
 
 def _belt_sprite(d, size):
     import pygame
@@ -63,8 +58,6 @@ def _sink_sprite(d, size):
     _dir_mark(s, d, b, COLOR)
     return s
 
-
-# ── Registration ─────────────────────────────────────────────────────────
 
 register(GateDef(
     id=BELT,

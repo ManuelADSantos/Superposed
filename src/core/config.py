@@ -1,7 +1,4 @@
-"""Game configuration and constants.
-
-Gate-specific colours now live in each gate file under gates/.
-"""
+"""Game configuration and constants."""
 
 from __future__ import annotations
 
@@ -37,7 +34,6 @@ YELLOW = (255, 220, 90)
 RED = (220, 80, 80)
 GREEN = (100, 220, 120)
 BLUE = (100, 160, 255)
-ORANGE = (255, 160, 80)
 PURPLE = (170, 90, 255)
 CYAN = (90, 220, 230)
 TEAL = (70, 200, 190)

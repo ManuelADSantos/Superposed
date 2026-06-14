@@ -1,7 +1,4 @@
-"""Superposed: A Quantum Factory Puzzle Game.
-
-Entry point — state-machine game loop with menu, levels, and sandbox.
-"""
+"""Superposed: A Quantum Factory Puzzle Game."""
 
 from __future__ import annotations
 
@@ -9,7 +6,6 @@ import pygame
 from .core import config
 from .core.config import FPS, BG
 
-# Load the gate registry BEFORE other game modules need it
 from .engine.gate_registry import load_gates, BELT
 
 from .core.entities import Direction
@@ -32,7 +28,6 @@ from .core import world as W
 def main():
     pygame.init()
 
-    # Maximised window (not fullscreen)
     info = pygame.display.Info()
     sw, sh = info.current_w, info.current_h
     if sw < 640 or sh < 480:
@@ -44,7 +39,6 @@ def main():
     pygame.display.set_caption("Superposed — Quantum Factory")
     clock = pygame.time.Clock()
 
-    # Load all gate definitions from gates/ folder
     load_gates()
 
     state = GameState.MAIN_MENU

@@ -22,7 +22,6 @@ class GameState(Enum):
     WIN_SCREEN = 5
 
 
-# ── Colours ──────────────────────────────────────────────────────────────────
 _BG_MENU = (10, 10, 14)
 _PANEL = (24, 24, 30)
 _PANEL_HOVER = (34, 34, 44)
@@ -30,18 +29,52 @@ _PANEL_BORDER = (55, 55, 70)
 _ACCENT = PURPLE
 _ACCENT_DIM = (120, 60, 180)
 
-# ── Persistent state ────────────────────────────────────────────────────────
-completed_levels: set[int] = set()          # indices of completed levels
+completed_levels: set[int] = set()
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# Main Menu
-# ═══════════════════════════════════════════════════════════════════════════════
+def _wrap_text(font, text, max_width):
+    wrapped: list[str] = []
+    for paragraph in text.split("\n"):
+        if not paragraph.strip():
+            wrapped.append("")
+            continue
+        words = paragraph.split(" ")
+        current = words[0]
+        for word in words[1:]:
+            test = f"{current} {word}"
+            if font.size(test)[0] <= max_width:
+                current = test
+            else:
+                wrapped.append(current)
+                current = word
+        wrapped.append(current)
+    return wrapped
+
+
+def _draw_menu_buttons(screen, font, labels_colors, start_y, btn_w=260, btn_h=52, gap=16):
+    mx, my = pygame.mouse.get_pos()
+    buttons = []
+    y = start_y
+    for label, color in labels_colors:
+        rect = pygame.Rect((config.WIDTH - btn_w) // 2, y, btn_w, btn_h)
+        hovered = rect.collidepoint(mx, my)
+        bg = _PANEL_HOVER if hovered else _PANEL
+        border = color if hovered else _PANEL_BORDER
+
+        pygame.draw.rect(screen, bg, rect, border_radius=10)
+        pygame.draw.rect(screen, border, rect, 2, border_radius=10)
+
+        txt = font.render(label, True, color if hovered else WHITE)
+        screen.blit(txt, txt.get_rect(center=rect.center))
+
+        buttons.append((rect, label))
+        y += btn_h + gap
+    return buttons
+
 
 def draw_main_menu(screen):
     screen.fill(_BG_MENU)
 
-    # Title
     title_font = pygame.font.SysFont("consolas", 52, bold=True)
     sub_font = pygame.font.SysFont("consolas", 18)
 
@@ -51,20 +84,17 @@ def draw_main_menu(screen):
     sub = sub_font.render("A Quantum Computing Puzzle Game", True, LIGHT_GRAY)
     screen.blit(sub, sub.get_rect(center=(config.WIDTH // 2, config.HEIGHT // 2 - 70)))
 
-    # Decorative line
     lw = 260
     pygame.draw.line(screen, _ACCENT_DIM,
                      (config.WIDTH // 2 - lw // 2, config.HEIGHT // 2 - 48),
                      (config.WIDTH // 2 + lw // 2, config.HEIGHT // 2 - 48), 1)
 
-    # Buttons
     btn_font = pygame.font.SysFont("consolas", 26)
     buttons = _draw_menu_buttons(screen, btn_font, [
         ("Levels", CYAN),
         ("Sandbox", GREEN),
     ], start_y=config.HEIGHT // 2 - 10)
 
-    # Version / footer
     from .. import __version__
     ver = pygame.font.SysFont("consolas", 12).render(f"v{__version__}", True, DARK_GRAY)
     screen.blit(ver, ver.get_rect(bottomright=(config.WIDTH - 12, config.HEIGHT - 8)))
@@ -73,7 +103,6 @@ def draw_main_menu(screen):
 
 
 def handle_main_menu(events, buttons):
-    """Return (new_state, level_index_or_None)."""
     mx, my = pygame.mouse.get_pos()
     for event in events:
         if event.type == pygame.QUIT:
@@ -89,10 +118,6 @@ def handle_main_menu(events, buttons):
                         return GameState.LEVEL_SELECT, None
     return GameState.MAIN_MENU, None
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Level Select
-# ═══════════════════════════════════════════════════════════════════════════════
 
 def draw_level_select(screen):
     screen.fill(_BG_MENU)
@@ -129,20 +154,16 @@ def draw_level_select(screen):
         pygame.draw.rect(screen, bg, rect, border_radius=10)
         pygame.draw.rect(screen, border, rect, 2, border_radius=10)
 
-        # Level number
         num = small_font.render(f"Level {i + 1}", True, DARK_GRAY)
         screen.blit(num, (cx + 10, cy + 8))
 
-        # Completion badge
         if i in completed_levels:
             badge = small_font.render("DONE", True, GREEN)
             screen.blit(badge, badge.get_rect(topright=(cx + card_w - 10, cy + 8)))
 
-        # Name
         name = card_font.render(lev["name"], True, CYAN if hovered else WHITE)
         screen.blit(name, (cx + 10, cy + 28))
 
-        # Description (word-wrapped, clipped to card)
         desc_lines = _wrap_text(desc_font, lev["description"], card_w - 20)
         clip = pygame.Rect(cx + 10, cy + 54, card_w - 20, card_h - 80)
         screen.set_clip(clip)
@@ -153,14 +174,12 @@ def draw_level_select(screen):
             dy += 16
         screen.set_clip(None)
 
-        # Available buildings
         avail = ", ".join(gid.replace("_", " ").title() for gid in lev["available"])
         avail_txt = small_font.render(f"Tools: {avail}", True, DARK_GRAY)
         screen.blit(avail_txt, (cx + 10, cy + card_h - 22))
 
         cards.append((rect, i))
 
-    # Back button
     back_font = pygame.font.SysFont("consolas", 18)
     back_txt = back_font.render("← Back", True, LIGHT_GRAY)
     back_rect = back_txt.get_rect(topleft=(20, config.HEIGHT - 40))
@@ -171,7 +190,6 @@ def draw_level_select(screen):
 
 
 def handle_level_select(events, cards):
-    """Return (new_state, level_index_or_None)."""
     mx, my = pygame.mouse.get_pos()
     for event in events:
         if event.type == pygame.QUIT:
@@ -187,72 +205,36 @@ def handle_level_select(events, cards):
     return GameState.LEVEL_SELECT, None
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# Briefing Overlay (shown before level starts)
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def _wrap_text(font, text, max_width):
-    """Word-wrap *text* to fit within *max_width* pixels.
-
-    Respects explicit newlines in the source string.
-    Returns a list of strings, one per rendered line.
-    """
-    wrapped: list[str] = []
-    for paragraph in text.split("\n"):
-        if not paragraph.strip():
-            wrapped.append("")
-            continue
-        words = paragraph.split(" ")
-        current = words[0]
-        for word in words[1:]:
-            test = f"{current} {word}"
-            if font.size(test)[0] <= max_width:
-                current = test
-            else:
-                wrapped.append(current)
-                current = word
-        wrapped.append(current)
-    return wrapped
-
-
 def draw_briefing(screen, level_index):
     lev = ALL_LEVELS[level_index]
 
-    # Fonts
     tf = pygame.font.SysFont("consolas", 28, bold=True)
     bf = pygame.font.SysFont("consolas", 15)
     btn_font = pygame.font.SysFont("consolas", 22, bold=True)
 
-    # --- measure content to size the panel dynamically ---
     pw = 520
     pad_x = 24
     text_area_w = pw - pad_x * 2
     line_h = 22
-    title_h = 60          # space reserved for the title area
-    btn_h = 70            # space reserved for the button area
+    title_h = 60
+    btn_h = 70
 
     lines = _wrap_text(bf, lev["briefing"], text_area_w)
     text_block_h = len(lines) * line_h
 
-    ph = title_h + text_block_h + btn_h
-    # Clamp so the panel never exceeds the screen
-    ph = min(ph, config.HEIGHT - 40)
+    ph = min(title_h + text_block_h + btn_h, config.HEIGHT - 40)
 
-    # Dim overlay
     overlay = pygame.Surface((config.WIDTH, config.HEIGHT), pygame.SRCALPHA)
     overlay.fill((0, 0, 0, 180))
     screen.blit(overlay, (0, 0))
 
-    # Panel
     panel = pygame.Rect((config.WIDTH - pw) // 2, (config.HEIGHT - ph) // 2, pw, ph)
     pygame.draw.rect(screen, _PANEL, panel, border_radius=14)
     pygame.draw.rect(screen, _ACCENT, panel, 2, border_radius=14)
 
-    # Title
     title = tf.render(f"Level {level_index + 1}: {lev['name']}", True, CYAN)
     screen.blit(title, title.get_rect(midtop=(panel.centerx, panel.top + 18)))
 
-    # Briefing text (word-wrapped, clipped to panel)
     clip = pygame.Rect(panel.left + pad_x, panel.top + title_h,
                        text_area_w, ph - title_h - btn_h)
     screen.set_clip(clip)
@@ -264,7 +246,6 @@ def draw_briefing(screen, level_index):
         y += line_h
     screen.set_clip(None)
 
-    # Start button
     btn_rect = pygame.Rect(0, 0, 180, 44)
     btn_rect.center = (panel.centerx, panel.bottom - 40)
 
@@ -278,7 +259,6 @@ def draw_briefing(screen, level_index):
 
 
 def handle_briefing(events, start_btn, level_index):
-    """Return (new_state, level_index)."""
     mx, my = pygame.mouse.get_pos()
     for event in events:
         if event.type == pygame.QUIT:
@@ -293,10 +273,6 @@ def handle_briefing(events, start_btn, level_index):
                 return GameState.LEVEL_PLAY, level_index
     return GameState.BRIEFING, level_index
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Win Screen Overlay
-# ═══════════════════════════════════════════════════════════════════════════════
 
 def draw_win_screen(screen, level_index):
     lev = ALL_LEVELS[level_index]
@@ -318,7 +294,6 @@ def draw_win_screen(screen, level_index):
     sub = sf.render(f"{lev['name']} — cleared!", True, LIGHT_GRAY)
     screen.blit(sub, sub.get_rect(center=(panel.centerx, panel.top + 80)))
 
-    # Buttons
     btn_font = pygame.font.SysFont("consolas", 18, bold=True)
     mx, my = pygame.mouse.get_pos()
 
@@ -340,7 +315,6 @@ def draw_win_screen(screen, level_index):
 
 
 def handle_win_screen(events, menu_btn, next_btn, level_index):
-    """Return (new_state, level_index_or_None)."""
     mx, my = pygame.mouse.get_pos()
     for event in events:
         if event.type == pygame.QUIT:
@@ -362,29 +336,3 @@ def handle_win_screen(events, menu_btn, next_btn, level_index):
                     return GameState.BRIEFING, nxt
                 return GameState.LEVEL_SELECT, None
     return GameState.WIN_SCREEN, level_index
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Helpers
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def _draw_menu_buttons(screen, font, labels_colors, start_y, btn_w=260, btn_h=52, gap=16):
-    """Draw centered vertical buttons. Returns list of (rect, label)."""
-    mx, my = pygame.mouse.get_pos()
-    buttons = []
-    y = start_y
-    for label, color in labels_colors:
-        rect = pygame.Rect((config.WIDTH - btn_w) // 2, y, btn_w, btn_h)
-        hovered = rect.collidepoint(mx, my)
-        bg = _PANEL_HOVER if hovered else _PANEL
-        border = color if hovered else _PANEL_BORDER
-
-        pygame.draw.rect(screen, bg, rect, border_radius=10)
-        pygame.draw.rect(screen, border, rect, 2, border_radius=10)
-
-        txt = font.render(label, True, color if hovered else WHITE)
-        screen.blit(txt, txt.get_rect(center=rect.center))
-
-        buttons.append((rect, label))
-        y += btn_h + gap
-    return buttons

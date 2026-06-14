@@ -319,9 +319,10 @@ def draw_hud(surface, selected_rotation):
     wx, wy = screen_to_world(mx, my, TILE_SIZE)
     coord = font.render(f"({wx}, {wy})", True, DARK_GRAY)
     compass_cy = 68
-    compass_r = 20
-    _draw_compass(surface, selected_rotation, config.WIDTH - 10 - coord.get_width() // 2, compass_cy)
-    coord_rect = coord.get_rect(topright=(config.WIDTH - 10, compass_cy + compass_r + 20))
+    compass_r = 30
+    compass_cx = config.WIDTH - 30 - compass_r
+    _draw_compass(surface, selected_rotation, compass_cx, compass_cy)
+    coord_rect = coord.get_rect(midtop=(compass_cx, compass_cy + compass_r + 20))
     surface.blit(coord, coord_rect)
 
 

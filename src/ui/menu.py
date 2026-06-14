@@ -160,9 +160,9 @@ def draw_main_menu(screen):
 
     btn_font = pygame.font.SysFont("consolas", 26)
     buttons = _draw_menu_buttons(screen, btn_font, [
-        ("Campaign", CYAN),
-        ("Sandbox", GREEN),
-        ("Exit", DARK_GRAY),
+        ("Campaign", BLUE),
+        ("Sandbox", RED),
+        ("Exit", PURPLE),
     ], start_y=config.HEIGHT // 2 - 10)
 
     from .. import __version__

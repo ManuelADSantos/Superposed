@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+from functools import lru_cache
 import pygame
 from ..core import config
 from ..core.config import TILE_SIZE, TOOLBAR_HEIGHT, TOOLBAR_PAD
 from ..core.entities import Direction, QubitState, cw_dir
-from ..core.world import screen_to_world, get_tile, in_bounds
+from ..core.world import screen_to_world, get_tile
 from ..engine.gate_registry import get_gate, active_toolbar, EMPTY, OUTPUT_SINK
 from ..engine.circuit_export import export_circuit
 from .rendering import get_export_button_rect, show_toast
@@ -29,14 +30,14 @@ def _toolbar_hit(mx, my):
     return None
 
 
-def _build_key_map():
-    active = active_toolbar(W.available_buildings)
-    km = {}
-    for idx, gid in enumerate(active):
-        key_code = getattr(pygame, f"K_{idx + 1}", None)
-        if key_code:
-            km[key_code] = gid
-    return km
+@lru_cache(maxsize=32)
+def _build_key_map(available: tuple | None) -> dict:
+    active = active_toolbar(list(available) if available is not None else None)
+    return {
+        kc: gid
+        for idx, gid in enumerate(active)
+        if (kc := getattr(pygame, f"K_{idx + 1}", None))
+    }
 
 
 def handle_input(dt, selected_building, selected_rotation, paused, step_requested,
@@ -60,7 +61,8 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
     if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
         W._state.camera_x += speed
 
-    key_map = _build_key_map()
+    avail = tuple(W.available_buildings) if W.available_buildings is not None else None
+    key_map = _build_key_map(avail)
 
     if events is None:
         events = pygame.event.get()
@@ -115,38 +117,37 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
 
             if my < config.HEIGHT - TOOLBAR_HEIGHT:
                 wx, wy = screen_to_world(mx, my, TILE_SIZE)
-                if in_bounds(wx, wy):
-                    tile = get_tile(wx, wy)
-                    is_locked = (wx, wy) in W.locked_tiles
+                tile = get_tile(wx, wy)
+                is_locked = (wx, wy) in W.locked_tiles
 
-                    if event.button == 1 and not is_locked:
-                        if W.available_buildings is None or selected_building in W.available_buildings:
-                            tile.building = selected_building
-                            tile.direction = selected_rotation
-                            tile.control_item = None
-                            tile.process_timer = 0.0
-                            if selected_building == OUTPUT_SINK:
-                                tile.sink_total = 0
-                                tile.sink_match = 0
-                                tile.sink_target = None
-
-                    elif event.button == 3 and not is_locked:
-                        tile.building = EMPTY
-                        tile.item = None
+                if event.button == 1 and not is_locked:
+                    if W.available_buildings is None or selected_building in W.available_buildings:
+                        tile.building = selected_building
+                        tile.direction = selected_rotation
                         tile.control_item = None
-
-                    elif event.button == 2:
-                        if tile.building == OUTPUT_SINK and not is_locked:
-                            if tile.sink_target is None:
-                                tile.sink_target = QubitState.ZERO
-                            elif tile.sink_target == QubitState.ZERO:
-                                tile.sink_target = QubitState.ONE
-                            elif tile.sink_target == QubitState.ONE:
-                                tile.sink_target = QubitState.SUPERPOSITION
-                            else:
-                                tile.sink_target = None
+                        tile.process_timer = 0.0
+                        if selected_building == OUTPUT_SINK:
                             tile.sink_total = 0
                             tile.sink_match = 0
+                            tile.sink_target = None
+
+                elif event.button == 3 and not is_locked:
+                    tile.building = EMPTY
+                    tile.item = None
+                    tile.control_item = None
+
+                elif event.button == 2:
+                    if tile.building == OUTPUT_SINK and not is_locked:
+                        if tile.sink_target is None:
+                            tile.sink_target = QubitState.ZERO
+                        elif tile.sink_target == QubitState.ZERO:
+                            tile.sink_target = QubitState.ONE
+                        elif tile.sink_target == QubitState.ONE:
+                            tile.sink_target = QubitState.SUPERPOSITION
+                        else:
+                            tile.sink_target = None
+                        tile.sink_total = 0
+                        tile.sink_match = 0
 
     active = active_toolbar(W.available_buildings)
     if active and selected_building not in active:

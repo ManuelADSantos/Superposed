@@ -84,10 +84,6 @@ class WorldState:
             self.world[key] = Tile()
         return self.world[key]
 
-    @staticmethod
-    def in_bounds(x: int, y: int) -> bool:   # noqa: ARG004
-        return True
-
     def world_to_screen(self, wx, wy, tile_size):
         size = tile_size * self.zoom
         return (wx * size) - self.camera_x, (wy * size) - self.camera_y
@@ -132,9 +128,6 @@ def break_entanglement(qubit: QubitItem):
 
 def get_tile(x, y) -> Tile:
     return _state.get_tile(x, y)
-
-def in_bounds(x, y) -> bool:
-    return _state.in_bounds(x, y)
 
 def world_to_screen(wx, wy, tile_size):
     return _state.world_to_screen(wx, wy, tile_size)

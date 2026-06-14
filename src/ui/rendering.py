@@ -193,8 +193,7 @@ def draw_toolbar(surface, selected_building, selected_rotation, paused):
 
     # ── Export button (left side of status area) ──
     export_font = pygame.font.SysFont("consolas", 13, bold=True)
-    export_w, export_h = 80, 26
-    export_rect = pygame.Rect(config.WIDTH - export_w - 12, tb_y + 6, export_w, export_h)
+    export_rect = get_export_button_rect()
     mx, my = pygame.mouse.get_pos()
     export_hover = export_rect.collidepoint(mx, my)
     bg_col = (60, 40, 100) if export_hover else (40, 30, 60)

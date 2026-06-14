@@ -13,7 +13,7 @@ from ..core.entities import (
     DIR_VECTORS, opposite_dir, cw_dir, ccw_dir,
 )
 from ..core import world as _world_mod
-from ..core.world import get_tile, in_bounds
+from ..core.world import get_tile
 from .gate_registry import (
     get_gate, Category,
     EMPTY, BELT, GENERATOR, OUTPUT_SINK,
@@ -48,9 +48,6 @@ def _safe_transform(gate, *args):
 def _eject_qubit(src_x, src_y, nx, ny, qubit):
     """Try to place a qubit on the next tile; vanish if impossible."""
     qubit.progress = 0.0
-    if not in_bounds(nx, ny):
-        _start_disappear(qubit)
-        return
     next_tile = get_tile(nx, ny)
     gate = get_gate(next_tile.building)
     if gate and gate.category == Category.CONSUMER:
@@ -126,10 +123,6 @@ def update_items(dt):
         dx, dy = DIR_VECTORS[tile.direction]
         nx, ny = x + dx, y + dy
         item.progress = 0.0
-
-        if not in_bounds(nx, ny):
-            _start_disappear(item)
-            continue
 
         next_tile = get_tile(nx, ny)
         next_gate = get_gate(next_tile.building)

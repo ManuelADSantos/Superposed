@@ -25,6 +25,10 @@ CZ = "cz"
 SWAP = "swap"
 MEAS = "measurement"
 SPLIT = "splitter"
+NOISE = "noise"
+ORA_C = "oracle_constant"
+ORA_B = "oracle_balanced"
+DUP = "duplicator"
 
 
 # ---------------------------------------------------------------------------
@@ -502,6 +506,651 @@ CH6_L2 = {
 
 
 # ---------------------------------------------------------------------------
+# Chapter 7: Interference Patterns
+# ---------------------------------------------------------------------------
+
+_CH7_CONCEPT = (
+    "In Chapter 4 you learned that H→Z→H always produces |1>.\n"
+    "That was a single path. Now let's use interference to CONTROL\n"
+    "where qubits go.\n\n"
+    "Key insight: a Splitter routes |0> straight and |1> clockwise.\n"
+    "Without interference, superposition collapses randomly — 50/50.\n"
+    "With interference, you decide the outcome: H→H keeps |0>,\n"
+    "H→Z→H forces |1>.\n\n"
+    "Combine interference with routing to build deterministic\n"
+    "quantum factories."
+)
+
+CH7_L1 = {
+    "name": "Taming Randomness",
+    "description": "Use interference to guarantee every qubit reaches the sink.",
+    "briefing": (
+        "The locked Hadamard puts every qubit into superposition.\n"
+        "The locked Splitter then measures them — 50/50 random.\n\n"
+        "The sink only accepts |1> qubits, arriving from the\n"
+        "Splitter's clockwise exit (downward).\n\n"
+        "Random means ~half your qubits are wasted.\n"
+        "Can you guarantee EVERY qubit reaches the sink?\n\n"
+        "Hint: what happens between two Hadamard gates\n"
+        "determines the outcome."
+    ),
+    "hint": "H → Z → H = always |1> → Splitter sends all down",
+    "pre_placed": {
+        (0, 3): (GEN, RIGHT, None),
+        (3, 3): (H, RIGHT, None),
+        (9, 3): (SPLIT, RIGHT, None),
+        (9, 7): (SINK, DOWN, ONE),
+    },
+    "locked": {(0, 3), (3, 3), (9, 3), (9, 7)},
+    "available": [BELT, H, Z],
+    "win_count": 5,
+    "camera": (5, 4),
+}
+
+CH7_L2 = {
+    "name": "Both Ways",
+    "description": "Master constructive AND destructive interference.",
+    "briefing": (
+        "Two assembly lines, each with a locked Hadamard\n"
+        "and a locked Splitter.\n\n"
+        "Top sink wants |0> (exits straight from Splitter).\n"
+        "Bottom sink wants |1> (exits clockwise from Splitter).\n\n"
+        "Use constructive interference (H·H = identity) on the\n"
+        "top path to keep qubits as |0>.\n\n"
+        "Use destructive interference (H·Z·H) on the bottom\n"
+        "path to flip qubits to |1>."
+    ),
+    "hint": "Top: add H before Splitter. Bottom: add Z then H.",
+    "pre_placed": {
+        (0, 1): (GEN, RIGHT, None),
+        (3, 1): (H, RIGHT, None),
+        (9, 1): (SPLIT, RIGHT, None),
+        (13, 1): (SINK, RIGHT, ZERO),
+        (0, 5): (GEN, RIGHT, None),
+        (3, 5): (H, RIGHT, None),
+        (9, 5): (SPLIT, RIGHT, None),
+        (9, 9): (SINK, DOWN, ONE),
+    },
+    "locked": {(0, 1), (3, 1), (9, 1), (13, 1),
+               (0, 5), (3, 5), (9, 5), (9, 9)},
+    "available": [BELT, H, Z],
+    "win_count": 5,
+    "camera": (6, 4),
+}
+
+CH7_L3 = {
+    "name": "Interference Lab",
+    "description": "Three lanes, three targets — pick the right tool for each.",
+    "briefing": (
+        "Three generators, three sinks, three target states.\n\n"
+        "  Top:     deliver |1>\n"
+        "  Middle:  deliver |0>\n"
+        "  Bottom:  deliver |1>\n\n"
+        "You have every single-qubit gate. Some paths need\n"
+        "interference, others just need the right gate.\n\n"
+        "Find the most efficient solution for each lane."
+    ),
+    "hint": "Top: H→Z→H or just X. Middle: belts only. Bottom: Y or X.",
+    "pre_placed": {
+        (0, 1): (GEN, RIGHT, None),
+        (11, 1): (SINK, RIGHT, ONE),
+        (0, 5): (GEN, RIGHT, None),
+        (11, 5): (SINK, RIGHT, ZERO),
+        (0, 9): (GEN, RIGHT, None),
+        (11, 9): (SINK, RIGHT, ONE),
+    },
+    "locked": {(0, 1), (11, 1), (0, 5), (11, 5), (0, 9), (11, 9)},
+    "available": [BELT, H, X, Y, Z],
+    "win_count": 5,
+    "camera": (5, 5),
+}
+
+
+# ---------------------------------------------------------------------------
+# Chapter 8: Quantum Circuits
+# ---------------------------------------------------------------------------
+
+_CH8_CONCEPT = (
+    "Real quantum circuits combine single-qubit and two-qubit gates\n"
+    "into larger patterns with surprising properties.\n\n"
+    "A key equivalence: sandwiching CZ between two Hadamard gates\n"
+    "on the target makes it behave exactly like CNOT.\n"
+    "This is because H converts phase flips into bit flips.\n\n"
+    "Understanding circuit equivalences is the foundation of\n"
+    "quantum algorithm design — there are always multiple ways\n"
+    "to build the same computation."
+)
+
+CH8_L1 = {
+    "name": "Circuit Equivalence",
+    "description": "Build a CNOT from CZ and Hadamard gates.",
+    "briefing": (
+        "CZ only flips phase — never directly flips bits.\n"
+        "But H converts phase flips into bit flips!\n\n"
+        "The equivalence: H → CZ → H on the target path\n"
+        "behaves exactly like CNOT.\n\n"
+        "Both sinks want |1>.\n"
+        "  Control path (vertical): use X to make |1>\n"
+        "  Target path (horizontal): H before CZ, H after CZ\n\n"
+        "The |1> control triggers CZ's phase flip,\n"
+        "and the surrounding H gates convert it to a bit flip."
+    ),
+    "hint": "Vertical: X. Horizontal: H before and after the CZ.",
+    "pre_placed": {
+        (-1, 3): (GEN, RIGHT, None),
+        (5, -1): (GEN, DOWN, None),
+        (5, 3): (CZ, RIGHT, None),
+        (10, 3): (SINK, RIGHT, ONE),
+        (5, 8): (SINK, DOWN, ONE),
+    },
+    "locked": {(-1, 3), (5, -1), (5, 3), (10, 3), (5, 8)},
+    "available": [BELT, H, X],
+    "win_count": 5,
+    "camera": (5, 3),
+}
+
+CH8_L2 = {
+    "name": "Entanglement Chain",
+    "description": "Chain entanglement across three qubits with two CNOTs.",
+    "briefing": (
+        "Three qubits, two CNOT gates, one entangled group.\n\n"
+        "Put the first qubit in superposition with H,\n"
+        "then chain it through two CNOTs. The entanglement\n"
+        "propagates: all three qubits become entangled.\n\n"
+        "When the Measurement gate collapses one qubit,\n"
+        "watch all three snap to the same value.\n\n"
+        "Place both CNOTs and connect everything."
+    ),
+    "hint": "H on first qubit, CNOT at each crossing, belts between.",
+    "pre_placed": {
+        (3, -1): (GEN, DOWN, None),
+        (-1, 3): (GEN, RIGHT, None),
+        (-1, 7): (GEN, RIGHT, None),
+        (10, 3): (MEAS, RIGHT, None),
+        (10, 7): (SINK, RIGHT, None),
+        (3, 10): (SINK, DOWN, None),
+    },
+    "locked": {(3, -1), (-1, 3), (-1, 7), (10, 3), (10, 7), (3, 10)},
+    "available": [BELT, H, CNOT],
+    "win_count": 5,
+    "win_type": "measure",
+    "camera": (5, 4),
+}
+
+
+# ---------------------------------------------------------------------------
+# Chapter 9: Quantum Noise
+# ---------------------------------------------------------------------------
+
+_CH9_CONCEPT = (
+    "Real quantum computers suffer from noise — random errors\n"
+    "that corrupt qubits. A perfect qubit can spontaneously\n"
+    "flip from |0> to |1> or vice versa.\n\n"
+    "The Noise gate simulates this: each qubit passing through\n"
+    "has a 50% chance of being flipped. The corruption is\n"
+    "completely random and unpredictable.\n\n"
+    "Your first defense: avoid the noise entirely.\n"
+    "Route your qubits around noisy channels whenever possible."
+)
+
+CH9_L1 = {
+    "name": "Noisy Channel",
+    "description": "The direct path is corrupted — find a way around.",
+    "briefing": (
+        "A Noise gate sits on the direct path from\n"
+        "generator to sink. Every qubit passing through\n"
+        "has a 50% chance of being flipped.\n\n"
+        "The sink wants |0> but noise randomly changes\n"
+        "some qubits to |1>.\n\n"
+        "Build a detour — route your qubits AROUND the\n"
+        "noise gate to guarantee clean delivery."
+    ),
+    "hint": "Build a belt path that bypasses the Noise gate.",
+    "pre_placed": {
+        (0, 3): (GEN, RIGHT, None),
+        (4, 3): (NOISE, RIGHT, None),
+        (8, 3): (SINK, RIGHT, ZERO),
+    },
+    "locked": {(0, 3), (4, 3), (8, 3)},
+    "available": [BELT],
+    "win_count": 5,
+    "camera": (4, 3),
+}
+
+CH9_L2 = {
+    "name": "Noise Breaks Everything",
+    "description": "Noise destroys interference — see the damage firsthand.",
+    "briefing": (
+        "Two assembly lines, both with H gates for interference.\n\n"
+        "Top line: clean. H → Z → H produces |1> reliably.\n"
+        "Bottom line: a locked Noise gate sits between\n"
+        "the Z and the second H. Noise randomizes the phase,\n"
+        "breaking the interference pattern.\n\n"
+        "Both sinks want |1>.\n"
+        "Top line works perfectly.\n"
+        "Bottom line: route AROUND the noise to save it."
+    ),
+    "hint": "Top: H→Z→H as normal. Bottom: bypass the Noise gate.",
+    "pre_placed": {
+        (0, 1): (GEN, RIGHT, None),
+        (12, 1): (SINK, RIGHT, ONE),
+        (0, 6): (GEN, RIGHT, None),
+        (5, 6): (NOISE, RIGHT, None),
+        (12, 6): (SINK, RIGHT, ONE),
+    },
+    "locked": {(0, 1), (12, 1), (0, 6), (5, 6), (12, 6)},
+    "available": [BELT, H, Z],
+    "win_count": 5,
+    "camera": (6, 3),
+}
+
+CH9_L3 = {
+    "name": "Noisy Crossroads",
+    "description": "Multiple noise gates block the paths — find the one clean route.",
+    "briefing": (
+        "Noise gates are everywhere! Three of the four\n"
+        "possible paths from generator to sink pass\n"
+        "through locked Noise gates.\n\n"
+        "Find the ONE clean path and route your qubits\n"
+        "through it. The sink wants |0>."
+    ),
+    "hint": "Only one path has no Noise gate — try going down first.",
+    "pre_placed": {
+        (0, 0): (GEN, RIGHT, None),
+        (3, 0): (NOISE, RIGHT, None),
+        (0, 3): (NOISE, DOWN, None),
+        (6, 3): (NOISE, RIGHT, None),
+        (9, 5): (SINK, RIGHT, ZERO),
+    },
+    "locked": {(0, 0), (3, 0), (0, 3), (6, 3), (9, 5)},
+    "available": [BELT],
+    "win_count": 5,
+    "camera": (4, 2),
+}
+
+
+# ---------------------------------------------------------------------------
+# Chapter 10: Error Detection
+# ---------------------------------------------------------------------------
+
+_CH10_CONCEPT = (
+    "You can't always avoid noise. But you CAN detect it.\n\n"
+    "The trick: send two identical qubits down parallel paths.\n"
+    "One path passes through noise, the other stays clean.\n"
+    "At the end, a CNOT compares them.\n\n"
+    "If noise flipped the qubit, the CNOT's control output\n"
+    "changes — revealing the error. A Splitter then routes\n"
+    "corrupted qubits away from the output.\n\n"
+    "This is the core idea behind quantum error detection:\n"
+    "redundancy and comparison."
+)
+
+CH10_L1 = {
+    "name": "Parity Check",
+    "description": "Use CNOT to detect whether noise flipped a qubit.",
+    "briefing": (
+        "Two generators both produce |0>.\n"
+        "One qubit passes through a locked Noise gate.\n"
+        "The other stays clean.\n\n"
+        "They meet at a CNOT:\n"
+        "  Clean qubit = control (from top)\n"
+        "  Noisy qubit = target (from left)\n\n"
+        "If noise did nothing: control stays |0>.\n"
+        "If noise flipped: control becomes |1>.\n\n"
+        "The Measurement gate records the parity check.\n"
+        "Build the circuit and watch the error detection!"
+    ),
+    "hint": "Connect clean gen to CNOT control (top), noisy gen to target (left).",
+    "win_type": "measure",
+    "pre_placed": {
+        (5, -1): (GEN, DOWN, None),
+        (-1, 3): (GEN, RIGHT, None),
+        (2, 3): (NOISE, RIGHT, None),
+        (9, 3): (SINK, RIGHT, None),
+        (5, 8): (MEAS, DOWN, None),
+    },
+    "locked": {(5, -1), (-1, 3), (2, 3), (9, 3), (5, 8)},
+    "available": [BELT, CNOT],
+    "win_count": 10,
+    "camera": (5, 3),
+}
+
+CH10_L2 = {
+    "name": "Error Filter",
+    "description": "Detect noise errors AND discard corrupted qubits.",
+    "briefing": (
+        "Same setup as before, but now we FILTER the output.\n\n"
+        "After the CNOT compares clean and noisy qubits,\n"
+        "feed the target into a Splitter:\n"
+        "  |0> (uncorrupted) → straight to the sink\n"
+        "  |1> (corrupted)   → discarded\n\n"
+        "The sink wants |0>. Only clean qubits should\n"
+        "reach it. Corrupted qubits go to the discard path.\n\n"
+        "Place the CNOT and Splitter to build the filter."
+    ),
+    "hint": "CNOT at the crossing, Splitter after target exit. |0> to sink.",
+    "pre_placed": {
+        (5, -1): (GEN, DOWN, None),
+        (-1, 3): (GEN, RIGHT, None),
+        (2, 3): (NOISE, RIGHT, None),
+        (13, 3): (SINK, RIGHT, ZERO),
+    },
+    "locked": {(5, -1), (-1, 3), (2, 3), (13, 3)},
+    "available": [BELT, CNOT, SPLIT],
+    "win_count": 5,
+    "camera": (6, 3),
+}
+
+
+# ---------------------------------------------------------------------------
+# Chapter 11: Deutsch's Problem
+# ---------------------------------------------------------------------------
+
+_CH11_CONCEPT = (
+    "Imagine a black box — an Oracle — that computes a function.\n"
+    "You can't look inside. It's either CONSTANT (always does\n"
+    "nothing) or BALANCED (always flips the phase).\n\n"
+    "Classically, you'd need to test both inputs to be sure.\n"
+    "Quantumly: send a superposed qubit through H → Oracle → H.\n"
+    "The output is deterministic:\n"
+    "  Constant oracle → |0>  (constructive interference)\n"
+    "  Balanced oracle → |1>  (destructive interference)\n\n"
+    "One query. Certain answer. This is Deutsch's algorithm —\n"
+    "the first proof that quantum beats classical."
+)
+
+CH11_L1 = {
+    "name": "The Constant Oracle",
+    "description": "A black-box that does nothing — detect it with one query.",
+    "briefing": (
+        "The locked Oracle gate is a black box.\n"
+        "This one is CONSTANT — it does nothing to qubits.\n\n"
+        "Build the detection circuit: H → Oracle → H\n\n"
+        "A constant oracle preserves interference:\n"
+        "  H|0> = |+> → Oracle(nothing) → |+> → H → |0>\n\n"
+        "The sink wants |0>. Build the circuit!"
+    ),
+    "hint": "Place H before and after the Oracle. Output is always |0>.",
+    "pre_placed": {
+        (0, 3): (GEN, RIGHT, None),
+        (5, 3): (ORA_C, RIGHT, None),
+        (10, 3): (SINK, RIGHT, ZERO),
+    },
+    "locked": {(0, 3), (5, 3), (10, 3)},
+    "available": [BELT, H],
+    "win_count": 5,
+    "camera": (5, 3),
+}
+
+CH11_L2 = {
+    "name": "The Balanced Oracle",
+    "description": "This oracle flips the phase — detect it with one query.",
+    "briefing": (
+        "Same circuit, different oracle.\n"
+        "This one is BALANCED — it flips the phase.\n\n"
+        "Build H → Oracle → H again:\n"
+        "  H|0> = |+> → Oracle(phase flip) → |-> → H → |1>\n\n"
+        "The destructive interference reveals the oracle type!\n"
+        "The sink wants |1>."
+    ),
+    "hint": "Same circuit as before — H, Oracle, H. Output is now |1>.",
+    "pre_placed": {
+        (0, 3): (GEN, RIGHT, None),
+        (5, 3): (ORA_B, RIGHT, None),
+        (10, 3): (SINK, RIGHT, ONE),
+    },
+    "locked": {(0, 3), (5, 3), (10, 3)},
+    "available": [BELT, H],
+    "win_count": 5,
+    "camera": (5, 3),
+}
+
+CH11_L3 = {
+    "name": "Oracle Classifier",
+    "description": "Two unknown oracles — classify both automatically.",
+    "briefing": (
+        "Two oracles, two assembly lines.\n"
+        "You don't need to know which is which!\n\n"
+        "Build H → Oracle → H → Splitter on each line.\n"
+        "The Splitter routes by state:\n"
+        "  |0> (constant) → straight to the |0> sink\n"
+        "  |1> (balanced) → clockwise to the |1> sink\n\n"
+        "The circuit automatically classifies the oracle.\n"
+        "This is the power of Deutsch's algorithm."
+    ),
+    "hint": "H before each Oracle, H after, then Splitter sorts the answer.",
+    "pre_placed": {
+        (0, 1): (GEN, RIGHT, None),
+        (5, 1): (ORA_C, RIGHT, None),
+        (11, 1): (SPLIT, RIGHT, None),
+        (15, 1): (SINK, RIGHT, ZERO),
+        (0, 6): (GEN, RIGHT, None),
+        (5, 6): (ORA_B, RIGHT, None),
+        (11, 6): (SPLIT, RIGHT, None),
+        (11, 10): (SINK, DOWN, ONE),
+    },
+    "locked": {(0, 1), (5, 1), (11, 1), (15, 1),
+               (0, 6), (5, 6), (11, 6), (11, 10)},
+    "available": [BELT, H],
+    "win_count": 5,
+    "camera": (7, 4),
+}
+
+
+# ---------------------------------------------------------------------------
+# Chapter 12: Quantum Cloning
+# ---------------------------------------------------------------------------
+
+_CH12_CONCEPT = (
+    "The No-Cloning Theorem says you cannot perfectly copy an\n"
+    "unknown quantum state. But classical states (|0> and |1>)\n"
+    "CAN be copied — only superposition is forbidden.\n\n"
+    "The Duplicator gate makes a copy of any qubit:\n"
+    "  Original exits straight (gate direction)\n"
+    "  Copy exits clockwise (perpendicular)\n\n"
+    "If the input is in superposition, the Duplicator collapses\n"
+    "it first — you get two identical classical copies, not two\n"
+    "entangled qubits. This is the no-cloning limit in action."
+)
+
+CH12_L1 = {
+    "name": "The Duplicator",
+    "description": "One qubit in, two copies out.",
+    "briefing": (
+        "The Duplicator sends a copy of each qubit in\n"
+        "two directions:\n"
+        "  Straight → original continues forward\n"
+        "  Clockwise → copy goes perpendicular\n\n"
+        "Both sinks want |0>. The generator makes |0>.\n"
+        "Connect the Duplicator's outputs to both sinks."
+    ),
+    "hint": "Belt from straight exit to right sink, CW exit to bottom sink.",
+    "pre_placed": {
+        (0, 3): (GEN, RIGHT, None),
+        (4, 3): (DUP, RIGHT, None),
+        (8, 3): (SINK, RIGHT, ZERO),
+        (4, 7): (SINK, DOWN, ZERO),
+    },
+    "locked": {(0, 3), (4, 3), (8, 3), (4, 7)},
+    "available": [BELT],
+    "win_count": 5,
+    "camera": (4, 4),
+}
+
+CH12_L2 = {
+    "name": "Redundant Channel",
+    "description": "Duplicate before noise — the backup always gets through.",
+    "briefing": (
+        "The Duplicator creates a backup copy before the\n"
+        "noisy channel.\n\n"
+        "Original path: through the locked Noise gate.\n"
+        "  Use a Splitter to filter: |0> to the sink,\n"
+        "  |1> (corrupted) gets discarded.\n\n"
+        "Copy path: clean detour straight to a second sink.\n\n"
+        "Both sinks want |0>. The backup guarantees output\n"
+        "even when noise strikes."
+    ),
+    "hint": "Splitter after noise filters corrupted qubits. Copy path goes clean.",
+    "pre_placed": {
+        (0, 3): (GEN, RIGHT, None),
+        (3, 3): (DUP, RIGHT, None),
+        (6, 3): (NOISE, RIGHT, None),
+        (12, 3): (SINK, RIGHT, ZERO),
+        (3, 7): (SINK, DOWN, ZERO),
+    },
+    "locked": {(0, 3), (3, 3), (6, 3), (12, 3), (3, 7)},
+    "available": [BELT, SPLIT],
+    "win_count": 5,
+    "camera": (6, 4),
+}
+
+
+# ---------------------------------------------------------------------------
+# Chapter 13: Grand Challenge
+# ---------------------------------------------------------------------------
+
+_CH13_CONCEPT = (
+    "Time to combine everything you've learned.\n\n"
+    "These puzzles require multiple concepts working together:\n"
+    "bit flips, phase kicks, entanglement, interference,\n"
+    "noise avoidance, and clever routing.\n\n"
+    "There's no single trick — you need to read the board,\n"
+    "understand what each sink needs, and build the right\n"
+    "circuit for each path."
+)
+
+CH13_L1 = {
+    "name": "Quantum Lab",
+    "description": "Three generators, three sinks — SWAP, interference, and routing.",
+    "briefing": (
+        "Three qubit streams cross at a locked SWAP gate.\n\n"
+        "SWAP exchanges the states of the two qubits\n"
+        "passing through it. Plan ahead:\n"
+        "  What state enters each side of the SWAP?\n"
+        "  What state exits each side?\n\n"
+        "The third stream is independent — it needs\n"
+        "superposition.\n\n"
+        "  Sink A (right of SWAP): wants |1>\n"
+        "  Sink B (below SWAP): wants |0>\n"
+        "  Sink C (bottom): wants superposition"
+    ),
+    "hint": "X on the vertical gen, SWAP exchanges states. H on the third path.",
+    "pre_placed": {
+        (5, 0): (GEN, DOWN, None),
+        (0, 4): (GEN, RIGHT, None),
+        (0, 8): (GEN, RIGHT, None),
+        (5, 4): (SWAP, RIGHT, None),
+        (11, 4): (SINK, RIGHT, ONE),
+        (5, 9): (SINK, DOWN, ZERO),
+        (11, 8): (SINK, RIGHT, SUP),
+    },
+    "locked": {(5, 0), (0, 4), (0, 8), (5, 4), (11, 4), (5, 9), (11, 8)},
+    "available": [BELT, H, X],
+    "win_count": 5,
+    "camera": (5, 4),
+}
+
+CH13_L2 = {
+    "name": "Double Flip",
+    "description": "Two CNOTs in sequence — trace the state through both.",
+    "briefing": (
+        "Two CNOT gates are locked in a chain.\n\n"
+        "The first CNOT's target output feeds the second\n"
+        "CNOT's control input. Think carefully about\n"
+        "what state reaches each gate.\n\n"
+        "Both sinks want |1>.\n"
+        "You have X and belts — no Hadamard, no tricks.\n"
+        "Pure logic."
+    ),
+    "hint": "X on the first control → flips first target → now feeds second CNOT.",
+    "pre_placed": {
+        (4, -1): (GEN, DOWN, None),
+        (-1, 2): (GEN, RIGHT, None),
+        (4, 2): (CNOT, RIGHT, None),
+        (-1, 6): (GEN, RIGHT, None),
+        (8, 6): (CNOT, RIGHT, None),
+        (12, 6): (SINK, RIGHT, ONE),
+        (4, 6): (SINK, DOWN, ONE),
+        (8, 10): (SINK, DOWN, ONE),
+    },
+    "locked": {(4, -1), (-1, 2), (4, 2), (-1, 6), (8, 6),
+               (12, 6), (4, 6), (8, 10)},
+    "available": [BELT, X],
+    "win_count": 5,
+    "camera": (5, 4),
+}
+
+
+# ---------------------------------------------------------------------------
+# Chapter 14: Quantum Mastery
+# ---------------------------------------------------------------------------
+
+_CH14_CONCEPT = (
+    "You've mastered every gate in the factory.\n\n"
+    "These final challenges combine noise avoidance,\n"
+    "interference, phase kickback, and entanglement\n"
+    "into puzzles that require deep understanding.\n\n"
+    "No new tools — just everything you've learned,\n"
+    "pushed to the limit."
+)
+
+CH14_L1 = {
+    "name": "Noisy Interference",
+    "description": "Noise blocks interference — use a Splitter to recover.",
+    "briefing": (
+        "The generator feeds through locked H and Z gates\n"
+        "for interference, but a Noise gate sits after Z.\n\n"
+        "Without noise: H → Z → H = always |1>.\n"
+        "With noise: the phase flip is randomly undone,\n"
+        "giving a 50/50 mix of |0> and |1>.\n\n"
+        "Use a Splitter after the second H to catch the\n"
+        "|1> qubits that survived. The sink wants |1>."
+    ),
+    "hint": "Build: H(locked) → Z(locked) → Noise(locked) → H → Splitter → |1> CW to sink.",
+    "pre_placed": {
+        (0, 3): (GEN, RIGHT, None),
+        (2, 3): (H, RIGHT, None),
+        (4, 3): (Z, RIGHT, None),
+        (6, 3): (NOISE, RIGHT, None),
+        (13, 7): (SINK, DOWN, ONE),
+    },
+    "locked": {(0, 3), (2, 3), (4, 3), (6, 3), (13, 7)},
+    "available": [BELT, H, SPLIT],
+    "win_count": 5,
+    "camera": (7, 4),
+}
+
+CH14_L2 = {
+    "name": "Kickback Detour",
+    "description": "Phase kickback through a noisy landscape.",
+    "briefing": (
+        "The vertical generator's path passes through\n"
+        "a locked Noise gate. You need |1> on that path\n"
+        "for phase kickback to work on the CZ gate.\n\n"
+        "Route the vertical qubit AROUND the noise,\n"
+        "apply X to flip it to |1>, then let CZ do\n"
+        "its phase kickback on the horizontal qubit.\n\n"
+        "Horizontal: H before CZ, H after CZ → |1>.\n"
+        "Vertical: X, detour around noise → |1>.\n"
+        "Both sinks want |1>."
+    ),
+    "hint": "Detour vertical gen around noise. X for |1>. H-CZ-H on horizontal.",
+    "pre_placed": {
+        (-1, 4): (GEN, RIGHT, None),
+        (5, -1): (GEN, DOWN, None),
+        (5, 1): (NOISE, DOWN, None),
+        (5, 4): (CZ, RIGHT, None),
+        (11, 4): (SINK, RIGHT, ONE),
+        (5, 9): (SINK, DOWN, ONE),
+    },
+    "locked": {(-1, 4), (5, -1), (5, 1), (5, 4), (11, 4), (5, 9)},
+    "available": [BELT, H, X],
+    "win_count": 5,
+    "camera": (5, 4),
+}
+
+
+# ---------------------------------------------------------------------------
 # Chapter definitions
 # ---------------------------------------------------------------------------
 
@@ -548,18 +1197,65 @@ CHAPTERS = [
         "color": (90, 220, 230),
         "levels": [CH6_L1, CH6_L2],
     },
+    {
+        "name": "Interference Patterns",
+        "subtitle": "Controlling randomness with interference",
+        "concept": _CH7_CONCEPT,
+        "color": (130, 200, 255),
+        "levels": [CH7_L1, CH7_L2, CH7_L3],
+    },
+    {
+        "name": "Quantum Circuits",
+        "subtitle": "Gate equivalences and entanglement chains",
+        "concept": _CH8_CONCEPT,
+        "color": (180, 255, 180),
+        "levels": [CH8_L1, CH8_L2],
+    },
+    {
+        "name": "Quantum Noise",
+        "subtitle": "Random errors and how to avoid them",
+        "concept": _CH9_CONCEPT,
+        "color": (200, 70, 70),
+        "levels": [CH9_L1, CH9_L2, CH9_L3],
+    },
+    {
+        "name": "Error Detection",
+        "subtitle": "Finding and filtering quantum errors",
+        "concept": _CH10_CONCEPT,
+        "color": (255, 180, 100),
+        "levels": [CH10_L1, CH10_L2],
+    },
+    {
+        "name": "Deutsch's Problem",
+        "subtitle": "The first quantum speedup",
+        "concept": _CH11_CONCEPT,
+        "color": (160, 100, 220),
+        "levels": [CH11_L1, CH11_L2, CH11_L3],
+    },
+    {
+        "name": "Quantum Cloning",
+        "subtitle": "Copying qubits and the no-cloning limit",
+        "concept": _CH12_CONCEPT,
+        "color": (100, 200, 140),
+        "levels": [CH12_L1, CH12_L2],
+    },
+    {
+        "name": "Grand Challenge",
+        "subtitle": "Combining every concept",
+        "concept": _CH13_CONCEPT,
+        "color": (220, 200, 100),
+        "levels": [CH13_L1, CH13_L2],
+    },
+    {
+        "name": "Quantum Mastery",
+        "subtitle": "The final exam",
+        "concept": _CH14_CONCEPT,
+        "color": (255, 255, 255),
+        "levels": [CH14_L1, CH14_L2],
+    },
 ]
 
-COMING_SOON = [
-    {"name": "Interference Patterns", "subtitle": "S, T, and phase gates"},
-    {"name": "Quantum Teleportation", "subtitle": "Sending state without sending qubits"},
-    {"name": "Deutsch-Jozsa", "subtitle": "The first quantum speedup"},
-    {"name": "Grover's Search", "subtitle": "Finding needles in haystacks"},
-    {"name": "Quantum Fourier Transform", "subtitle": "Frequency analysis with qubits"},
-    {"name": "Shor's Algorithm", "subtitle": "Breaking encryption with quantum"},
-    {"name": "Quantum Noise", "subtitle": "Decoherence and imperfections"},
-    {"name": "Error Correction", "subtitle": "Protecting quantum information"},
-]
+COMING_SOON = []
 
 # Flat list for backwards compatibility (completion tracking uses global indices)
 ALL_LEVELS = []

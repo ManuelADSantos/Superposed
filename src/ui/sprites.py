@@ -153,10 +153,16 @@ def get_qubit_sprite(state, size, disappearing=False, progress=1.0, entangled=Fa
     return _draw_qubit(state, size, disappearing, progress, entangled, phase_flipped)
 
 
+# ponytail: gates that always face RIGHT regardless of tile rotation
+_ORIENTATION_LOCKED = frozenset({"measurement", "output_sink"})
+
+
 @lru_cache(maxsize=512)
 def get_building_sprite(building_id, direction, size):
     if building_id == "empty":
         return None
+    if building_id in _ORIENTATION_LOCKED:
+        direction = Direction.RIGHT
     custom = _load_custom_png(building_id, direction, size)
     if custom is not None:
         return custom

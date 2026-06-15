@@ -136,6 +136,7 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
                         tile.direction = selected_rotation
                         tile.control_item = None
                         tile.process_timer = 0.0
+                        tile.measurements = []
                         if selected_building == OUTPUT_SINK:
                             tile.sink_total = 0
                             tile.sink_match = 0

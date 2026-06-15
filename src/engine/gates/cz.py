@@ -43,56 +43,6 @@ def _transform(control, target):
         # target=|0>: Z|0>=|0>, no effect on control either
 
 
-def _sprite(d, size):
-    import pygame
-    from ...ui.sprites import _surf, _panel, _dir_mark, _a
-    from ...core.config import WHITE, GOLD
-    from ...core.entities import DIR_VECTORS, ccw_dir, opposite_dir
-    COLOR = (80, 180, 255)
-    s = _surf(size)
-    b = pygame.Rect(4, 4, size - 8, size - 8)
-    _panel(s, b, (20, 55, 100), COLOR, 10)
-
-    # Cross-hairs
-    pygame.draw.line(s, _a(WHITE, 100),
-                     (b.centerx, b.top + 8), (b.centerx, b.bottom - 8), 2)
-    pygame.draw.line(s, _a(WHITE, 100),
-                     (b.left + 8, b.centery), (b.right - 8, b.centery), 2)
-
-    ctrl_offset = int(size * 0.18)
-    label_offset = int(size * 0.35)
-    font_size = max(8, int(size * 0.18))
-    lf = pygame.font.SysFont("consolas", font_size, bold=True)
-
-    # Control dot on CCW side
-    r_dot = max(4, int(size * 0.08))
-    cdx, cdy = DIR_VECTORS[ccw_dir(d)]
-    dot_x = b.centerx + cdx * ctrl_offset
-    dot_y = b.centery + cdy * ctrl_offset
-    pygame.draw.circle(s, GOLD, (dot_x, dot_y), r_dot)
-    c_lbl = lf.render("C", True, GOLD)
-    s.blit(c_lbl, c_lbl.get_rect(center=(
-        b.centerx + cdx * label_offset,
-        b.centery + cdy * label_offset,
-    )))
-
-    # Target side: "Z" label (phase flip symbol) instead of CNOT's ⊕
-    tdx, tdy = DIR_VECTORS[opposite_dir(d)]
-    tz_x = b.centerx + tdx * ctrl_offset
-    tz_y = b.centery + tdy * ctrl_offset
-    font_z = pygame.font.SysFont("consolas", max(10, int(size * 0.24)), bold=True)
-    z_lbl = font_z.render("Z", True, _a(COLOR, 230))
-    s.blit(z_lbl, z_lbl.get_rect(center=(tz_x, tz_y)))
-    t_lbl = lf.render("T", True, _a(WHITE, 180))
-    s.blit(t_lbl, t_lbl.get_rect(center=(
-        b.centerx + tdx * label_offset,
-        b.centery + tdy * label_offset,
-    )))
-
-    _dir_mark(s, d, b, COLOR)
-    return s
-
-
 register(GateDef(
     id="cz",
     name="CZ Gate",
@@ -100,6 +50,6 @@ register(GateDef(
     color=(80, 180, 255),
     category=Category.TWO_QUBIT,
     transform=_transform,
-    sprite_fn=_sprite,
+
     order=31,
 ))

@@ -36,29 +36,6 @@ def _transform(sx, sy, tile, item, eject_fn):
     eject_fn(sx, sy, sx + dx, sy + dy, item)
 
 
-def _sprite(d, size):
-    import pygame
-    from ...ui.sprites import _surf, _panel, _dir_mark, _arrow, _a
-    from ...core.config import WHITE
-    from ...core.entities import cw_dir
-    COLOR = (90, 220, 200)
-    TEAL = (70, 200, 190)
-    s = _surf(size)
-    b = pygame.Rect(4, 4, size - 8, size - 8)
-    _panel(s, b, (30, 85, 80), COLOR, 10)
-    _arrow(s, b.centerx, b.centery, d, _a((220, 80, 80), 200), int(size * 0.16), 2)
-    _arrow(s, b.centerx, b.centery, cw_dir(d), _a((100, 160, 255), 200), int(size * 0.16), 2)
-    dm = 8
-    diamond = [
-        (b.centerx, b.centery - dm), (b.centerx + dm, b.centery),
-        (b.centerx, b.centery + dm), (b.centerx - dm, b.centery),
-    ]
-    pygame.draw.polygon(s, _a(TEAL, 200), diamond)
-    pygame.draw.polygon(s, _a(WHITE, 150), diamond, 2)
-    _dir_mark(s, d, b, COLOR)
-    return s
-
-
 register(GateDef(
     id="splitter",
     name="Splitter",
@@ -66,6 +43,6 @@ register(GateDef(
     color=(90, 220, 200),
     category=Category.ROUTER,
     transform=_transform,
-    sprite_fn=_sprite,
+
     order=50,
 ))

@@ -67,28 +67,6 @@ def _overlay(surface, rect, tile):
         surface.blit(fs, rect.topleft)
 
 
-def _sprite(d, size):
-    import pygame
-    from ...ui.sprites import _surf, _panel, _dir_mark, _a
-    from ...core.config import WHITE, RED, BLUE
-    COLOR = (255, 214, 112)
-    s = _surf(size)
-    b = pygame.Rect(4, 4, size - 8, size - 8)
-    _panel(s, b, (90, 65, 20), COLOR, 10)
-    r = int(size * 0.2)
-    pygame.draw.circle(s, (255, 236, 180), b.center, r)
-    pygame.draw.circle(s, _a(WHITE, 140), b.center, r, 2)
-    pygame.draw.circle(s, (90, 65, 20), b.center, max(3, r // 2))
-    meter = pygame.Rect(0, 0, int(size * 0.54), int(size * 0.14))
-    meter.center = (b.centerx, b.bottom - 14)
-    pygame.draw.rect(s, (40, 30, 18), meter, border_radius=6)
-    pygame.draw.rect(s, _a(COLOR, 180), meter, 2, border_radius=6)
-    pygame.draw.line(s, RED, (meter.left + 6, meter.centery), (meter.centerx - 2, meter.centery), 3)
-    pygame.draw.line(s, BLUE, (meter.centerx + 2, meter.centery), (meter.right - 6, meter.centery), 3)
-    _dir_mark(s, d, b, (255, 225, 145))
-    return s
-
-
 register(GateDef(
     id="measurement",
     name="Measure",
@@ -96,7 +74,7 @@ register(GateDef(
     color=(255, 214, 112),
     category=Category.CONSUMER,
     transform=_transform,
-    sprite_fn=_sprite,
+
     overlay_fn=_overlay,
     order=40,
 ))

@@ -32,11 +32,6 @@ def _panel(surface, rect, base, border, radius=10):
     pygame.draw.rect(surface, border, rect, 2, border_radius=radius)
 
 
-def _shine(surface, size):
-    s = pygame.Surface((size, size), pygame.SRCALPHA)
-    pygame.draw.line(s, (255, 255, 255, 35), (8, 8), (size - 10, 10), 2)
-    surface.blit(s, (0, 0))
-
 
 def _dir_edge(rect, d):
     m = 10
@@ -56,21 +51,7 @@ def _dir_mark(surface, d, rect, color):
     surface.blit(g, (0, 0))
 
 
-def _arrow(surface, cx, cy, d, color, length=10, width=3):
-    from ..core.entities import DIR_VECTORS
-    dx, dy = DIR_VECTORS[d]
-    ex, ey = cx + dx * length, cy + dy * length
-    pygame.draw.line(surface, color, (cx, cy), (ex, ey), width)
-    perp_x, perp_y = -dy, dx
-    tip = 5
-    pygame.draw.polygon(surface, color, [
-        (ex, ey),
-        (ex - dx * tip + perp_x * tip * 0.5, ey - dy * tip + perp_y * tip * 0.5),
-        (ex - dx * tip - perp_x * tip * 0.5, ey - dy * tip - perp_y * tip * 0.5),
-    ])
 
-
-_SPRITE_DIR = os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'sprites')
 _GATES_SPRITE_DIR = os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'gates_sprites')
 _ROTATION_ANGLE = {
     Direction.RIGHT: 0, Direction.UP: 90,
@@ -79,9 +60,7 @@ _ROTATION_ANGLE = {
 
 
 def _load_custom_png(gate_id, direction, size):
-    path = os.path.join(_SPRITE_DIR, f'{gate_id}.png')
-    if not os.path.isfile(path):
-        path = os.path.join(_GATES_SPRITE_DIR, f'{gate_id}.png')
+    path = os.path.join(_GATES_SPRITE_DIR, f'{gate_id}.png')
     if not os.path.isfile(path):
         return None
     try:

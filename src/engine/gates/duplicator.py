@@ -37,24 +37,6 @@ def _transform(sx, sy, tile, item, eject_fn):
     eject_fn(sx, sy, sx + cdx, sy + cdy, copy)
 
 
-def _sprite(d, size):
-    import pygame
-    from ...ui.sprites import _surf, _panel, _dir_mark, _arrow, _a
-    from ...core.config import WHITE
-    from ...core.entities import cw_dir
-    COLOR = (100, 200, 140)
-    s = _surf(size)
-    b = pygame.Rect(4, 4, size - 8, size - 8)
-    _panel(s, b, (35, 80, 55), COLOR, 10)
-    _arrow(s, b.centerx, b.centery, d, _a(WHITE, 180), int(size * 0.16), 2)
-    _arrow(s, b.centerx, b.centery, cw_dir(d), _a(WHITE, 180), int(size * 0.16), 2)
-    font = pygame.font.SysFont("consolas", max(10, int(size * 0.22)), bold=True)
-    txt = font.render("DUP", True, WHITE)
-    s.blit(txt, txt.get_rect(center=(b.centerx, b.centery - 2)))
-    _dir_mark(s, d, b, COLOR)
-    return s
-
-
 register(GateDef(
     id="duplicator",
     name="Duplicator",
@@ -62,6 +44,6 @@ register(GateDef(
     color=(100, 200, 140),
     category=Category.ROUTER,
     transform=_transform,
-    sprite_fn=_sprite,
+
     order=55,
 ))

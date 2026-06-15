@@ -20,22 +20,6 @@ def _transform_balanced(item):
         item.phase_flipped = not item.phase_flipped
 
 
-def _sprite(d, size):
-    import pygame
-    from ...ui.sprites import _surf, _panel, _dir_mark, _a
-    from ...core.config import WHITE
-    COLOR = (160, 100, 220)
-    s = _surf(size)
-    b = pygame.Rect(4, 4, size - 8, size - 8)
-    _panel(s, b, (60, 35, 90), COLOR, 10)
-    font = pygame.font.SysFont("consolas", max(14, int(size * 0.4)), bold=True)
-    txt = font.render("?", True, WHITE)
-    s.blit(txt, txt.get_rect(center=b.center))
-    pygame.draw.rect(s, _a(COLOR, 120), b.inflate(-12, -12), 2, border_radius=6)
-    _dir_mark(s, d, b, COLOR)
-    return s
-
-
 register(GateDef(
     id="oracle_constant",
     name="Oracle",
@@ -43,7 +27,6 @@ register(GateDef(
     color=(160, 100, 220),
     category=Category.SINGLE,
     transform=_transform_constant,
-    sprite_fn=_sprite,
     order=70,
 ))
 
@@ -54,6 +37,5 @@ register(GateDef(
     color=(160, 100, 220),
     category=Category.SINGLE,
     transform=_transform_balanced,
-    sprite_fn=_sprite,
     order=71,
 ))

@@ -227,9 +227,19 @@
     <button class="tool-btn" onclick="resizeCanvas()">Apply</button>
   </div>
 
-  <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
-    <input type="checkbox" id="gridToggle" checked>
-    <label for="gridToggle" style="font-size:12px;color:#999;cursor:pointer">Show grid</label>
+  <div style="display:flex;flex-direction:column;gap:4px;margin-top:2px">
+    <div style="display:flex;align-items:center;gap:6px">
+      <input type="checkbox" id="gridToggle" checked>
+      <label for="gridToggle" style="font-size:12px;color:#999;cursor:pointer">Show grid</label>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <input type="checkbox" id="mirrorH">
+      <label for="mirrorH" style="font-size:12px;color:#999;cursor:pointer">Mirror ↔ vertical</label>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <input type="checkbox" id="mirrorV">
+      <label for="mirrorV" style="font-size:12px;color:#999;cursor:pointer">Mirror ↕ horizontal</label>
+    </div>
   </div>
 
   <h2>HISTORY</h2>
@@ -415,16 +425,23 @@ function colorsEqual(a, b) {
 function paintBrush(cx, cy) {
   const s = brushSize;
   const half = Math.floor(s / 2);
+  const rgba = currentTool === 'eraser' ? [0,0,0,0] : currentColor;
+  const mh = document.getElementById('mirrorH').checked;
+  const mv = document.getElementById('mirrorV').checked;
   for (let dy = 0; dy < s; dy++) {
     for (let dx = 0; dx < s; dx++) {
-      setPixel(cx - half + dx, cy - half + dy,
-        currentTool === 'eraser' ? [0,0,0,0] : currentColor);
+      const px = cx - half + dx, py = cy - half + dy;
+      setPixel(px, py, rgba);
+      if (mh) setPixel(W - 1 - px, py, rgba);
+      if (mv) setPixel(px, H - 1 - py, rgba);
+      if (mh && mv) setPixel(W - 1 - px, H - 1 - py, rgba);
     }
   }
 }
 
 function floodFill(sx, sy, target, replace) {
   if (colorsEqual(target, replace)) return;
+  const filled = [];
   const stack = [[sx, sy]];
   const visited = new Set();
   while (stack.length) {
@@ -435,7 +452,15 @@ function floodFill(sx, sy, target, replace) {
     visited.add(key);
     if (!colorsEqual(getPixel(x, y), target)) continue;
     setPixel(x, y, replace);
+    filled.push([x, y]);
     stack.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);
+  }
+  const mh = document.getElementById('mirrorH').checked;
+  const mv = document.getElementById('mirrorV').checked;
+  for (const [x, y] of filled) {
+    if (mh) setPixel(W - 1 - x, y, replace);
+    if (mv) setPixel(x, H - 1 - y, replace);
+    if (mh && mv) setPixel(W - 1 - x, H - 1 - y, replace);
   }
 }
 
@@ -511,9 +536,15 @@ function render() {
       ctx.beginPath(); ctx.moveTo(0, y*scale); ctx.lineTo(W*scale, y*scale); ctx.stroke();
     }
     // Center crosshair
-    ctx.strokeStyle = 'rgba(170,90,255,0.15)';
+    const mh = document.getElementById('mirrorH').checked;
+    const mv = document.getElementById('mirrorV').checked;
+    ctx.strokeStyle = mh ? 'rgba(90,220,230,0.4)' : 'rgba(170,90,255,0.15)';
+    ctx.lineWidth = mh ? 1.5 : 0.5;
     ctx.beginPath(); ctx.moveTo(W/2*scale, 0); ctx.lineTo(W/2*scale, H*scale); ctx.stroke();
+    ctx.strokeStyle = mv ? 'rgba(90,220,230,0.4)' : 'rgba(170,90,255,0.15)';
+    ctx.lineWidth = mv ? 1.5 : 0.5;
     ctx.beginPath(); ctx.moveTo(0, H/2*scale); ctx.lineTo(W*scale, H/2*scale); ctx.stroke();
+    ctx.lineWidth = 0.5;
   }
 }
 
@@ -768,7 +799,7 @@ document.getElementById('fileInput').addEventListener('change', e => {
     const cx = c.getContext('2d');
     cx.imageSmoothingEnabled = false;
     cx.drawImage(img, 0, 0, W, H);
-    const data = cx.getContext('2d').getImageData(0, 0, W, H).data;
+    const data = cx.getImageData(0, 0, W, H).data;
     pixels = new Uint8ClampedArray(data);
     pushHistory(); render(); updatePreviews();
   };

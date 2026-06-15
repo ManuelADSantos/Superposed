@@ -35,26 +35,27 @@ def _transform(item, tile):
 def _overlay(surface, rect, tile):
     """Draw histogram and timeline on the measurement tile."""
     import pygame
-    from ...core.config import WHITE, RED, BLUE
     from ...core.entities import QubitState, state_color
 
     if not tile.measurements:
         return
-    chart = rect.inflate(-14, -22)
-    chart.height = max(14, chart.height // 2)
-    chart.top = rect.top + 6
+    # ponytail: colors matched to pixel-art sprite, coords proportional to tile size
+    SRED, SBLU = (220, 80, 80), (100, 160, 255)
+    s = rect.width / 64
+    chart = pygame.Rect(
+        rect.left + int(15 * s), rect.top + int(14 * s),
+        int(34 * s), int(30 * s))
     zero_n = sum(1 for o in tile.measurements if o == QubitState.ZERO)
     one_n = sum(1 for o in tile.measurements if o == QubitState.ONE)
     total = max(1, zero_n + one_n)
-    gap = 4
+    gap = max(2, int(3 * s))
     bw = max(3, (chart.width - gap) // 2)
-    mh = chart.height - 4
+    mh = chart.height - 2
     rh = max(3, int(mh * zero_n / total))
     bh = max(3, int(mh * one_n / total))
-    pygame.draw.rect(surface, RED, pygame.Rect(chart.left, chart.bottom - rh, bw, rh))
-    pygame.draw.rect(surface, BLUE, pygame.Rect(chart.left + bw + gap, chart.bottom - bh, bw, bh))
-    pygame.draw.rect(surface, WHITE, chart, 1)
-    ty = chart.bottom + 2
+    pygame.draw.rect(surface, SRED, pygame.Rect(chart.left, chart.bottom - rh, bw, rh))
+    pygame.draw.rect(surface, SBLU, pygame.Rect(chart.left + bw + gap, chart.bottom - bh, bw, bh))
+    ty = rect.top + int(49 * s)
     tw = max(2, chart.width // 20)
     for i, o in enumerate(tile.measurements[-20:]):
         tr = pygame.Rect(chart.left + i * tw, ty, tw - 1, 3)

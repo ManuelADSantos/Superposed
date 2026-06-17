@@ -24,16 +24,11 @@ CNOT = "cnot"
 CZ = "cz"
 SWAP = "swap"
 TOFFOLI = "toffoli"
-QFT = "qft"
-GROVER = "grover"
-TELEPORT = "teleport"
-SHOR = "shor"
 MEAS = "measurement"
 SPLIT = "splitter"
 NOISE = "noise"
 ORA_C = "oracle_constant"
 ORA_B = "oracle_balanced"
-DUP = "duplicator"
 
 
 # ---------------------------------------------------------------------------
@@ -950,64 +945,61 @@ CH11_L3 = {
 # ---------------------------------------------------------------------------
 
 _CH12_CONCEPT = (
-    "The No-Cloning Theorem says you cannot perfectly copy an\n"
-    "unknown quantum state. But classical states (|0> and |1>)\n"
-    "CAN be copied — only superposition is forbidden.\n\n"
-    "The Duplicator gate makes a copy of any qubit:\n"
-    "  Original exits straight (gate direction)\n"
-    "  Copy exits clockwise (perpendicular)\n\n"
-    "If the input is in superposition, the Duplicator collapses\n"
-    "it first — you get two identical classical copies, not two\n"
-    "entangled qubits. This is the no-cloning limit in action."
+    "The No-Cloning Theorem says there is no universal machine\n"
+    "that copies an arbitrary unknown quantum state.\n\n"
+    "Known basis states are different. If you know the input is\n"
+    "either |0> or |1>, CNOT can copy it onto a fresh |0> target:\n"
+    "  |0>|0> -> |0>|0>\n"
+    "  |1>|0> -> |1>|1>\n\n"
+    "That does not clone superposition. With alpha|0> + beta|1>,\n"
+    "CNOT creates entanglement, not two independent copies."
 )
 
 CH12_L1 = {
-    "name": "The Duplicator",
-    "description": "One qubit in, two copies out.",
+    "name": "Classical Copy",
+    "description": "Use CNOT to copy a known |1> onto a fresh |0>.",
     "briefing": (
-        "The Duplicator sends a copy of each qubit in\n"
-        "two directions:\n"
-        "  Straight → original continues forward\n"
-        "  Clockwise → copy goes perpendicular\n\n"
-        "Both sinks want |0>. The generator makes |0>.\n"
-        "Connect the Duplicator's outputs to both sinks."
+        "CNOT can copy classical basis states.\n\n"
+        "The top lane is flipped to a known |1> by the locked X.\n"
+        "The bottom lane stays a fresh |0> target.\n\n"
+        "Place CNOT with the top lane as control and the bottom\n"
+        "lane as target. Both exits should become |1>."
     ),
-    "hint": "Belt from straight exit to right sink, CW exit to bottom sink.",
+    "hint": "Place CNOT on the bottom lane under the top control lane.",
     "pre_placed": {
-        (0, 3): (GEN, RIGHT, None),
-        (4, 3): (DUP, RIGHT, None),
-        (8, 3): (SINK, RIGHT, ZERO),
-        (4, 7): (SINK, DOWN, ZERO),
+        (-1, 2): (GEN, RIGHT, None),
+        (1, 2): (X, RIGHT, None),
+        (-1, 3): (GEN, RIGHT, None),
+        (9, 2): (SINK, RIGHT, ONE),
+        (9, 3): (SINK, RIGHT, ONE),
     },
-    "locked": {(0, 3), (4, 3), (8, 3), (4, 7)},
-    "available": [BELT],
+    "locked": {(-1, 2), (1, 2), (-1, 3), (9, 2), (9, 3)},
+    "available": [BELT, CNOT],
     "win_count": 5,
-    "camera": (4, 4),
+    "camera": (4, 3),
 }
 
 CH12_L2 = {
-    "name": "Redundant Channel",
-    "description": "Duplicate before noise — the backup always gets through.",
+    "name": "Redundant Classical Channel",
+    "description": "Copy a known bit with CNOT before the original hits noise.",
     "briefing": (
-        "The Duplicator creates a backup copy before the\n"
-        "noisy channel.\n\n"
-        "Original path: through the locked Noise gate.\n"
-        "  Use a Splitter to filter: |0> to the sink,\n"
-        "  |1> (corrupted) gets discarded.\n\n"
-        "Copy path: clean detour straight to a second sink.\n\n"
-        "Both sinks want |0>. The backup guarantees output\n"
-        "even when noise strikes."
+        "Use CNOT to make a backup of a known classical |1>.\n\n"
+        "Top lane: original |1>, then locked Noise.\n"
+        "Bottom lane: fresh |0> target, kept clean.\n\n"
+        "CNOT copies the known basis state before the noisy part.\n"
+        "The clean backup sink wants |1>."
     ),
-    "hint": "Splitter after noise filters corrupted qubits. Copy path goes clean.",
+    "hint": "CNOT before Noise. Top is control, bottom is target.",
     "pre_placed": {
-        (0, 3): (GEN, RIGHT, None),
-        (3, 3): (DUP, RIGHT, None),
-        (6, 3): (NOISE, RIGHT, None),
-        (12, 3): (SINK, RIGHT, ZERO),
-        (3, 7): (SINK, DOWN, ZERO),
+        (-1, 3): (GEN, RIGHT, None),
+        (1, 3): (X, RIGHT, None),
+        (7, 3): (NOISE, RIGHT, None),
+        (-1, 4): (GEN, RIGHT, None),
+        (13, 3): (SINK, RIGHT, None),
+        (13, 4): (SINK, RIGHT, ONE),
     },
-    "locked": {(0, 3), (3, 3), (6, 3), (12, 3), (3, 7)},
-    "available": [BELT, SPLIT],
+    "locked": {(-1, 3), (1, 3), (7, 3), (-1, 4), (13, 3), (13, 4)},
+    "available": [BELT, CNOT],
     "win_count": 5,
     "camera": (6, 4),
 }
@@ -1171,29 +1163,32 @@ _CH15_CONCEPT = (
     "answer. Teleportation moves an unknown state using shared\n"
     "entanglement plus correction. Shor uses period finding, with\n"
     "QFT as the readout step.\n\n"
-    "These are toy factory blocks, but the shape is the real idea."
+    "No new magic gates here: these levels ask you to assemble\n"
+    "the algorithm shapes from the gates you already know."
 )
 
 CH15_L1 = {
-    "name": "QFT Block",
-    "description": "Run two |0> streams through a QFT block.",
+    "name": "QFT Ingredients",
+    "description": "Build the Fourier-transform shape with H, CZ, and SWAP.",
     "briefing": (
-        "The QFT block is a two-qubit Fourier transform.\n\n"
-        "With two |0> inputs it creates two superposed outputs.\n"
-        "Connect both lanes through the locked QFT block."
+        "QFT is built from smaller pieces:\n"
+        "Hadamards create frequency-like superposition,\n"
+        "controlled phase gates connect the lanes,\n"
+        "and SWAP reverses output order.\n\n"
+        "Build the two-lane QFT shape with H, CZ, and SWAP.\n"
+        "Both outputs should stay superposed."
     ),
-    "hint": "Both QFT outputs should reach superposition sinks.",
+    "hint": "Use H on both lanes; CZ and SWAP are the QFT-shaped middle.",
     "pre_placed": {
         (-1, 2): (GEN, RIGHT, None),
         (-1, 3): (GEN, RIGHT, None),
-        (4, 3): (QFT, RIGHT, None),
-        (9, 2): (SINK, RIGHT, SUP),
-        (9, 3): (SINK, RIGHT, SUP),
+        (12, 2): (SINK, RIGHT, SUP),
+        (12, 3): (SINK, RIGHT, SUP),
     },
-    "locked": {(-1, 2), (-1, 3), (4, 3), (9, 2), (9, 3)},
-    "available": [BELT],
+    "locked": {(-1, 2), (-1, 3), (12, 2), (12, 3)},
+    "available": [BELT, H, CZ, SWAP],
     "win_count": 5,
-    "camera": (4, 3),
+    "camera": (5, 3),
 }
 
 CH15_L2 = {
@@ -1201,72 +1196,74 @@ CH15_L2 = {
     "description": "Prepare |++>, then amplify the marked |11> answer.",
     "briefing": (
         "Grover search starts with a uniform superposition.\n\n"
-        "Put both input lanes through H, then feed them into\n"
-        "the locked Grover block. This toy block marks |11>,\n"
-        "so both sinks want |1>."
+        "Build it from simple gates:\n"
+        "  1. H on both lanes to make |++>\n"
+        "  2. CZ as the oracle marking |11>\n"
+        "  3. H, X, CZ, X, H as the diffusion step\n\n"
+        "Both sinks want the amplified |1> result."
     ),
-    "hint": "H on both lanes before Grover -> |11>.",
+    "hint": "Recipe: H, CZ, H-X-CZ-X-H across both lanes.",
     "pre_placed": {
         (-1, 2): (GEN, RIGHT, None),
         (-1, 3): (GEN, RIGHT, None),
-        (5, 3): (GROVER, RIGHT, None),
-        (10, 2): (SINK, RIGHT, ONE),
-        (10, 3): (SINK, RIGHT, ONE),
+        (18, 2): (SINK, RIGHT, ONE),
+        (18, 3): (SINK, RIGHT, ONE),
     },
-    "locked": {(-1, 2), (-1, 3), (5, 3), (10, 2), (10, 3)},
-    "available": [BELT, H],
+    "locked": {(-1, 2), (-1, 3), (18, 2), (18, 3)},
+    "available": [BELT, H, X, CZ],
     "win_count": 5,
-    "camera": (5, 3),
+    "camera": (8, 3),
 }
 
 CH15_L3 = {
-    "name": "Teleport",
-    "description": "Move the top lane's state to the bottom lane.",
+    "name": "Teleport Blueprint",
+    "description": "Build the Bell-pair and Bell-measurement half of teleportation.",
     "briefing": (
-        "The Teleport block spans three lanes.\n\n"
-        "Top lane: source state.\n"
-        "Middle lane: helper.\n"
-        "Bottom lane: target destination.\n\n"
-        "Make the top source superposed with H. The block moves\n"
-        "that state to the bottom output."
+        "Teleportation is not a single gate.\n"
+        "It is a circuit: create an entangled Bell pair,\n"
+        "mix the source with one half using CNOT and H,\n"
+        "then measure the source lanes.\n\n"
+        "This level builds that Bell-measurement half.\n"
+        "Classical correction wiring comes later."
     ),
-    "hint": "H on the top source lane. Bottom sink wants superposition.",
+    "hint": "Use H and CNOTs, then route the top two lanes into measurements.",
+    "win_type": "measure",
     "pre_placed": {
         (-1, 1): (GEN, RIGHT, None),
         (-1, 2): (GEN, RIGHT, None),
         (-1, 3): (GEN, RIGHT, None),
-        (5, 3): (TELEPORT, RIGHT, None),
-        (10, 1): (SINK, RIGHT, ZERO),
-        (10, 2): (SINK, RIGHT, ZERO),
-        (10, 3): (SINK, RIGHT, SUP),
+        (14, 1): (MEAS, RIGHT, None),
+        (14, 2): (MEAS, RIGHT, None),
+        (14, 3): (SINK, RIGHT, None),
     },
-    "locked": {(-1, 1), (-1, 2), (-1, 3), (5, 3), (10, 1), (10, 2), (10, 3)},
-    "available": [BELT, H],
-    "win_count": 5,
-    "camera": (5, 2),
+    "locked": {(-1, 1), (-1, 2), (-1, 3), (14, 1), (14, 2), (14, 3)},
+    "available": [BELT, H, CNOT],
+    "win_count": 10,
+    "camera": (6, 2),
 }
 
 CH15_L4 = {
-    "name": "Toy Shor",
-    "description": "Use the period-readout block behind Shor's algorithm.",
+    "name": "Shor Readout",
+    "description": "Build a tiny period-finding readout from kickback and QFT ingredients.",
     "briefing": (
-        "Full Shor factors numbers by finding periods.\n"
-        "This toy block gives you the period-readout step:\n"
-        "a compact QFT-style transform.\n\n"
-        "Connect both lanes and watch the phase arrows."
+        "Shor's algorithm is too large to be one factory tile.\n"
+        "The important game-sized idea is period readout:\n"
+        "prepare superposition, use phase kickback, then measure.\n\n"
+        "Build a small H -> CZ -> H-style readout circuit\n"
+        "and send both lanes into measurement."
     ),
-    "hint": "The toy Shor block sends both |0> inputs to superposition.",
+    "hint": "H for superposition, CZ for kickback, H again before measurement.",
+    "win_type": "measure",
     "pre_placed": {
         (-1, 2): (GEN, RIGHT, None),
         (-1, 3): (GEN, RIGHT, None),
-        (4, 3): (SHOR, RIGHT, None),
-        (9, 2): (SINK, RIGHT, SUP),
-        (9, 3): (SINK, RIGHT, SUP),
+        (14, 2): (MEAS, RIGHT, None),
+        (14, 3): (MEAS, RIGHT, None),
     },
-    "locked": {(-1, 2), (-1, 3), (4, 3), (9, 2), (9, 3)},
-    "available": [BELT],
-    "win_count": 5,
-    "camera": (4, 3),
+    "locked": {(-1, 2), (-1, 3), (14, 2), (14, 3)},
+    "available": [BELT, H, CZ],
+    "win_count": 10,
+    "camera": (6, 3),
 }
 
 
@@ -1354,7 +1351,7 @@ CHAPTERS = [
     },
     {
         "name": "Quantum Cloning",
-        "subtitle": "Copying qubits and the no-cloning limit",
+        "subtitle": "Classical copying and the no-cloning limit",
         "concept": _CH12_CONCEPT,
         "color": (100, 200, 140),
         "levels": [CH12_L1, CH12_L2],

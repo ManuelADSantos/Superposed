@@ -23,10 +23,6 @@ from src.engine.gates.x_gate import _transform as x_gate
 from src.engine.gates.z_gate import _transform as z_gate
 from src.engine.gates.cnot import _transform as cnot
 from src.engine.gates.toffoli import _transform as toffoli
-from src.engine.gates.qft import _transform as qft
-from src.engine.gates.grover import _transform as grover
-from src.engine.gates.shor import _transform as shor
-from src.engine.gates.teleport import _transform as teleport
 from src.engine.gates.measurement import _transform as measure
 from src.engine.gates.splitter import _transform as splitter
 
@@ -274,45 +270,6 @@ class TestToffoli(unittest.TestCase):
         self.assertIsNone(c2.entangle_group)
 
 
-class TestAlgorithmBlocks(unittest.TestCase):
-
-    def setUp(self):
-        reset_world()
-
-    def test_qft_preserves_quarter_turn_phase(self):
-        c = _qubit(QubitState.ZERO)
-        t = _qubit(QubitState.ONE)
-        qft(c, t)
-        self.assertEqual(c.state, QubitState.SUPERPOSITION)
-        self.assertEqual(t.state, QubitState.SUPERPOSITION)
-        self.assertAlmostEqual(abs(t.phase_angle), math.pi / 2)
-
-    def test_grover_amplifies_marked_state(self):
-        c = _qubit(QubitState.SUPERPOSITION)
-        t = _qubit(QubitState.SUPERPOSITION)
-        grover(c, t)
-        self.assertEqual(c.state, QubitState.ONE)
-        self.assertEqual(t.state, QubitState.ONE)
-
-    def test_toy_shor_uses_qft_readout(self):
-        c = _qubit(QubitState.ZERO)
-        t = _qubit(QubitState.ZERO)
-        shor(c, t)
-        self.assertEqual(c.state, QubitState.SUPERPOSITION)
-        self.assertEqual(t.state, QubitState.SUPERPOSITION)
-
-    def test_teleport_moves_source_state_to_target(self):
-        helper = _qubit(QubitState.ZERO)
-        source = _qubit(QubitState.SUPERPOSITION)
-        source.beta *= 1j
-        target = _qubit(QubitState.ZERO)
-        teleport(helper, source, target)
-        self.assertEqual(target.state, QubitState.SUPERPOSITION)
-        self.assertAlmostEqual(target.phase_angle, math.pi / 2)
-        self.assertEqual(source.state, QubitState.ZERO)
-        self.assertEqual(helper.state, QubitState.ZERO)
-
-
 # Measurement
 
 class TestMeasurement(unittest.TestCase):
@@ -556,6 +513,33 @@ class TestProgressMeta(unittest.TestCase):
             menu.completed_levels.update(old)
 
 
+class TestAlgorithmLevels(unittest.TestCase):
+
+    def test_algorithms_are_levels_not_gates(self):
+        from src.content.levels import ALL_LEVELS
+        from src.engine.gate_registry import get_gate
+
+        algorithm_ids = {"qft", "grover", "teleport", "shor"}
+        self.assertTrue(all(get_gate(gid) is None for gid in algorithm_ids))
+        for level in ALL_LEVELS:
+            ids = set(level.get("available", []))
+            ids.update(data[0] for data in level.get("pre_placed", {}).values())
+            self.assertFalse(ids & algorithm_ids)
+
+
+class TestRemovedGates(unittest.TestCase):
+
+    def test_duplicator_is_removed(self):
+        from src.content.levels import ALL_LEVELS
+        from src.engine.gate_registry import get_gate
+
+        self.assertIsNone(get_gate("duplicator"))
+        for level in ALL_LEVELS:
+            ids = set(level.get("available", []))
+            ids.update(data[0] for data in level.get("pre_placed", {}).values())
+            self.assertNotIn("duplicator", ids)
+
+
 class TestCircuitExport(unittest.TestCase):
 
     def _two_cell_script(self, building):
@@ -617,11 +601,6 @@ class TestCircuitExport(unittest.TestCase):
         script = self._three_cell_script()
         self.assertIn("qc.ccx(1, 0, 2)", script)
         self.assertNotIn("WARNING", script)
-
-    def test_unknown_multi_gate_export_warns_instead_of_cnot(self):
-        script = self._two_cell_script("qft")
-        self.assertIn("WARNING: qft", script)
-        self.assertNotIn("qc.cx", script)
 
 
 if __name__ == "__main__":

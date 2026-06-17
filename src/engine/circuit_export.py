@@ -1,8 +1,4 @@
-"""Export the current grid layout as a Qiskit QuantumCircuit Python script.
-
-Traces qubit paths from generators through gates, matches CNOT pairs,
-and emits a .py script that constructs the equivalent QuantumCircuit.
-"""
+"""Export the current grid layout as a Qiskit QuantumCircuit Python script."""
 
 from __future__ import annotations
 
@@ -10,7 +6,7 @@ import os
 from dataclasses import dataclass
 from datetime import datetime
 
-from ..core.entities import Direction, DIR_VECTORS, opposite_dir, cw_dir, ccw_dir
+from ..core.entities import Direction, DIR_VECTORS
 from ..core import world as _world_module
 from .gate_registry import get_gate, Category, BELT, GENERATOR, OUTPUT_SINK, EMPTY
 
@@ -28,8 +24,13 @@ _SINGLE_MAP = {
     "x_gate":    "x",
     "y_gate":    "y",
     "z_gate":    "z",
-    "cz":        "cz",
-    "swap":      "swap",
+}
+
+_TWO_QUBIT_MAP = {
+    "cnot": "cx",
+    "cz": "cz",
+    "swap": "swap",
+    "toffoli": "ccx",
 }
 
 
@@ -88,23 +89,19 @@ def _trace_path(start_x: int, start_y: int, start_dir: Direction,
             break
 
         if gate and gate.category == Category.TWO_QUBIT:
-            arrival = opposite_dir(direction)
-            target_input = opposite_dir(tile.direction)
-            control_input = ccw_dir(tile.direction)
-
-            if arrival == target_input:
-                role = "target"
-            elif arrival == control_input:
-                role = "control"
-            else:
+            # Multi-qubit gate roles share the primary tile position so
+            # _build_pair_map matches the controls and target.
+            if not tile.peer:
                 break
-
-            path.append(PathStep(nx, ny, bid, role=role))
-
-            if role == "target":
-                direction = tile.direction
-            else:
-                direction = cw_dir(tile.direction)
+            px, py = tile.peer if tile.is_ctrl else (nx, ny)
+            role_num = getattr(tile, "role", 1)
+            if tile.is_ctrl and role_num == 1:
+                role_num = 2
+            role = "target" if role_num == 1 else f"control{role_num - 1}"
+            if gate.qubits == 2 and role != "target":
+                role = "control"
+            path.append(PathStep(px, py, bid, role=role))
+            direction = tile.direction
             x, y = nx, ny
             continue
 
@@ -113,16 +110,16 @@ def _trace_path(start_x: int, start_y: int, start_dir: Direction,
     return path
 
 
-def _build_cnot_map(all_paths: list[list[PathStep]]
+def _build_pair_map(all_paths: list[list[PathStep]]
                     ) -> dict[tuple[int, int], dict[str, int]]:
-    cnot_map: dict[tuple[int, int], dict[str, int]] = {}
+    pair_map: dict[tuple[int, int], dict[str, int]] = {}
     for qi, path in enumerate(all_paths):
         for step in path:
             if step.role is not None:
                 pos = (step.x, step.y)
-                cnot_map.setdefault(pos, {})
-                cnot_map[pos][step.role] = qi
-    return cnot_map
+                pair_map.setdefault(pos, {})
+                pair_map[pos][step.role] = qi
+    return pair_map
 
 
 def generate_qiskit_script(grid: dict | None = None) -> str:
@@ -139,7 +136,7 @@ def generate_qiskit_script(grid: dict | None = None) -> str:
     all_paths = [_trace_path(gx, gy, gdir, grid)
                  for gx, gy, gdir in generators]
 
-    cnot_map = _build_cnot_map(all_paths)
+    pair_map = _build_pair_map(all_paths)
 
     has_measure = any(
         step.building in ("measurement", "splitter")
@@ -152,7 +149,7 @@ def generate_qiskit_script(grid: dict | None = None) -> str:
     classical_idx = 0
 
     ops: list[str] = []
-    emitted_cnots: set[tuple[int, int]] = set()
+    emitted_pairs: set[tuple[int, int]] = set()
     warnings: list[str] = []
 
     for qi, path in enumerate(all_paths):
@@ -164,25 +161,38 @@ def generate_qiskit_script(grid: dict | None = None) -> str:
                    f"({generators[qi][0]}, {generators[qi][1]})")
 
         for step in path:
-            if step.building in _SINGLE_MAP:
+            if step.role is not None:
+                pos = (step.x, step.y)
+                if pos not in emitted_pairs:
+                    pair = pair_map.get(pos, {})
+                    tgt = pair.get("target")
+                    method = _TWO_QUBIT_MAP.get(step.building, "cx")
+                    if method == "ccx":
+                        ctrl1 = pair.get("control1")
+                        ctrl2 = pair.get("control2")
+                        if ctrl1 is not None and ctrl2 is not None and tgt is not None:
+                            ops.append(f"qc.ccx({ctrl1}, {ctrl2}, {tgt})")
+                            emitted_pairs.add(pos)
+                        else:
+                            warnings.append(
+                                f"# WARNING: {step.building} at ({pos[0]},{pos[1]}) "
+                                "missing input — skipped"
+                            )
+                    else:
+                        ctrl = pair.get("control")
+                        if ctrl is not None and tgt is not None:
+                            ops.append(f"qc.{method}({ctrl}, {tgt})")
+                            emitted_pairs.add(pos)
+                        else:
+                            missing = "target" if tgt is None else "control"
+                            warnings.append(
+                                f"# WARNING: {step.building} at ({pos[0]},{pos[1]}) "
+                                f"missing {missing} input — skipped"
+                            )
+
+            elif step.building in _SINGLE_MAP:
                 method = _SINGLE_MAP[step.building]
                 ops.append(f"qc.{method}({qi})")
-
-            elif step.role is not None:
-                pos = (step.x, step.y)
-                if pos not in emitted_cnots:
-                    pair = cnot_map.get(pos, {})
-                    ctrl = pair.get("control")
-                    tgt = pair.get("target")
-                    if ctrl is not None and tgt is not None:
-                        ops.append(f"qc.cx({ctrl}, {tgt})")
-                        emitted_cnots.add(pos)
-                    else:
-                        missing = "target" if tgt is None else "control"
-                        warnings.append(
-                            f"# WARNING: CNOT at ({pos[0]},{pos[1]}) "
-                            f"missing {missing} input — skipped"
-                        )
 
             elif step.building in ("measurement", "splitter"):
                 ops.append(f"qc.measure({qi}, {classical_idx})")

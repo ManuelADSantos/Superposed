@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import unittest
 import random
+import os
 
 import pygame  # noqa: E402 — needed by sprite functions at registration time
 
@@ -20,13 +21,15 @@ from src.engine.gates.hadamard import _transform as hadamard
 from src.engine.gates.x_gate import _transform as x_gate
 from src.engine.gates.z_gate import _transform as z_gate
 from src.engine.gates.cnot import _transform as cnot
+from src.engine.gates.toffoli import _transform as toffoli
 from src.engine.gates.measurement import _transform as measure
 from src.engine.gates.splitter import _transform as splitter
 
 
 def _qubit(state=QubitState.ZERO, phase=False):
     q = QubitItem(state)
-    q.phase_flipped = phase
+    if phase:
+        q.beta = -q.beta
     return q
 
 
@@ -199,6 +202,47 @@ class TestCNOT(unittest.TestCase):
         self.assertEqual(len(partners), 1)
         self.assertEqual(partners[0].uid, t.uid)
 
+    def test_entangled_pair_can_merge_with_third_qubit(self):
+        q1 = _qubit(QubitState.SUPERPOSITION)
+        q2 = _qubit(QubitState.ZERO)
+        q3 = _qubit(QubitState.ZERO)
+        cnot(q1, q2)
+        cnot(q2, q3)
+        self.assertEqual(q1.entangle_group, q2.entangle_group)
+        self.assertEqual(q1.entangle_group, q3.entangle_group)
+        self.assertEqual(q3.state, QubitState.SUPERPOSITION)
+        self.assertEqual({p.uid for p in get_entangled_partners(q1)}, {q2.uid, q3.uid})
+
+
+class TestToffoli(unittest.TestCase):
+
+    def setUp(self):
+        reset_world()
+
+    def test_two_controls_flip_target(self):
+        c1 = _qubit(QubitState.ONE)
+        c2 = _qubit(QubitState.ONE)
+        t = _qubit(QubitState.ZERO)
+        toffoli(c1, c2, t)
+        self.assertEqual(t.state, QubitState.ONE)
+        self.assertIsNone(t.entangle_group)
+
+    def test_one_control_does_not_flip(self):
+        c1 = _qubit(QubitState.ONE)
+        c2 = _qubit(QubitState.ZERO)
+        t = _qubit(QubitState.ZERO)
+        toffoli(c1, c2, t)
+        self.assertEqual(t.state, QubitState.ZERO)
+
+    def test_superposed_control_entangles_target(self):
+        c1 = _qubit(QubitState.SUPERPOSITION)
+        c2 = _qubit(QubitState.ONE)
+        t = _qubit(QubitState.ZERO)
+        toffoli(c1, c2, t)
+        self.assertEqual(t.state, QubitState.SUPERPOSITION)
+        self.assertEqual(c1.entangle_group, t.entangle_group)
+        self.assertIsNone(c2.entangle_group)
+
 
 # Measurement
 
@@ -263,6 +307,14 @@ class TestMeasurement(unittest.TestCase):
         tile = _tile()
         measure(q, tile)
         self.assertAlmostEqual(tile.measure_flash, 0.35)
+
+    def test_sink_counts_superposition_without_measuring(self):
+        from src.engine.simulation import _collect_sink
+        q = _qubit(QubitState.SUPERPOSITION)
+        tile = _tile(sink_target=QubitState.SUPERPOSITION)
+        _collect_sink(tile, q)
+        self.assertEqual(tile.sink_total, 1)
+        self.assertEqual(tile.sink_match, 1)
 
 
 # Splitter
@@ -365,6 +417,97 @@ class TestSafeTransform(unittest.TestCase):
         _safe_transform(gate, q)
         # Qubit should be unmodified
         self.assertEqual(q.state, QubitState.ZERO)
+
+
+class TestInputHandler(unittest.TestCase):
+
+    def test_right_drag_deletes_tiles(self):
+        from src.core import config
+        from src.core.world import get_tile
+        from src.engine.gate_registry import BELT, EMPTY
+        from src.ui.input_handler import handle_input
+
+        os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+        pygame.init()
+        pygame.display.set_mode((1, 1))
+        old_size = config.WIDTH, config.HEIGHT
+        try:
+            config.WIDTH, config.HEIGHT = 320, 240
+            reset_world()
+            get_tile(0, 0).building = BELT
+            get_tile(1, 0).building = BELT
+            handle_input(0, BELT, Direction.RIGHT, False, False, [
+                pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=3, pos=(5, 5)),
+                pygame.event.Event(pygame.MOUSEMOTION, pos=(config.TILE_SIZE + 5, 5)),
+                pygame.event.Event(pygame.MOUSEBUTTONUP, button=3, pos=(config.TILE_SIZE + 5, 5)),
+            ])
+            self.assertEqual(get_tile(0, 0).building, EMPTY)
+            self.assertEqual(get_tile(1, 0).building, EMPTY)
+        finally:
+            config.WIDTH, config.HEIGHT = old_size
+
+
+class TestCircuitExport(unittest.TestCase):
+
+    def _two_cell_script(self, building):
+        from src.engine.circuit_export import generate_qiskit_script
+        from src.engine.gate_registry import BELT, GENERATOR, OUTPUT_SINK
+
+        grid = {}
+
+        def put(pos, bid, peer=None, is_ctrl=False):
+            grid[pos] = _tile(
+                building=bid,
+                direction=Direction.RIGHT,
+                peer=peer,
+                is_ctrl=is_ctrl,
+            )
+
+        put((0, 0), GENERATOR)
+        put((1, 0), BELT)
+        put((2, 0), building, peer=(2, 1), is_ctrl=True)
+        put((3, 0), OUTPUT_SINK)
+        put((0, 1), GENERATOR)
+        put((1, 1), BELT)
+        put((2, 1), building, peer=(2, 0))
+        put((3, 1), OUTPUT_SINK)
+        return generate_qiskit_script(grid)
+
+    def _three_cell_script(self):
+        from src.engine.circuit_export import generate_qiskit_script
+        from src.engine.gate_registry import BELT, GENERATOR, OUTPUT_SINK
+
+        grid = {}
+
+        def put(pos, bid, peer=None, is_ctrl=False, role=1):
+            grid[pos] = _tile(
+                building=bid,
+                direction=Direction.RIGHT,
+                peer=peer,
+                is_ctrl=is_ctrl,
+                role=role,
+            )
+
+        for y in range(3):
+            put((0, y), GENERATOR)
+            put((1, y), BELT)
+            put((3, y), OUTPUT_SINK)
+        put((2, 0), "toffoli", peer=(2, 2), is_ctrl=True, role=3)
+        put((2, 1), "toffoli", peer=(2, 2), is_ctrl=True, role=2)
+        put((2, 2), "toffoli", peer=(2, 1), role=1)
+        return generate_qiskit_script(grid)
+
+    def test_two_cell_gates_export_as_two_qubit_ops(self):
+        expected = {"cnot": "cx", "cz": "cz", "swap": "swap"}
+        for building, qiskit_name in expected.items():
+            script = self._two_cell_script(building)
+            self.assertIn(f"qc.{qiskit_name}(0, 1)", script)
+            self.assertNotIn("WARNING", script)
+
+    def test_toffoli_exports_as_ccx(self):
+        script = self._three_cell_script()
+        self.assertIn("qc.ccx(1, 0, 2)", script)
+        self.assertNotIn("WARNING", script)
 
 
 if __name__ == "__main__":

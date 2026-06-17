@@ -5,22 +5,16 @@ H|0> = |+>,  H|1> = |−>,  H|+> = |0>,  H|−> = |1>
 
 from __future__ import annotations
 
+import math
 from ..gate_registry import register, GateDef, Category
+
+_S = 1 / math.sqrt(2)
+_H = ((_S, _S), (_S, -_S))
 
 
 def _transform(item):
-    from ...core.entities import QubitState
-    from ...core.world import break_entanglement
-    if item.state in (QubitState.ZERO, QubitState.ONE):
-        item.phase_flipped = (item.state == QubitState.ONE)
-        item.state = QubitState.SUPERPOSITION
-    else:
-        if item.phase_flipped:
-            item.state = QubitState.ONE
-        else:
-            item.state = QubitState.ZERO
-        item.phase_flipped = False
-        break_entanglement(item)
+    from ...core.world import apply_single
+    apply_single(item, _H)
 
 
 register(GateDef(

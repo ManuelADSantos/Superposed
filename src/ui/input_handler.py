@@ -6,10 +6,9 @@ from functools import lru_cache
 import pygame
 from ..core import config
 from ..core.config import TILE_SIZE, TOOLBAR_HEIGHT, TOOLBAR_PAD
-from ..core.entities import Direction, QubitState, cw_dir
+from ..core.entities import Direction, QubitState, cw_dir, ccw_dir, DIR_VECTORS
 from ..core.world import screen_to_world, get_tile
-from ..engine.gate_registry import get_gate, active_toolbar, EMPTY, OUTPUT_SINK
-from ..engine.circuit_export import export_circuit
+from ..engine.gate_registry import get_gate, active_toolbar, Category, EMPTY, OUTPUT_SINK, BELT
 from .rendering import (
     get_export_button_rect, get_speed_button_rect, get_pause_button_rect,
     show_toast, toolbar_button_rects, toggle_briefing,
@@ -36,14 +35,108 @@ def _build_key_map(available: tuple | None) -> dict:
     }
 
 
+def _companion_pos(wx, wy, direction):
+    """Compute first companion/control tile position for a multi-qubit gate."""
+    cd = ccw_dir(direction)
+    dx, dy = DIR_VECTORS[cd]
+    return wx + dx, wy + dy
+
+
+def _multi_cells(wx, wy, tile):
+    gate = get_gate(tile.building)
+    if not (gate and gate.category == Category.TWO_QUBIT and tile.peer):
+        return [(wx, wy)]
+    px, py = tile.peer if tile.is_ctrl else (wx, wy)
+    primary = get_tile(px, py)
+    cd = ccw_dir(primary.direction)
+    dx, dy = DIR_VECTORS[cd]
+    return [(px + dx * i, py + dy * i) for i in range(gate.qubits)]
+
+
+def _clear_tile(tile):
+    tile.building = EMPTY
+    tile.item = None
+    tile.peer = None
+    tile.is_ctrl = False
+    tile.role = 1
+
+
+def _clear_linked(wx, wy):
+    for cx, cy in _multi_cells(wx, wy, get_tile(wx, wy)):
+        _clear_tile(get_tile(cx, cy))
+
+
+def _can_place_at(wx, wy, available, building):
+    """Check if a building can be placed at (wx, wy)."""
+    if (wx, wy) in W.locked_tiles:
+        return False
+    if available is not None and building not in available:
+        return False
+    return True
+
+
+def _place_building(wx, wy, building, direction):
+    """Place a building and set up companion cells for multi-qubit gates."""
+    tile = get_tile(wx, wy)
+    if tile.peer:
+        _clear_linked(wx, wy)
+
+    tile = get_tile(wx, wy)
+    tile.building = building
+    tile.direction = direction
+    tile.process_timer = 0.0
+    tile.measurements = []
+    tile.peer = None
+    tile.is_ctrl = False
+    tile.role = 1
+    if building == OUTPUT_SINK:
+        tile.sink_total = 0
+        tile.sink_match = 0
+        tile.sink_target = None
+
+    gate = get_gate(building)
+    if gate and gate.category == Category.TWO_QUBIT:
+        cd = ccw_dir(direction)
+        dx, dy = DIR_VECTORS[cd]
+        for role in range(2, gate.qubits + 1):
+            cx, cy = wx + dx * (role - 1), wy + dy * (role - 1)
+            companion = get_tile(cx, cy)
+            if companion.peer:
+                _clear_linked(cx, cy)
+                companion = get_tile(cx, cy)
+            companion.building = building
+            companion.direction = direction
+            companion.item = None
+            companion.process_timer = 0.0
+            companion.peer = (wx, wy)
+            companion.is_ctrl = True
+            companion.role = role
+        tile.peer = _companion_pos(wx, wy, direction)
+
+
+def _delete_building(wx, wy):
+    """Delete a building and its companion if linked."""
+    tile = get_tile(wx, wy)
+    if tile.peer:
+        for pos in _multi_cells(wx, wy, tile):
+            if pos in W.locked_tiles:
+                W.locked_tiles.discard(pos)
+            _clear_tile(get_tile(*pos))
+        return
+    _clear_tile(tile)
+
+
+# Belt drag state
+_drag_active = False
+_drag_last_cell = None
+_erase_active = False
+_erase_last_cell = None
+
+
 def handle_input(dt, selected_building, selected_rotation, paused, step_requested,
                  events=None):
-    """Process keyboard/mouse input.
+    global _drag_active, _drag_last_cell, _erase_active, _erase_last_cell
 
-    *events* is the list of pygame events for this frame.  If ``None``
-    (legacy call), events are pulled from the pygame queue — but passing
-    them explicitly is preferred so the main loop doesn't need to re-post.
-    """
     back_to_menu = False
 
     keys = pygame.key.get_pressed()
@@ -77,9 +170,15 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
                 selected_rotation = cw_dir(selected_rotation)
             elif event.key == pygame.K_p:
                 paused = not paused
+            elif event.key == pygame.K_n:
+                step_requested = True
             elif event.key == pygame.K_c:
                 for pos in list(W.world.keys()):
                     if pos not in W.locked_tiles:
+                        tile = get_tile(*pos)
+                        tile.peer = None
+                        tile.is_ctrl = False
+                        tile.role = 1
                         del W.world[pos]
             elif event.key == pygame.K_b:
                 toggle_briefing()
@@ -101,7 +200,7 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
             W._state.camera_y = my + (W._state.camera_y - my) * factor
 
         if event.type == pygame.MOUSEBUTTONDOWN:
-            mx, my = pygame.mouse.get_pos()
+            mx, my = event.pos
 
             if event.button == 1 and get_speed_button_rect().collidepoint(mx, my):
                 config.SPEED_MULT = {0.5: 1, 1: 2, 2: 4, 4: 0.5}[config.SPEED_MULT]
@@ -114,6 +213,7 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
 
             if event.button == 1 and get_export_button_rect().collidepoint(mx, my):
                 try:
+                    from ..engine.circuit_export import export_circuit
                     path = export_circuit()
                     show_toast(f"Exported to {path}")
                 except Exception as exc:
@@ -127,27 +227,38 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
 
             if my < config.HEIGHT - TOOLBAR_HEIGHT:
                 wx, wy = screen_to_world(mx, my, TILE_SIZE)
-                tile = get_tile(wx, wy)
                 is_locked = (wx, wy) in W.locked_tiles
 
                 if event.button == 1 and not is_locked:
-                    if W.available_buildings is None or selected_building in W.available_buildings:
-                        tile.building = selected_building
-                        tile.direction = selected_rotation
-                        tile.control_item = None
-                        tile.process_timer = 0.0
-                        tile.measurements = []
-                        if selected_building == OUTPUT_SINK:
-                            tile.sink_total = 0
-                            tile.sink_match = 0
-                            tile.sink_target = None
+                    if _can_place_at(wx, wy, W.available_buildings, selected_building):
+                        gate = get_gate(selected_building)
+                        if gate and gate.category == Category.TWO_QUBIT:
+                            cdx, cdy = DIR_VECTORS[ccw_dir(selected_rotation)]
+                            cells = [
+                                (wx + cdx * i, wy + cdy * i)
+                                for i in range(1, gate.qubits)
+                            ]
+                            if any(not _can_place_at(cx, cy, W.available_buildings, selected_building)
+                                   for cx, cy in cells):
+                                continue
+                            for cx, cy in cells:
+                                if get_tile(cx, cy).peer:
+                                    _delete_building(cx, cy)
+                        _place_building(wx, wy, selected_building, selected_rotation)
 
-                elif event.button == 3 and not is_locked:
-                    tile.building = EMPTY
-                    tile.item = None
-                    tile.control_item = None
+                        # Start belt drag
+                        if selected_building == BELT:
+                            _drag_active = True
+                            _drag_last_cell = (wx, wy)
+
+                elif event.button == 3:
+                    _erase_active = True
+                    _erase_last_cell = (wx, wy)
+                    if not is_locked:
+                        _delete_building(wx, wy)
 
                 elif event.button == 2:
+                    tile = get_tile(wx, wy)
                     if tile.building == OUTPUT_SINK and not is_locked:
                         if tile.sink_target is None:
                             tile.sink_target = QubitState.ZERO
@@ -159,6 +270,45 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
                             tile.sink_target = None
                         tile.sink_total = 0
                         tile.sink_match = 0
+
+        # Belt drag: place belts as mouse moves
+        if event.type == pygame.MOUSEMOTION and _drag_active:
+            mx, my = event.pos
+            if my < config.HEIGHT - TOOLBAR_HEIGHT:
+                wx, wy = screen_to_world(mx, my, TILE_SIZE)
+                if (wx, wy) != _drag_last_cell and (wx, wy) not in W.locked_tiles:
+                    lx, ly = _drag_last_cell
+                    dx, dy = wx - lx, wy - ly
+                    if abs(dx) >= abs(dy):
+                        d = Direction.RIGHT if dx > 0 else Direction.LEFT
+                    else:
+                        d = Direction.DOWN if dy > 0 else Direction.UP
+                    # Update previous belt to point toward new cell
+                    prev = get_tile(lx, ly)
+                    if prev.building == BELT and (lx, ly) not in W.locked_tiles:
+                        prev.direction = d
+                    # Place new belt (skip tiles that are part of a multi-qubit gate)
+                    target = get_tile(wx, wy)
+                    if _can_place_at(wx, wy, W.available_buildings, BELT) and not target.peer:
+                        target.building = BELT
+                        target.direction = d
+                    _drag_last_cell = (wx, wy)
+
+        if event.type == pygame.MOUSEMOTION and _erase_active:
+            mx, my = event.pos
+            if my < config.HEIGHT - TOOLBAR_HEIGHT:
+                wx, wy = screen_to_world(mx, my, TILE_SIZE)
+                if (wx, wy) != _erase_last_cell:
+                    _erase_last_cell = (wx, wy)
+                    if (wx, wy) not in W.locked_tiles:
+                        _delete_building(wx, wy)
+
+        if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+            _drag_active = False
+            _drag_last_cell = None
+        if event.type == pygame.MOUSEBUTTONUP and event.button == 3:
+            _erase_active = False
+            _erase_last_cell = None
 
     active = active_toolbar(W.available_buildings)
     if active and selected_building not in active:

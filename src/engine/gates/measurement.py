@@ -5,28 +5,14 @@ This is a CONSUMER: the qubit is absorbed and a histogram is updated.
 
 from __future__ import annotations
 
-import random
 from ..gate_registry import register, GateDef, Category
 
 
 def _transform(item, tile):
     """Measure the qubit, collapse entangled partners, update histogram."""
-    from ...core.entities import QubitState
-    from ...core.world import get_entangled_partners, break_entanglement
-
-    if item.state == QubitState.SUPERPOSITION:
-        result = random.choice([QubitState.ZERO, QubitState.ONE])
-        item.state = result
-        item.phase_flipped = False
-        for partner in get_entangled_partners(item):
-            if partner.state == QubitState.SUPERPOSITION:
-                partner.state = result
-                partner.phase_flipped = False
-            break_entanglement(partner)
-        break_entanglement(item)
-
-    # Record on the tile's histogram
-    tile.measurements.append(item.state)
+    from ...core.world import measure_qubit
+    result = measure_qubit(item)
+    tile.measurements.append(result)
     if len(tile.measurements) > 20:
         tile.measurements.pop(0)
     tile.measure_flash = 0.35

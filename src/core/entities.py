@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import math
 from enum import Enum
 
 from .config import RED, BLUE, PURPLE, WHITE
+
+_S = 1 / math.sqrt(2)
 
 
 class Direction(Enum):
@@ -56,11 +59,30 @@ class QubitItem:
         QubitItem._next_id += 1
         self.uid = QubitItem._next_id
         self.progress = 0.0
-        self.state = state
-        self.phase_flipped = False
+        if state == QubitState.ONE:
+            self.alpha, self.beta = 0 + 0j, 1 + 0j
+        elif state == QubitState.SUPERPOSITION:
+            self.alpha, self.beta = complex(_S), complex(_S)
+        else:
+            self.alpha, self.beta = 1 + 0j, 0 + 0j
         self.entangle_group: int | None = None
         self.is_disappearing = False
         self.disappear_time = 0.0
+
+    @property
+    def state(self) -> QubitState:
+        p0 = abs(self.alpha) ** 2
+        if p0 > 0.999:
+            return QubitState.ZERO
+        if p0 < 0.001:
+            return QubitState.ONE
+        return QubitState.SUPERPOSITION
+
+    @property
+    def phase_flipped(self) -> bool:
+        if self.state != QubitState.SUPERPOSITION:
+            return False
+        return (self.alpha.conjugate() * self.beta).real < 0
 
 
 class Tile:
@@ -68,7 +90,6 @@ class Tile:
         self.building = "empty"
         self.direction = Direction.RIGHT
         self.item: QubitItem | None = None
-        self.control_item: QubitItem | None = None
         self.spawn_timer = 0.0
         self.process_timer = 0.0
         self.measurements = []
@@ -76,3 +97,6 @@ class Tile:
         self.sink_target: QubitState | None = None
         self.sink_total = 0
         self.sink_match = 0
+        self.peer: tuple[int, int] | None = None
+        self.is_ctrl: bool = False
+        self.role: int = 1

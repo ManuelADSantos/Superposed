@@ -28,6 +28,7 @@ class GateDef:
     transform: Callable | None = None
     sprite_fn: Callable | None = None
     overlay_fn: Callable | None = None
+    qubits: int = 1
     order: int = 100
 
 

@@ -59,9 +59,14 @@ _ROTATION_ANGLE = {
 }
 
 
-def _load_custom_png(gate_id, direction, size):
-    path = os.path.join(_GATES_SPRITE_DIR, f'{gate_id}.png')
-    if not os.path.isfile(path):
+def _load_custom_png(gate_id, direction, size, role=1):
+    names = [f"{gate_id}_{role}.png"]
+    if role == 1:
+        names.append(f"{gate_id}.png")
+    path = next((os.path.join(_GATES_SPRITE_DIR, name)
+                 for name in names
+                 if os.path.isfile(os.path.join(_GATES_SPRITE_DIR, name))), None)
+    if path is None:
         return None
     try:
         img = pygame.image.load(path).convert_alpha()
@@ -136,13 +141,35 @@ def get_qubit_sprite(state, size, disappearing=False, progress=1.0, entangled=Fa
 _ORIENTATION_LOCKED = frozenset({"measurement", "output_sink"})
 
 
+def _ctrl_sprite(building_id, direction, size):
+    """Fallback control-dot sprite for multi-qubit companion cells."""
+    from ..engine.gate_registry import get_gate
+    gate = get_gate(building_id)
+    color = gate.color if gate else (120, 120, 130)
+    s = _surf(size)
+    b = pygame.Rect(4, 4, size - 8, size - 8)
+    _panel(s, b, tuple(c // 3 for c in color), color, 10)
+    r = max(4, int(size * 0.16))
+    pygame.draw.circle(s, _a(color, 255), b.center, r)
+    pygame.draw.circle(s, _a(WHITE, 180), b.center, r, 2)
+    _dir_mark(s, direction, b, color)
+    return s
+
+
 @lru_cache(maxsize=512)
-def get_building_sprite(building_id, direction, size):
+def get_building_sprite(building_id, direction, size, ctrl=False, role=1):
     if building_id == "empty":
         return None
+    if ctrl and role == 1:
+        role = 2
+    if role != 1:
+        custom = _load_custom_png(building_id, direction, size, role)
+        if custom is not None:
+            return custom
+        return _ctrl_sprite(building_id, direction, size)
     if building_id in _ORIENTATION_LOCKED:
         direction = Direction.RIGHT
-    custom = _load_custom_png(building_id, direction, size)
+    custom = _load_custom_png(building_id, direction, size, role)
     if custom is not None:
         return custom
     from ..engine.gate_registry import get_gate

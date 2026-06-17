@@ -52,7 +52,7 @@ The finished executable appears in `dist/Superposed` (macOS/Linux) or `dist/Supe
 
 ## 4. Fix asset paths at runtime
 
-pygame loads assets with relative paths like `"assets/sprites/..."`. These break inside a PyInstaller bundle because the CWD is no longer the project root.
+pygame loads assets with relative paths like `"assets/gates_sprites/..."`. These break inside a PyInstaller bundle because the CWD is no longer the project root.
 
 Add this helper near the top of `src/main.py` (or a shared `utils.py`):
 

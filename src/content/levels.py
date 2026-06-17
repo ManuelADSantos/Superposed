@@ -23,6 +23,7 @@ Z = "z_gate"
 CNOT = "cnot"
 CZ = "cz"
 SWAP = "swap"
+TOFFOLI = "toffoli"
 MEAS = "measurement"
 SPLIT = "splitter"
 NOISE = "noise"
@@ -362,10 +363,11 @@ CH4_L3 = {
 # ---------------------------------------------------------------------------
 
 _CH5_CONCEPT = (
-    "The CNOT gate is the first two-qubit gate you'll use.\n\n"
-    "It has two inputs:\n"
-    "  Control — enters from the top\n"
-    "  Target  — enters from the left\n\n"
+    "The CNOT gate is the first two-qubit gate you'll use.\n"
+    "It spans two cells — like a real quantum circuit.\n\n"
+    "Two parallel qubit streams flow through it:\n"
+    "  Top  = Control (marked with a dot)\n"
+    "  Bottom = Target (the gate symbol)\n\n"
     "Rule: if the control is |1>, the target gets flipped.\n"
     "Simple enough — but something magical happens when\n"
     "the control is in superposition.\n\n"
@@ -379,25 +381,26 @@ CH5_L1 = {
     "name": "Controlled Flip",
     "description": "CNOT flips the target when the control is |1>.",
     "briefing": (
-        "The CNOT gate has two inputs:\n"
-        "  Control — enters from the top\n"
-        "  Target  — enters from the left\n\n"
+        "The CNOT gate spans two cells:\n"
+        "  Top row  = Control (dot)\n"
+        "  Bottom row = Target (gate)\n\n"
+        "Both streams flow left to right.\n"
         "The rule: if control = |1>, target gets flipped.\n"
         "  |0> -> |1>  and  |1> -> |0>\n"
         "If control = |0>, nothing happens.\n\n"
         "Both generators make |0>.  Use X on the control\n"
-        "path to flip it to |1>, then the CNOT will\n"
+        "path (top) to flip it to |1>, then the CNOT will\n"
         "flip the target too.  Both sinks want |1>."
     ),
     "hint": "X on the control (top) path — CNOT flips the target",
     "pre_placed": {
-        (4, -1): (GEN, DOWN, None),
+        (-1, 1): (GEN, RIGHT, None),
         (-1, 2): (GEN, RIGHT, None),
-        (4, 2): (CNOT, RIGHT, None),
-        (8, 2): (SINK, RIGHT, ONE),
-        (4, 6): (SINK, DOWN, ONE),
+        (5, 2): (CNOT, RIGHT, None),
+        (9, 1): (SINK, RIGHT, ONE),
+        (9, 2): (SINK, RIGHT, ONE),
     },
-    "locked": {(4, -1), (-1, 2), (4, 2), (8, 2), (4, 6)},
+    "locked": {(-1, 1), (-1, 2), (5, 2), (9, 1), (9, 2)},
     "available": [BELT, X],
     "win_count": 5,
     "camera": (4, 2),
@@ -407,29 +410,29 @@ CH5_L2 = {
     "name": "Bell State",
     "description": "Superposition + CNOT creates entangled pairs.",
     "briefing": (
-        "Now replace X with H on the control path.\n\n"
+        "Use H on the control path to create superposition.\n\n"
         "When the control is in superposition:\n"
         "  CNOT doesn't flip or not-flip — it does BOTH.\n"
         "  The two qubits become entangled.\n\n"
-        "A locked Measurement gate sits on the horizontal exit.\n"
+        "A locked Measurement gate sits on the control exit.\n"
         "When one entangled qubit is measured, watch what\n"
-        "happens to its partner on the vertical path —\n"
+        "happens to its partner on the target path —\n"
         "it collapses to the same value instantly!\n\n"
         "Watch for the golden ring — it marks entanglement.\n"
         "Place the CNOT yourself."
     ),
-    "hint": "H on the control (top) path, CNOT at the crossing — watch the collapse",
+    "hint": "H on the control (top) path, CNOT below it — watch the entanglement",
     "pre_placed": {
+        (-1, 2): (GEN, RIGHT, None),
         (-1, 3): (GEN, RIGHT, None),
-        (5, -1): (GEN, DOWN, None),
-        (8, 3): (MEAS, RIGHT, None),
-        (5, 8): (SINK, DOWN, None),
+        (9, 2): (MEAS, RIGHT, None),
+        (9, 3): (SINK, RIGHT, None),
     },
-    "locked": {(-1, 3), (5, -1), (8, 3), (5, 8)},
+    "locked": {(-1, 2), (-1, 3), (9, 2), (9, 3)},
     "available": [BELT, H, CNOT],
     "win_count": 5,
     "win_type": "measure",
-    "camera": (5, 3),
+    "camera": (4, 3),
 }
 
 
@@ -458,50 +461,50 @@ CH6_L1 = {
         "If the TARGET is |1> and the CONTROL is in superposition:\n"
         "  the control's own phase gets flipped — |+> becomes |−>.\n"
         "This is called PHASE KICKBACK.\n\n"
-        "Circuit to build:\n"
-        "  Horizontal stream (target): X before CZ -> |1>\n"
-        "  Vertical stream (control):  H before CZ -> |+>\n"
+        "Two parallel streams, both flowing left to right:\n"
+        "  Control (top): H before CZ -> |+>\n"
+        "  Target (bottom): X before CZ -> |1>\n"
         "After CZ: control is |−> — apply H to collapse it to |1>.\n"
         "Both sinks want |1>."
     ),
-    "hint": "H on horizontal, X on vertical, CZ at crossing, H after CZ on vertical",
+    "hint": "Top: H before CZ, H after CZ. Bottom: X before CZ.",
     "pre_placed": {
+        (-1, 2): (GEN, RIGHT, None),
         (-1, 3): (GEN, RIGHT, None),
-        (5, -1): (GEN, DOWN, None),
+        (10, 2): (SINK, RIGHT, ONE),
         (10, 3): (SINK, RIGHT, ONE),
-        (5, 9): (SINK, DOWN, ONE),
     },
-    "locked": {(-1, 3), (5, -1), (10, 3), (5, 9)},
+    "locked": {(-1, 2), (-1, 3), (10, 2), (10, 3)},
     "available": [BELT, H, X, CZ],
     "win_count": 5,
-    "camera": (5, 4),
+    "camera": (5, 3),
 }
 
 CH6_L2 = {
-    "name": "Stream Crossing",
-    "description": "SWAP exchanges the states of two qubit streams.",
+    "name": "State Exchange",
+    "description": "SWAP exchanges the states of two parallel qubit streams.",
     "briefing": (
         "The SWAP gate exchanges the quantum states of two qubits.\n"
         "After a SWAP, each qubit carries the other's original state.\n\n"
-        "Two streams cross at a SWAP gate:\n"
-        "  Horizontal stream: |0> (straight from the generator)\n"
-        "  Vertical stream:   |1> (flip it with X first)\n\n"
+        "Two parallel streams flow through a SWAP gate:\n"
+        "  Top stream:    |1> (use X to flip from |0>)\n"
+        "  Bottom stream: |0> (straight from the generator)\n\n"
         "After the SWAP:\n"
-        "  Horizontal exit carries the vertical stream's state -> |1>\n"
-        "  Vertical exit carries the horizontal stream's state -> |0>\n\n"
+        "  Top exit carries the bottom stream's state -> |0>\n"
+        "  Bottom exit carries the top stream's state -> |1>\n\n"
         "Route each exit to the matching sink."
     ),
-    "hint": "X on the vertical path, SWAP at the crossing, belt the exits to sinks",
+    "hint": "X on the top path, SWAP in the middle, belt the exits to sinks",
     "pre_placed": {
+        (-1, 2): (GEN, RIGHT, None),
         (-1, 3): (GEN, RIGHT, None),
-        (5, -1): (GEN, DOWN, None),
+        (10, 2): (SINK, RIGHT, ZERO),
         (10, 3): (SINK, RIGHT, ONE),
-        (5, 9): (SINK, DOWN, ZERO),
     },
-    "locked": {(-1, 3), (5, -1), (10, 3), (5, 9)},
+    "locked": {(-1, 2), (-1, 3), (10, 2), (10, 3)},
     "available": [BELT, X, SWAP],
     "win_count": 5,
-    "camera": (5, 4),
+    "camera": (5, 3),
 }
 
 
@@ -630,20 +633,20 @@ CH8_L1 = {
         "The equivalence: H → CZ → H on the target path\n"
         "behaves exactly like CNOT.\n\n"
         "Both sinks want |1>.\n"
-        "  Control path (vertical): use X to make |1>\n"
-        "  Target path (horizontal): H before CZ, H after CZ\n\n"
+        "  Control (top): use X to make |1>\n"
+        "  Target (bottom): H before CZ, H after CZ\n\n"
         "The |1> control triggers CZ's phase flip,\n"
         "and the surrounding H gates convert it to a bit flip."
     ),
-    "hint": "Vertical: X. Horizontal: H before and after the CZ.",
+    "hint": "Top: X. Bottom: H before and after the CZ.",
     "pre_placed": {
+        (-1, 2): (GEN, RIGHT, None),
         (-1, 3): (GEN, RIGHT, None),
-        (5, -1): (GEN, DOWN, None),
         (5, 3): (CZ, RIGHT, None),
+        (10, 2): (SINK, RIGHT, ONE),
         (10, 3): (SINK, RIGHT, ONE),
-        (5, 8): (SINK, DOWN, ONE),
     },
-    "locked": {(-1, 3), (5, -1), (5, 3), (10, 3), (5, 8)},
+    "locked": {(-1, 2), (-1, 3), (5, 3), (10, 2), (10, 3)},
     "available": [BELT, H, X],
     "win_count": 5,
     "camera": (5, 3),
@@ -653,24 +656,25 @@ CH8_L2 = {
     "name": "Entanglement Chain",
     "description": "Chain entanglement across three qubits with two CNOTs.",
     "briefing": (
-        "Three qubits, two CNOT gates, one entangled group.\n\n"
-        "Put the first qubit in superposition with H,\n"
-        "then chain it through two CNOTs. The entanglement\n"
-        "propagates: all three qubits become entangled.\n\n"
+        "Three parallel qubit streams, two CNOTs.\n\n"
+        "Use H on the top stream, then route it through\n"
+        "two CNOT control inputs. Each CNOT entangles its\n"
+        "control with its target.\n\n"
+        "The top stream is control for the first CNOT.\n"
+        "Route its output down to be control for the second.\n"
         "When the Measurement gate collapses one qubit,\n"
-        "watch all three snap to the same value.\n\n"
-        "Place both CNOTs and connect everything."
+        "watch all three snap to the same value."
     ),
-    "hint": "H on first qubit, CNOT at each crossing, belts between.",
+    "hint": "H on top, CNOT1 links top+middle, route top down to CNOT2 for middle+bottom.",
     "pre_placed": {
-        (3, -1): (GEN, DOWN, None),
-        (-1, 3): (GEN, RIGHT, None),
-        (-1, 7): (GEN, RIGHT, None),
-        (10, 3): (MEAS, RIGHT, None),
-        (10, 7): (SINK, RIGHT, None),
-        (3, 10): (SINK, DOWN, None),
+        (-1, 2): (GEN, RIGHT, None),
+        (-1, 4): (GEN, RIGHT, None),
+        (-1, 6): (GEN, RIGHT, None),
+        (12, 2): (MEAS, RIGHT, None),
+        (12, 4): (SINK, RIGHT, None),
+        (12, 6): (SINK, RIGHT, None),
     },
-    "locked": {(3, -1), (-1, 3), (-1, 7), (10, 3), (10, 7), (3, 10)},
+    "locked": {(-1, 2), (-1, 4), (-1, 6), (12, 2), (12, 4), (12, 6)},
     "available": [BELT, H, CNOT],
     "win_count": 5,
     "win_type": "measure",
@@ -1023,28 +1027,28 @@ CH13_L1 = {
     "name": "Quantum Lab",
     "description": "Three generators, three sinks — SWAP, interference, and routing.",
     "briefing": (
-        "Three qubit streams cross at a locked SWAP gate.\n\n"
+        "Two parallel streams cross at a locked SWAP gate.\n\n"
         "SWAP exchanges the states of the two qubits\n"
         "passing through it. Plan ahead:\n"
-        "  What state enters each side of the SWAP?\n"
-        "  What state exits each side?\n\n"
+        "  What state enters control (top)?\n"
+        "  What state enters target (bottom)?\n\n"
         "The third stream is independent — it needs\n"
         "superposition.\n\n"
-        "  Sink A (right of SWAP): wants |1>\n"
-        "  Sink B (below SWAP): wants |0>\n"
-        "  Sink C (bottom): wants superposition"
+        "  Sink A (control exit): wants |0>\n"
+        "  Sink B (target exit): wants |1>\n"
+        "  Sink C (third path): wants superposition"
     ),
-    "hint": "X on the vertical gen, SWAP exchanges states. H on the third path.",
+    "hint": "X on the top path, SWAP exchanges states. H on the third path.",
     "pre_placed": {
-        (5, 0): (GEN, DOWN, None),
+        (0, 3): (GEN, RIGHT, None),
         (0, 4): (GEN, RIGHT, None),
         (0, 8): (GEN, RIGHT, None),
         (5, 4): (SWAP, RIGHT, None),
+        (11, 3): (SINK, RIGHT, ZERO),
         (11, 4): (SINK, RIGHT, ONE),
-        (5, 9): (SINK, DOWN, ZERO),
         (11, 8): (SINK, RIGHT, SUP),
     },
-    "locked": {(5, 0), (0, 4), (0, 8), (5, 4), (11, 4), (5, 9), (11, 8)},
+    "locked": {(0, 3), (0, 4), (0, 8), (5, 4), (11, 3), (11, 4), (11, 8)},
     "available": [BELT, H, X],
     "win_count": 5,
     "camera": (5, 4),
@@ -1054,30 +1058,33 @@ CH13_L2 = {
     "name": "Double Flip",
     "description": "Two CNOTs in sequence — trace the state through both.",
     "briefing": (
-        "Two CNOT gates are locked in a chain.\n\n"
-        "The first CNOT's target output feeds the second\n"
-        "CNOT's control input. Think carefully about\n"
-        "what state reaches each gate.\n\n"
-        "Both sinks want |1>.\n"
-        "You have X and belts — no Hadamard, no tricks.\n"
-        "Pure logic."
+        "Two locked CNOT gates in a chain.\n"
+        "Three parallel streams:\n\n"
+        "  Top:    control of first CNOT, exits right\n"
+        "  Middle: target of first, control of second\n"
+        "  Bottom: target of second CNOT\n\n"
+        "Use X on the top path to flip control to |1>.\n"
+        "First CNOT flips middle to |1>.\n"
+        "Middle feeds second CNOT's control.\n"
+        "Second CNOT flips bottom to |1>.\n"
+        "All three sinks want |1>."
     ),
-    "hint": "X on the first control → flips first target → now feeds second CNOT.",
+    "hint": "X on the top path — the flip cascades through both CNOTs.",
     "pre_placed": {
-        (4, -1): (GEN, DOWN, None),
+        (-1, 1): (GEN, RIGHT, None),
         (-1, 2): (GEN, RIGHT, None),
+        (-1, 3): (GEN, RIGHT, None),
         (4, 2): (CNOT, RIGHT, None),
-        (-1, 6): (GEN, RIGHT, None),
-        (8, 6): (CNOT, RIGHT, None),
-        (12, 6): (SINK, RIGHT, ONE),
-        (4, 6): (SINK, DOWN, ONE),
-        (8, 10): (SINK, DOWN, ONE),
+        (8, 3): (CNOT, RIGHT, None),
+        (12, 1): (SINK, RIGHT, ONE),
+        (12, 2): (SINK, RIGHT, ONE),
+        (12, 3): (SINK, RIGHT, ONE),
     },
-    "locked": {(4, -1), (-1, 2), (4, 2), (-1, 6), (8, 6),
-               (12, 6), (4, 6), (8, 10)},
+    "locked": {(-1, 1), (-1, 2), (-1, 3), (4, 2), (8, 3),
+               (12, 1), (12, 2), (12, 3)},
     "available": [BELT, X],
     "win_count": 5,
-    "camera": (5, 4),
+    "camera": (5, 2),
 }
 
 
@@ -1124,26 +1131,26 @@ CH14_L2 = {
     "name": "Kickback Detour",
     "description": "Phase kickback through a noisy landscape.",
     "briefing": (
-        "The vertical generator's path passes through\n"
-        "a locked Noise gate. You need |1> on that path\n"
-        "for phase kickback to work on the CZ gate.\n\n"
-        "Route the vertical qubit AROUND the noise,\n"
+        "The control path passes through a locked Noise gate.\n"
+        "You need |1> on that path for phase kickback\n"
+        "to work on the CZ gate.\n\n"
+        "Route the control qubit AROUND the noise,\n"
         "apply X to flip it to |1>, then let CZ do\n"
-        "its phase kickback on the horizontal qubit.\n\n"
-        "Horizontal: H before CZ, H after CZ → |1>.\n"
-        "Vertical: X, detour around noise → |1>.\n"
+        "its phase kickback on the target qubit.\n\n"
+        "Target (bottom): H before CZ, H after CZ → |1>.\n"
+        "Control (top): X, detour around noise → |1>.\n"
         "Both sinks want |1>."
     ),
-    "hint": "Detour vertical gen around noise. X for |1>. H-CZ-H on horizontal.",
+    "hint": "Detour top gen around noise. X for |1>. H-CZ-H on bottom path.",
     "pre_placed": {
+        (-1, 3): (GEN, RIGHT, None),
         (-1, 4): (GEN, RIGHT, None),
-        (5, -1): (GEN, DOWN, None),
-        (5, 1): (NOISE, DOWN, None),
+        (2, 3): (NOISE, RIGHT, None),
         (5, 4): (CZ, RIGHT, None),
+        (11, 3): (SINK, RIGHT, ONE),
         (11, 4): (SINK, RIGHT, ONE),
-        (5, 9): (SINK, DOWN, ONE),
     },
-    "locked": {(-1, 4), (5, -1), (5, 1), (5, 4), (11, 4), (5, 9)},
+    "locked": {(-1, 3), (-1, 4), (2, 3), (5, 4), (11, 3), (11, 4)},
     "available": [BELT, H, X],
     "win_count": 5,
     "camera": (5, 4),
@@ -1254,8 +1261,6 @@ CHAPTERS = [
         "levels": [CH14_L1, CH14_L2],
     },
 ]
-
-COMING_SOON = []
 
 # Flat list for backwards compatibility (completion tracking uses global indices)
 ALL_LEVELS = []

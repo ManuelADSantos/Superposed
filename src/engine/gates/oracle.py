@@ -9,15 +9,16 @@ from __future__ import annotations
 
 from ..gate_registry import register, GateDef, Category
 
+_Z = ((1, 0), (0, -1))
+
 
 def _transform_constant(item):
     pass
 
 
 def _transform_balanced(item):
-    from ...core.entities import QubitState
-    if item.state == QubitState.SUPERPOSITION:
-        item.phase_flipped = not item.phase_flipped
+    from ...core.world import apply_single
+    apply_single(item, _Z)
 
 
 register(GateDef(

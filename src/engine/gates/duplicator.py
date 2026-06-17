@@ -6,28 +6,18 @@ Superposition collapses before copying (no-cloning theorem).
 
 from __future__ import annotations
 
-import random
 from ..gate_registry import register, GateDef, Category
 
 
 def _transform(sx, sy, tile, item, eject_fn):
-    from ...core.entities import QubitItem, QubitState, DIR_VECTORS, cw_dir
-    from ...core.world import get_entangled_partners, break_entanglement
+    from ...core.entities import QubitItem, DIR_VECTORS, cw_dir
+    from ...core.world import measure_qubit
 
     # ponytail: no-cloning — collapse superposition before copying
-    if item.state == QubitState.SUPERPOSITION:
-        result = random.choice([QubitState.ZERO, QubitState.ONE])
-        item.state = result
-        item.phase_flipped = False
-        for partner in get_entangled_partners(item):
-            if partner.state == QubitState.SUPERPOSITION:
-                partner.state = result
-                partner.phase_flipped = False
-            break_entanglement(partner)
-        break_entanglement(item)
+    measure_qubit(item)
 
-    copy = QubitItem(item.state)
-    copy.phase_flipped = item.phase_flipped
+    copy = QubitItem()
+    copy.alpha, copy.beta = item.alpha, item.beta
 
     dx, dy = DIR_VECTORS[tile.direction]
     eject_fn(sx, sy, sx + dx, sy + dy, item)

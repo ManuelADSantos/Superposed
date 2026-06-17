@@ -16,13 +16,18 @@ from .gate_registry import (
 
 
 def _start_disappear(item):
+    from ..core.world import break_entanglement
+    break_entanglement(item)
     item.is_disappearing = True
     item.disappear_time = 0.3
 
 
 def _collect_sink(tile, item):
+    from ..core.world import break_entanglement
+    state = item.state
+    break_entanglement(item)
     tile.sink_total += 1
-    if tile.sink_target is not None and item.state == tile.sink_target:
+    if tile.sink_target is not None and state == tile.sink_target:
         tile.sink_match += 1
 
 
@@ -51,6 +56,14 @@ def _eject_qubit(src_x, src_y, nx, ny, qubit):
         _start_disappear(qubit)
 
 
+def _multi_tiles(px, py, primary, gate):
+    dx, dy = DIR_VECTORS[ccw_dir(primary.direction)]
+    return [
+        (px + dx * i, py + dy * i, get_tile(px + dx * i, py + dy * i))
+        for i in range(gate.qubits)
+    ]
+
+
 def update_items(dt):
     ready_to_move = []
 
@@ -58,12 +71,10 @@ def update_items(dt):
         if tile.measure_flash > 0:
             tile.measure_flash = max(0.0, tile.measure_flash - dt)
 
-        for slot in ("item", "control_item"):
-            q = getattr(tile, slot)
-            if q and q.is_disappearing:
-                q.disappear_time -= dt
-                if q.disappear_time <= 0:
-                    setattr(tile, slot, None)
+        if tile.item and tile.item.is_disappearing:
+            tile.item.disappear_time -= dt
+            if tile.item.disappear_time <= 0:
+                tile.item = None
 
         if tile.building == GENERATOR:
             tile.spawn_timer += dt
@@ -72,30 +83,31 @@ def update_items(dt):
                 tile.item = QubitItem(QubitState.ZERO)
 
         gate = get_gate(tile.building)
-        if gate and gate.category == Category.TWO_QUBIT:
-            if tile.item and tile.control_item:
+
+        # Multi-qubit gate processing: only on primary (target) tile
+        if gate and gate.category == Category.TWO_QUBIT and tile.peer and not tile.is_ctrl:
+            cells = _multi_tiles(x, y, tile, gate)
+            if all(cell.item for _, _, cell in cells):
                 tile.process_timer += dt
                 if tile.process_timer >= CNOT_PROCESS_DELAY:
-                    _process_two_qubit(x, y, tile, gate)
+                    _process_multi_qubit(x, y, tile, gate)
                     tile.process_timer = 0.0
             else:
                 tile.process_timer = 0.0
 
         if tile.item and not tile.item.is_disappearing:
-            should_advance = True
-            if gate and gate.category == Category.TWO_QUBIT and tile.control_item:
-                should_advance = False
-            if should_advance:
+            if gate and gate.category == Category.TWO_QUBIT and tile.peer:
+                # Items on multi-qubit tiles advance to 1.0 then hold
+                if tile.item.progress < 1.0:
+                    tile.item.progress = min(1.0, tile.item.progress + BELT_SPEED * dt)
+            else:
                 tile.item.progress += BELT_SPEED * dt
                 if tile.item.progress >= 1.0:
-                    ready_to_move.append((x, y, "item"))
+                    ready_to_move.append((x, y))
 
-        if tile.control_item and not tile.control_item.is_disappearing:
-            tile.control_item.progress += BELT_SPEED * dt
-
-    for x, y, slot in ready_to_move:
+    for x, y in ready_to_move:
         tile = get_tile(x, y)
-        item = getattr(tile, slot)
+        item = tile.item
         if item is None or item.is_disappearing:
             continue
 
@@ -121,15 +133,12 @@ def update_items(dt):
             tile.item = None
             continue
 
-        if next_gate and next_gate.category == Category.TWO_QUBIT:
+        if next_gate and next_gate.category == Category.TWO_QUBIT and next_tile.peer:
+            # Multi-cell gate: accept qubit from behind only
             arrival = opposite_dir(tile.direction)
-            target_input = opposite_dir(next_tile.direction)
-            control_input = ccw_dir(next_tile.direction)
-            if arrival == target_input and next_tile.item is None:
+            expected = opposite_dir(next_tile.direction)
+            if arrival == expected and next_tile.item is None:
                 next_tile.item = item
-                tile.item = None
-            elif arrival == control_input and next_tile.control_item is None:
-                next_tile.control_item = item
                 tile.item = None
             continue
 
@@ -147,16 +156,13 @@ def update_items(dt):
             _start_disappear(item)
 
 
-def _process_two_qubit(x, y, tile, gate):
-    control = tile.control_item
-    target = tile.item
-    _safe_transform(gate, control, target)
-
-    dx, dy = DIR_VECTORS[tile.direction]
-    _eject_qubit(x, y, x + dx, y + dy, target)
-    tile.item = None
-
-    ctrl_dir = cw_dir(tile.direction)
-    cdx, cdy = DIR_VECTORS[ctrl_dir]
-    _eject_qubit(x, y, x + cdx, y + cdy, control)
-    tile.control_item = None
+def _process_multi_qubit(px, py, primary, gate):
+    cells = _multi_tiles(px, py, primary, gate)
+    items = [tile.item for _, _, tile in cells]
+    target = items[0]
+    controls = items[1:]
+    _safe_transform(gate, *controls, target)
+    dx, dy = DIR_VECTORS[primary.direction]
+    for x, y, tile in cells:
+        _eject_qubit(x, y, x + dx, y + dy, tile.item)
+        tile.item = None

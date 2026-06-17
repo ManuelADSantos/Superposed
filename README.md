@@ -47,7 +47,7 @@ superposed
 
 The game has two modes accessible from the main menu:
 
-**Campaign** — a chapter-based progression with 15 tutorial levels across 6 chapters. The campaign introduces one concept at a time, from basic belt transport through entanglement and multi-qubit routing. Each level locks certain tiles and restricts which gates you can use, with a target number of qubits to deliver to the output sink.
+**Campaign** — a chapter-based progression with 34 tutorial levels across 14 chapters. The campaign introduces one concept at a time, from basic belt transport through entanglement, noise, error detection, and Deutsch's algorithm. Each level locks certain tiles and restricts which gates you can use, with a target number of qubits to deliver to the output sink.
 
 **Sandbox** — an open canvas with every gate unlocked and no win condition, for free experimentation.
 
@@ -59,6 +59,7 @@ The game has two modes accessible from the main menu:
 | Scroll wheel | Zoom in/out |
 | 1-9 | Select gate from toolbar |
 | Left click | Place selected gate |
+| Left-click + drag (belt) | Lay a continuous line of belts |
 | Right click | Remove gate |
 | R | Rotate selected gate |
 | P | Pause simulation |
@@ -78,7 +79,7 @@ The game has two modes accessible from the main menu:
 | **X (NOT)** | Single-qubit | Flips `\|0>` to `\|1>` and vice versa; superposition unchanged |
 | **Y (Pauli-Y)** | Single-qubit | Flips `\|0>` and `\|1>`, and toggles phase on superposition |
 | **Z (Phase)** | Single-qubit | Flips the phase of a superposed qubit; no visible effect on basis states |
-| **CNOT** | Two-qubit | Control from the side, target from behind. If control is `\|1>`, flips target. If superposed, entangles both |
+| **CNOT** | Two-qubit | Two-cell gate: control dot lane plus target gate lane. If control is `\|1>`, flips target. If superposed, entangles both |
 | **CZ** | Two-qubit | Controlled phase flip; useful for phase kickback and interference |
 | **SWAP** | Two-qubit | Exchanges the states of two qubits |
 | **Measurement** | Consumer | Collapses superposition to `\|0>` or `\|1>` (50/50). Shows a histogram of results |
@@ -91,7 +92,7 @@ Superposed/
 ├── pyproject.toml          # Package metadata, entry point
 ├── run.py                  # Quick launcher
 ├── src/                    # Main package
-│   ├── __init__.py         # __version__ = "0.3"
+│   ├── __init__.py         # __version__ = "1.0"
 │   ├── __main__.py         # python -m src
 │   ├── main.py             # Game loop and state machine
 │   ├── core/               # Data model
@@ -101,24 +102,17 @@ Superposed/
 │   ├── engine/             # Simulation and gates
 │   │   ├── gate_registry.py    # GateDef, register(), auto-loader
 │   │   ├── simulation.py       # Physics loop, gate dispatch
-│   │   └── gates/              # One file per gate type
-│   │       ├── _infrastructure.py
-│   │       ├── hadamard.py
-│   │       ├── x_gate.py
-│   │       ├── z_gate.py
-│   │       ├── cnot.py
-│   │       ├── measurement.py
-│   │       └── splitter.py
+│   │   └── gates/              # Registered gate modules
 │   ├── ui/                 # Rendering and input
 │   │   ├── rendering.py    # Grid, toolbar, HUD, qubit drawing
 │   │   ├── sprites.py      # Sprite generation and caching
 │   │   ├── menu.py         # Main menu, level select, briefing, win screen
 │   │   └── input_handler.py    # Keyboard, mouse, zoom
 │   └── content/            # Game content
-│       └── levels.py       # 15 tutorial level definitions across 6 chapters
-├── assets/sprites/         # Custom gate PNGs (optional overrides)
+│       └── levels.py       # 34 tutorial level definitions across 14 chapters
+├── assets/gates_sprites/   # Custom gate PNGs
 ├── tests/
-│   └── test_gates.py       # 37 unit tests
+│   └── test_gates.py       # 40 unit tests
 ├── tools/
 │   └── sprite_editor.html  # Visual sprite editor
 └── docs/
@@ -164,7 +158,7 @@ The gate will automatically appear in the toolbar, be handled by the simulation,
 python -m pytest tests/ -v
 ```
 
-All 37 tests cover gate transforms, entanglement mechanics, measurement statistics, splitter routing, interference, and error handling.
+All 40 tests cover gate transforms, entanglement mechanics, measurement statistics, splitter routing, interference, sink counting, circuit export, and error handling.
 
 ## License
 

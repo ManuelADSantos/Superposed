@@ -5,16 +5,13 @@ from __future__ import annotations
 import random
 from ..gate_registry import register, GateDef, Category
 
+_X = ((0, 1), (1, 0))
+
 
 def _transform(item):
-    from ...core.entities import QubitState
     if random.random() < 0.5:
-        if item.state == QubitState.ZERO:
-            item.state = QubitState.ONE
-        elif item.state == QubitState.ONE:
-            item.state = QubitState.ZERO
-        elif item.state == QubitState.SUPERPOSITION:
-            item.phase_flipped = not item.phase_flipped
+        from ...core.world import apply_single
+        apply_single(item, _X)
 
 
 register(GateDef(

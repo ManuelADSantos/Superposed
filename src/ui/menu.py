@@ -11,7 +11,7 @@ from ..core.config import (
     BG, WHITE, LIGHT_GRAY, DARK_GRAY, YELLOW, GREEN,
     RED, BLUE, PURPLE, CYAN, GOLD,
 )
-from ..content.levels import CHAPTERS, COMING_SOON, ALL_LEVELS, chapter_level_offset
+from ..content.levels import CHAPTERS, ALL_LEVELS, chapter_level_offset
 
 
 # ── Background particles ──
@@ -66,18 +66,29 @@ _PANEL_BORDER = (55, 55, 70)
 _ACCENT = PURPLE
 _ACCENT_DIM = (120, 60, 180)
 completed_levels: set[int] = set()
+_chapter_scroll = 0
+_level_scrolls: dict[int, int] = {}
+_MENU_TOP = 84
+_MENU_BOTTOM = 56
+_SCROLL_STEP = 48
 
 
 def _is_back(event):
     return event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE
 
 
+def _scroll_limit(count, cols, card_h, gap, start_y):
+    if count <= 0:
+        return 0
+    rows = (count + cols - 1) // cols
+    content_bottom = start_y + rows * card_h + (rows - 1) * gap
+    return max(0, content_bottom - (config.HEIGHT - _MENU_BOTTOM))
+
+
 def is_chapter_unlocked(ch_idx):
     if config.ADMIN_MODE or ch_idx == 0:
         return True
     prev = ch_idx - 1
-    if prev >= len(CHAPTERS):
-        return False
     offset = chapter_level_offset(prev)
     return all(offset + i in completed_levels for i in range(len(CHAPTERS[prev]["levels"])))
 
@@ -194,6 +205,8 @@ def handle_main_menu(events, buttons):
 # ── Chapter Select ──
 
 def draw_chapter_select(screen):
+    global _chapter_scroll
+
     screen.fill(_BG_MENU)
     _draw_particles(screen)
 
@@ -212,29 +225,31 @@ def draw_chapter_select(screen):
     total_w = cols * card_w + (cols - 1) * gap
     start_x = (config.WIDTH - total_w) // 2
     start_y = 100
+    _chapter_scroll = min(_chapter_scroll, _scroll_limit(len(CHAPTERS), cols, card_h, gap, start_y))
+    clip = pygame.Rect(0, _MENU_TOP, config.WIDTH, max(0, config.HEIGHT - _MENU_TOP - _MENU_BOTTOM))
 
     mx, my = pygame.mouse.get_pos()
 
-    all_chapters = [(i, ch, True) for i, ch in enumerate(CHAPTERS)]
-    all_chapters += [(len(CHAPTERS) + i, {"name": cs["name"], "subtitle": cs["subtitle"]}, False)
-                     for i, cs in enumerate(COMING_SOON)]
-
-    for display_idx, (ch_idx, ch, playable) in enumerate(all_chapters):
-        col = display_idx % cols
-        row = display_idx // cols
+    screen.set_clip(clip)
+    for ch_idx, ch in enumerate(CHAPTERS):
+        col = ch_idx % cols
+        row = ch_idx // cols
         cx = start_x + col * (card_w + gap)
-        cy = start_y + row * (card_h + gap)
+        cy = start_y + row * (card_h + gap) - _chapter_scroll
         rect = pygame.Rect(cx, cy, card_w, card_h)
+        visible = rect.clip(clip)
+        if visible.width <= 0 or visible.height <= 0:
+            continue
 
-        unlocked = playable and is_chapter_unlocked(ch_idx)
-        hovered = rect.collidepoint(mx, my) and unlocked
+        unlocked = is_chapter_unlocked(ch_idx)
+        hovered = visible.collidepoint(mx, my) and unlocked
 
         if not unlocked:
             bg = (18, 18, 22)
             border = (40, 40, 48)
         elif hovered:
             bg = _PANEL_HOVER
-            border = ch.get("color", _ACCENT) if playable else _PANEL_BORDER
+            border = ch.get("color", _ACCENT)
         else:
             bg = _PANEL
             border = _PANEL_BORDER
@@ -245,12 +260,9 @@ def draw_chapter_select(screen):
         ch_num = small_font.render(f"Chapter {ch_idx + 1}", True, DARK_GRAY)
         screen.blit(ch_num, (cx + 12, cy + 8))
 
-        if playable and is_chapter_complete(ch_idx):
+        if is_chapter_complete(ch_idx):
             badge = small_font.render("COMPLETE", True, GREEN)
             screen.blit(badge, badge.get_rect(topright=(cx + card_w - 12, cy + 8)))
-        elif not playable:
-            lock = small_font.render("COMING SOON", True, DARK_GRAY)
-            screen.blit(lock, lock.get_rect(topright=(cx + card_w - 12, cy + 8)))
         elif not unlocked:
             lock = small_font.render("LOCKED", True, DARK_GRAY)
             screen.blit(lock, lock.get_rect(topright=(cx + card_w - 12, cy + 8)))
@@ -263,7 +275,7 @@ def draw_chapter_select(screen):
         for si, sl in enumerate(_wrap_text(sub_font, ch.get("subtitle", ""), card_w - 24)):
             screen.blit(sub_font.render(sl, True, sub_color), (cx + 12, cy + 52 + si * 16))
 
-        if playable and unlocked:
+        if unlocked:
             done, total = chapter_progress(ch_idx)
             bar_w, bar_h = card_w - 24, 8
             bar_x, bar_y = cx + 12, cy + card_h - 18
@@ -276,7 +288,8 @@ def draw_chapter_select(screen):
             screen.blit(prog, prog.get_rect(topright=(cx + card_w - 12, cy + card_h - 20)))
 
         if unlocked:
-            cards.append((rect, ch_idx))
+            cards.append((visible, ch_idx))
+    screen.set_clip(None)
 
     back_font = pygame.font.SysFont("consolas", 18)
     back_txt = back_font.render("<< Back", True, LIGHT_GRAY)
@@ -288,12 +301,18 @@ def draw_chapter_select(screen):
 
 
 def handle_chapter_select(events, cards):
+    global _chapter_scroll
+
     mx, my = pygame.mouse.get_pos()
     for event in events:
         if event.type == pygame.QUIT:
             return None, None
         if _is_back(event):
             return GameState.MAIN_MENU, None
+        if event.type == pygame.MOUSEWHEEL:
+            limit = _scroll_limit(len(CHAPTERS), 2, 118, 20, 100)
+            _chapter_scroll = max(0, min(limit, _chapter_scroll - event.y * _SCROLL_STEP))
+            continue
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             for rect, idx in cards:
                 if rect.collidepoint(mx, my):
@@ -404,19 +423,27 @@ def draw_level_select(screen, chapter_index):
     total_w = cols * card_w + (cols - 1) * gap
     start_x = (config.WIDTH - total_w) // 2
     start_y = 100
+    scroll = min(_level_scrolls.get(chapter_index, 0),
+                 _scroll_limit(len(levels), cols, card_h, gap, start_y))
+    _level_scrolls[chapter_index] = scroll
+    clip = pygame.Rect(0, _MENU_TOP, config.WIDTH, max(0, config.HEIGHT - _MENU_TOP - _MENU_BOTTOM))
 
     mx, my = pygame.mouse.get_pos()
 
+    screen.set_clip(clip)
     for i, lev in enumerate(levels):
         col = i % cols
         row = i // cols
         cx = start_x + col * (card_w + gap)
-        cy = start_y + row * (card_h + gap)
+        cy = start_y + row * (card_h + gap) - scroll
         rect = pygame.Rect(cx, cy, card_w, card_h)
+        visible = rect.clip(clip)
+        if visible.width <= 0 or visible.height <= 0:
+            continue
 
         global_idx = offset + i
         done = global_idx in completed_levels
-        hovered = rect.collidepoint(mx, my)
+        hovered = visible.collidepoint(mx, my)
         bg = _PANEL_HOVER if hovered else _PANEL
         border = ch_color if hovered else _PANEL_BORDER
 
@@ -444,7 +471,8 @@ def draw_level_select(screen, chapter_index):
         avail_txt = small_font.render(f"Tools: {avail}", True, DARK_GRAY)
         screen.blit(avail_txt, (cx + 10, cy + card_h - 22))
 
-        cards.append((rect, global_idx))
+        cards.append((visible, global_idx))
+    screen.set_clip(None)
 
     back_font = pygame.font.SysFont("consolas", 18)
     back_txt = back_font.render("<< Back to chapters", True, LIGHT_GRAY)
@@ -462,6 +490,13 @@ def handle_level_select(events, cards, chapter_index):
             return None, None
         if _is_back(event):
             return GameState.CHAPTER_SELECT, None
+        if event.type == pygame.MOUSEWHEEL:
+            levels = CHAPTERS[chapter_index]["levels"]
+            cols = min(3, len(levels))
+            limit = _scroll_limit(len(levels), cols, 110, 20, 100)
+            scroll = _level_scrolls.get(chapter_index, 0) - event.y * _SCROLL_STEP
+            _level_scrolls[chapter_index] = max(0, min(limit, scroll))
+            continue
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             for rect, idx in cards:
                 if rect.collidepoint(mx, my):

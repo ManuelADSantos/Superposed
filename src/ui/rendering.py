@@ -60,6 +60,22 @@ def _draw_locked_indicator(surface, rect):
     surface.blit(s, rect.topleft)
 
 
+def _draw_peer_link(surface, rect, tile, size):
+    """Draw a connecting line between primary and companion tiles."""
+    if tile.peer is None or tile.is_ctrl:
+        return
+    cx, cy = tile.peer
+    px, py = rect.centerx, rect.centery
+    csx, csy = world_to_screen(cx, cy, TILE_SIZE)
+    csx += size // 2
+    csy += size // 2
+    gate = get_gate(tile.building)
+    color = gate.color if gate else LIGHT_GRAY
+    roles = (gate.qubits if gate else 2) - 1
+    end = (px + (csx - px) * roles, py + (csy - py) * roles)
+    pygame.draw.line(surface, color, (px, py), end, max(2, int(size * 0.04)))
+
+
 def draw_grid(surface):
     size = TILE_SIZE * world_module._state.zoom
     playable_h = config.HEIGHT - TOOLBAR_HEIGHT
@@ -79,9 +95,15 @@ def draw_grid(surface):
             tile = get_tile(wx, wy)
 
             if tile.building != EMPTY:
-                sprite = get_building_sprite(tile.building, tile.direction, int(size))
+                role = getattr(tile, "role", 1)
+                if tile.is_ctrl and role == 1:
+                    role = 2
+                sprite = get_building_sprite(
+                    tile.building, tile.direction, int(size), role=role)
                 if sprite:
                     surface.blit(sprite, sprite.get_rect(center=rect.center))
+
+                _draw_peer_link(surface, rect, tile, int(size))
 
                 gate = get_gate(tile.building)
                 if gate and gate.overlay_fn:
@@ -95,9 +117,6 @@ def draw_grid(surface):
 
             if tile.item:
                 _draw_item_on_tile(surface, tile, tile.item, sx, sy, size)
-            if tile.control_item:
-                _draw_item_on_tile(surface, tile, tile.control_item, sx, sy, size,
-                                   control=True)
 
 
 def draw_qubit_item(surface, item: QubitItem, x, y, size):
@@ -114,19 +133,20 @@ def draw_qubit_item(surface, item: QubitItem, x, y, size):
     surface.blit(sprite, sprite_rect)
 
 
-def _draw_item_on_tile(surface, tile, item, sx, sy, size, control=False):
+def _draw_item_on_tile(surface, tile, item, sx, sy, size):
     dx, dy = DIR_VECTORS[tile.direction]
     if tile.building == GENERATOR:
         px, py = sx + size / 2, sy + size / 2
-    elif control:
-        cd = ccw_dir(tile.direction)
-        cdx, cdy = DIR_VECTORS[cd]
-        px = sx + size / 2 + cdx * size * 0.2
-        py = sy + size / 2 + cdy * size * 0.2
     else:
         px = sx + size / 2 + dx * item.progress * size * 0.4
         py = sy + size / 2 + dy * item.progress * size * 0.4
     draw_qubit_item(surface, item, px - 10, py - 10, 20)
+
+
+def _companion_offset(direction):
+    """Return (dx, dy) for companion tile position — CCW from gate direction."""
+    cd = ccw_dir(direction)
+    return DIR_VECTORS[cd]
 
 
 def draw_ghost(surface, selected_building, selected_rotation, mouse_pos):
@@ -146,12 +166,28 @@ def draw_ghost(surface, selected_building, selected_rotation, mouse_pos):
         ghost.set_alpha(90)
         surface.blit(ghost, ghost.get_rect(center=(sx + size // 2, sy + size // 2)))
 
+    # Show companion ghosts for multi-qubit gates
+    gate = get_gate(selected_building)
+    if gate and gate.category == Category.TWO_QUBIT:
+        cdx, cdy = _companion_offset(selected_rotation)
+        for role in range(2, gate.qubits + 1):
+            cw, ch = wx + cdx * (role - 1), wy + cdy * (role - 1)
+            csx, csy = world_to_screen(cw, ch, TILE_SIZE)
+            ctrl_sprite = get_building_sprite(selected_building, selected_rotation, size, role=role)
+            if ctrl_sprite:
+                ctrl_ghost = ctrl_sprite.copy()
+                blocked = (cw, ch) in world_module.locked_tiles
+                ctrl_ghost.set_alpha(40 if blocked else 90)
+                surface.blit(ctrl_ghost, ctrl_ghost.get_rect(
+                    center=(csx + size // 2, csy + size // 2)))
+
 
 def _draw_help_tooltip(surface, anchor_rect):
     font = pygame.font.SysFont("consolas", 13)
     lines = [
         "R  Rotate direction",
         "P  Pause / Resume",
+        "N  Single step",
         "C  Clear all placed",
         "O  Recenter camera",
         "WASD  Pan camera",

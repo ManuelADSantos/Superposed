@@ -529,15 +529,16 @@ class TestAlgorithmLevels(unittest.TestCase):
 
 class TestRemovedGates(unittest.TestCase):
 
-    def test_duplicator_is_removed(self):
+    def test_removed_gates_stay_removed(self):
         from src.content.levels import ALL_LEVELS
         from src.engine.gate_registry import get_gate
 
-        self.assertIsNone(get_gate("duplicator"))
+        removed = {"duplicator", "oracle_constant", "oracle_balanced"}
+        self.assertTrue(all(get_gate(gid) is None for gid in removed))
         for level in ALL_LEVELS:
             ids = set(level.get("available", []))
             ids.update(data[0] for data in level.get("pre_placed", {}).values())
-            self.assertNotIn("duplicator", ids)
+            self.assertFalse(ids & removed)
 
 
 class TestCircuitExport(unittest.TestCase):

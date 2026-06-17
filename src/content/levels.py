@@ -27,8 +27,6 @@ TOFFOLI = "toffoli"
 MEAS = "measurement"
 SPLIT = "splitter"
 NOISE = "noise"
-ORA_C = "oracle_constant"
-ORA_B = "oracle_balanced"
 
 
 # ---------------------------------------------------------------------------
@@ -850,91 +848,84 @@ CH10_L2 = {
 # ---------------------------------------------------------------------------
 
 _CH11_CONCEPT = (
-    "Imagine a black box — an Oracle — that computes a function.\n"
-    "You can't look inside. It's either CONSTANT (always does\n"
-    "nothing) or BALANCED (always flips the phase).\n\n"
-    "Classically, you'd need to test both inputs to be sure.\n"
-    "Quantumly: send a superposed qubit through H → Oracle → H.\n"
+    "Deutsch's algorithm distinguishes two kinds of functions:\n"
+    "CONSTANT functions leave interference constructive,\n"
+    "while BALANCED functions flip phase and make interference\n"
+    "destructive.\n\n"
+    "In this factory, you build those function blocks yourself:\n"
+    "  Constant = no phase flip\n"
+    "  Balanced = Z phase flip\n\n"
+    "Send a superposed qubit through H → function → H.\n"
     "The output is deterministic:\n"
-    "  Constant oracle → |0>  (constructive interference)\n"
-    "  Balanced oracle → |1>  (destructive interference)\n\n"
-    "One query. Certain answer. This is Deutsch's algorithm —\n"
-    "the first proof that quantum beats classical."
+    "  Constant -> |0>  (constructive interference)\n"
+    "  Balanced -> |1>  (destructive interference)"
 )
 
 CH11_L1 = {
-    "name": "The Constant Oracle",
-    "description": "A black-box that does nothing — detect it with one query.",
+    "name": "Constant Function",
+    "description": "Build the constant Deutsch case from H gates.",
     "briefing": (
-        "The locked Oracle gate is a black box.\n"
-        "This one is CONSTANT — it does nothing to qubits.\n\n"
-        "Build the detection circuit: H → Oracle → H\n\n"
-        "A constant oracle preserves interference:\n"
-        "  H|0> = |+> → Oracle(nothing) → |+> → H → |0>\n\n"
-        "The sink wants |0>. Build the circuit!"
+        "A constant function does not flip phase.\n\n"
+        "Build the Deutsch detection circuit without a phase gate:\n"
+        "  H -> H\n\n"
+        "The first H creates |+>. With no phase flip, the second\n"
+        "H brings it back to |0>. The sink wants |0>."
     ),
-    "hint": "Place H before and after the Oracle. Output is always |0>.",
+    "hint": "H then H. No Z in the constant case.",
     "pre_placed": {
         (0, 3): (GEN, RIGHT, None),
-        (5, 3): (ORA_C, RIGHT, None),
         (10, 3): (SINK, RIGHT, ZERO),
     },
-    "locked": {(0, 3), (5, 3), (10, 3)},
+    "locked": {(0, 3), (10, 3)},
     "available": [BELT, H],
     "win_count": 5,
     "camera": (5, 3),
 }
 
 CH11_L2 = {
-    "name": "The Balanced Oracle",
-    "description": "This oracle flips the phase — detect it with one query.",
+    "name": "Balanced Function",
+    "description": "Build the balanced Deutsch case with Z.",
     "briefing": (
-        "Same circuit, different oracle.\n"
-        "This one is BALANCED — it flips the phase.\n\n"
-        "Build H → Oracle → H again:\n"
-        "  H|0> = |+> → Oracle(phase flip) → |-> → H → |1>\n\n"
-        "The destructive interference reveals the oracle type!\n"
-        "The sink wants |1>."
+        "A balanced function flips phase.\n\n"
+        "Build the Deutsch detection circuit with Z in the middle:\n"
+        "  H -> Z -> H\n\n"
+        "The first H creates |+>. Z turns it into |->.\n"
+        "The final H converts that phase difference into |1>."
     ),
-    "hint": "Same circuit as before — H, Oracle, H. Output is now |1>.",
+    "hint": "H -> Z -> H gives guaranteed |1>.",
     "pre_placed": {
         (0, 3): (GEN, RIGHT, None),
-        (5, 3): (ORA_B, RIGHT, None),
         (10, 3): (SINK, RIGHT, ONE),
     },
-    "locked": {(0, 3), (5, 3), (10, 3)},
-    "available": [BELT, H],
+    "locked": {(0, 3), (10, 3)},
+    "available": [BELT, H, Z],
     "win_count": 5,
     "camera": (5, 3),
 }
 
 CH11_L3 = {
-    "name": "Oracle Classifier",
-    "description": "Two unknown oracles — classify both automatically.",
+    "name": "Deutsch Classifier",
+    "description": "Build constant and balanced paths, then route the answers.",
     "briefing": (
-        "Two oracles, two assembly lines.\n"
-        "You don't need to know which is which!\n\n"
-        "Build H → Oracle → H → Splitter on each line.\n"
-        "The Splitter routes by state:\n"
-        "  |0> (constant) → straight to the |0> sink\n"
-        "  |1> (balanced) → clockwise to the |1> sink\n\n"
-        "The circuit automatically classifies the oracle.\n"
-        "This is the power of Deutsch's algorithm."
+        "Now build both Deutsch cases yourself.\n\n"
+        "Top lane is constant: H -> H -> Splitter.\n"
+        "Bottom lane is balanced: H -> Z -> H -> Splitter.\n\n"
+        "The locked Splitters sort the deterministic answers:\n"
+        "  |0> goes straight to the constant sink\n"
+        "  |1> turns clockwise to the balanced sink."
     ),
-    "hint": "H before each Oracle, H after, then Splitter sorts the answer.",
+    "hint": "Top: H-H. Bottom: H-Z-H. Splitters are already placed.",
     "pre_placed": {
         (0, 1): (GEN, RIGHT, None),
-        (5, 1): (ORA_C, RIGHT, None),
         (11, 1): (SPLIT, RIGHT, None),
         (15, 1): (SINK, RIGHT, ZERO),
         (0, 6): (GEN, RIGHT, None),
-        (5, 6): (ORA_B, RIGHT, None),
         (11, 6): (SPLIT, RIGHT, None),
         (11, 10): (SINK, DOWN, ONE),
     },
-    "locked": {(0, 1), (5, 1), (11, 1), (15, 1),
-               (0, 6), (5, 6), (11, 6), (11, 10)},
-    "available": [BELT, H],
+    "locked": {(0, 1), (11, 1), (15, 1),
+               (0, 6), (11, 6), (11, 10)},
+    "available": [BELT, H, Z],
     "win_count": 5,
     "camera": (7, 4),
 }

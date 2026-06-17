@@ -24,6 +24,10 @@ CNOT = "cnot"
 CZ = "cz"
 SWAP = "swap"
 TOFFOLI = "toffoli"
+QFT = "qft"
+GROVER = "grover"
+TELEPORT = "teleport"
+SHOR = "shor"
 MEAS = "measurement"
 SPLIT = "splitter"
 NOISE = "noise"
@@ -1158,6 +1162,115 @@ CH14_L2 = {
 
 
 # ---------------------------------------------------------------------------
+# Chapter 15: Algorithms
+# ---------------------------------------------------------------------------
+
+_CH15_CONCEPT = (
+    "Quantum algorithms are built from the same small gates.\n\n"
+    "QFT turns position into phase. Grover amplifies a marked\n"
+    "answer. Teleportation moves an unknown state using shared\n"
+    "entanglement plus correction. Shor uses period finding, with\n"
+    "QFT as the readout step.\n\n"
+    "These are toy factory blocks, but the shape is the real idea."
+)
+
+CH15_L1 = {
+    "name": "QFT Block",
+    "description": "Run two |0> streams through a QFT block.",
+    "briefing": (
+        "The QFT block is a two-qubit Fourier transform.\n\n"
+        "With two |0> inputs it creates two superposed outputs.\n"
+        "Connect both lanes through the locked QFT block."
+    ),
+    "hint": "Both QFT outputs should reach superposition sinks.",
+    "pre_placed": {
+        (-1, 2): (GEN, RIGHT, None),
+        (-1, 3): (GEN, RIGHT, None),
+        (4, 3): (QFT, RIGHT, None),
+        (9, 2): (SINK, RIGHT, SUP),
+        (9, 3): (SINK, RIGHT, SUP),
+    },
+    "locked": {(-1, 2), (-1, 3), (4, 3), (9, 2), (9, 3)},
+    "available": [BELT],
+    "win_count": 5,
+    "camera": (4, 3),
+}
+
+CH15_L2 = {
+    "name": "Grover Search",
+    "description": "Prepare |++>, then amplify the marked |11> answer.",
+    "briefing": (
+        "Grover search starts with a uniform superposition.\n\n"
+        "Put both input lanes through H, then feed them into\n"
+        "the locked Grover block. This toy block marks |11>,\n"
+        "so both sinks want |1>."
+    ),
+    "hint": "H on both lanes before Grover -> |11>.",
+    "pre_placed": {
+        (-1, 2): (GEN, RIGHT, None),
+        (-1, 3): (GEN, RIGHT, None),
+        (5, 3): (GROVER, RIGHT, None),
+        (10, 2): (SINK, RIGHT, ONE),
+        (10, 3): (SINK, RIGHT, ONE),
+    },
+    "locked": {(-1, 2), (-1, 3), (5, 3), (10, 2), (10, 3)},
+    "available": [BELT, H],
+    "win_count": 5,
+    "camera": (5, 3),
+}
+
+CH15_L3 = {
+    "name": "Teleport",
+    "description": "Move the top lane's state to the bottom lane.",
+    "briefing": (
+        "The Teleport block spans three lanes.\n\n"
+        "Top lane: source state.\n"
+        "Middle lane: helper.\n"
+        "Bottom lane: target destination.\n\n"
+        "Make the top source superposed with H. The block moves\n"
+        "that state to the bottom output."
+    ),
+    "hint": "H on the top source lane. Bottom sink wants superposition.",
+    "pre_placed": {
+        (-1, 1): (GEN, RIGHT, None),
+        (-1, 2): (GEN, RIGHT, None),
+        (-1, 3): (GEN, RIGHT, None),
+        (5, 3): (TELEPORT, RIGHT, None),
+        (10, 1): (SINK, RIGHT, ZERO),
+        (10, 2): (SINK, RIGHT, ZERO),
+        (10, 3): (SINK, RIGHT, SUP),
+    },
+    "locked": {(-1, 1), (-1, 2), (-1, 3), (5, 3), (10, 1), (10, 2), (10, 3)},
+    "available": [BELT, H],
+    "win_count": 5,
+    "camera": (5, 2),
+}
+
+CH15_L4 = {
+    "name": "Toy Shor",
+    "description": "Use the period-readout block behind Shor's algorithm.",
+    "briefing": (
+        "Full Shor factors numbers by finding periods.\n"
+        "This toy block gives you the period-readout step:\n"
+        "a compact QFT-style transform.\n\n"
+        "Connect both lanes and watch the phase arrows."
+    ),
+    "hint": "The toy Shor block sends both |0> inputs to superposition.",
+    "pre_placed": {
+        (-1, 2): (GEN, RIGHT, None),
+        (-1, 3): (GEN, RIGHT, None),
+        (4, 3): (SHOR, RIGHT, None),
+        (9, 2): (SINK, RIGHT, SUP),
+        (9, 3): (SINK, RIGHT, SUP),
+    },
+    "locked": {(-1, 2), (-1, 3), (4, 3), (9, 2), (9, 3)},
+    "available": [BELT],
+    "win_count": 5,
+    "camera": (4, 3),
+}
+
+
+# ---------------------------------------------------------------------------
 # Chapter definitions
 # ---------------------------------------------------------------------------
 
@@ -1259,6 +1372,13 @@ CHAPTERS = [
         "concept": _CH14_CONCEPT,
         "color": (255, 255, 255),
         "levels": [CH14_L1, CH14_L2],
+    },
+    {
+        "name": "Algorithms",
+        "subtitle": "QFT, Grover, teleportation, and toy Shor",
+        "concept": _CH15_CONCEPT,
+        "color": (120, 210, 255),
+        "levels": [CH15_L1, CH15_L2, CH15_L3, CH15_L4],
     },
 ]
 

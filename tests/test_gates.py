@@ -5,6 +5,7 @@ from __future__ import annotations
 import unittest
 import random
 import os
+import math
 
 import pygame  # noqa: E402 — needed by sprite functions at registration time
 
@@ -22,6 +23,10 @@ from src.engine.gates.x_gate import _transform as x_gate
 from src.engine.gates.z_gate import _transform as z_gate
 from src.engine.gates.cnot import _transform as cnot
 from src.engine.gates.toffoli import _transform as toffoli
+from src.engine.gates.qft import _transform as qft
+from src.engine.gates.grover import _transform as grover
+from src.engine.gates.shor import _transform as shor
+from src.engine.gates.teleport import _transform as teleport
 from src.engine.gates.measurement import _transform as measure
 from src.engine.gates.splitter import _transform as splitter
 
@@ -103,6 +108,31 @@ class TestHadamard(unittest.TestCase):
         hadamard(q)
         hadamard(q)
         self.assertEqual(q.state, QubitState.ONE)
+
+    def test_arbitrary_phase_angle(self):
+        q = _qubit(QubitState.SUPERPOSITION)
+        q.beta *= 1j
+        self.assertAlmostEqual(q.phase_angle, math.pi / 2)
+        self.assertAlmostEqual(q.bloch[1], 1.0)
+
+    def test_basis_state_sprite_draws_phase_arrow(self):
+        from src.ui import sprites
+
+        calls = []
+        draw_arrow = sprites._draw_phase_arrow
+
+        def spy(*args):
+            calls.append(args)
+
+        try:
+            sprites.clear_sprite_caches()
+            sprites._draw_phase_arrow = spy
+            sprites.get_qubit_sprite(QubitState.ZERO, 32, phase_angle=0.0, bloch=(0, 0, 1))
+        finally:
+            sprites._draw_phase_arrow = draw_arrow
+            sprites.clear_sprite_caches()
+
+        self.assertEqual(len(calls), 1)
 
 
 # Z gate
@@ -244,6 +274,45 @@ class TestToffoli(unittest.TestCase):
         self.assertIsNone(c2.entangle_group)
 
 
+class TestAlgorithmBlocks(unittest.TestCase):
+
+    def setUp(self):
+        reset_world()
+
+    def test_qft_preserves_quarter_turn_phase(self):
+        c = _qubit(QubitState.ZERO)
+        t = _qubit(QubitState.ONE)
+        qft(c, t)
+        self.assertEqual(c.state, QubitState.SUPERPOSITION)
+        self.assertEqual(t.state, QubitState.SUPERPOSITION)
+        self.assertAlmostEqual(abs(t.phase_angle), math.pi / 2)
+
+    def test_grover_amplifies_marked_state(self):
+        c = _qubit(QubitState.SUPERPOSITION)
+        t = _qubit(QubitState.SUPERPOSITION)
+        grover(c, t)
+        self.assertEqual(c.state, QubitState.ONE)
+        self.assertEqual(t.state, QubitState.ONE)
+
+    def test_toy_shor_uses_qft_readout(self):
+        c = _qubit(QubitState.ZERO)
+        t = _qubit(QubitState.ZERO)
+        shor(c, t)
+        self.assertEqual(c.state, QubitState.SUPERPOSITION)
+        self.assertEqual(t.state, QubitState.SUPERPOSITION)
+
+    def test_teleport_moves_source_state_to_target(self):
+        helper = _qubit(QubitState.ZERO)
+        source = _qubit(QubitState.SUPERPOSITION)
+        source.beta *= 1j
+        target = _qubit(QubitState.ZERO)
+        teleport(helper, source, target)
+        self.assertEqual(target.state, QubitState.SUPERPOSITION)
+        self.assertAlmostEqual(target.phase_angle, math.pi / 2)
+        self.assertEqual(source.state, QubitState.ZERO)
+        self.assertEqual(helper.state, QubitState.ZERO)
+
+
 # Measurement
 
 class TestMeasurement(unittest.TestCase):
@@ -301,6 +370,28 @@ class TestMeasurement(unittest.TestCase):
             q = _qubit(QubitState.ZERO)
             measure(q, tile)
         self.assertEqual(len(tile.measurements), 20)
+
+    def test_measurement_history_scales_with_tile_size(self):
+        from src.engine.gates.measurement import _overlay
+
+        def history_heights(tile_size):
+            calls = []
+            draw_rect = pygame.draw.rect
+
+            def spy(surface, color, rect, *args, **kwargs):
+                calls.append(pygame.Rect(rect))
+                return calls[-1]
+
+            tile = _tile(measurements=[QubitState.ZERO] * 20)
+            try:
+                pygame.draw.rect = spy
+                _overlay(pygame.Surface((tile_size, tile_size), pygame.SRCALPHA),
+                         pygame.Rect(0, 0, tile_size, tile_size), tile)
+            finally:
+                pygame.draw.rect = draw_rect
+            return [r.height for r in calls[2:]]
+
+        self.assertLess(max(history_heights(20)), max(history_heights(64)))
 
     def test_measure_flash_set(self):
         q = _qubit(QubitState.ZERO)
@@ -447,6 +538,24 @@ class TestInputHandler(unittest.TestCase):
             config.WIDTH, config.HEIGHT = old_size
 
 
+class TestProgressMeta(unittest.TestCase):
+
+    def test_xp_and_achievements_are_derived_from_completed_levels(self):
+        from src.ui import menu
+
+        old = set(menu.completed_levels)
+        try:
+            menu.completed_levels.clear()
+            self.assertEqual(menu.xp_total(), 0)
+            self.assertEqual(menu.achievements(), [])
+            menu.completed_levels.add(0)
+            self.assertEqual(menu.xp_total(), 100)
+            self.assertIn("First Clear", menu.achievements())
+        finally:
+            menu.completed_levels.clear()
+            menu.completed_levels.update(old)
+
+
 class TestCircuitExport(unittest.TestCase):
 
     def _two_cell_script(self, building):
@@ -508,6 +617,11 @@ class TestCircuitExport(unittest.TestCase):
         script = self._three_cell_script()
         self.assertIn("qc.ccx(1, 0, 2)", script)
         self.assertNotIn("WARNING", script)
+
+    def test_unknown_multi_gate_export_warns_instead_of_cnot(self):
+        script = self._two_cell_script("qft")
+        self.assertIn("WARNING: qft", script)
+        self.assertNotIn("qc.cx", script)
 
 
 if __name__ == "__main__":

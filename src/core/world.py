@@ -248,9 +248,11 @@ def _update_reduced(qubit):
                  for i in range(len(sv)) if not (i & bit))
 
     qubit.alpha = complex(math.sqrt(max(0, p0)))
-    qubit.beta = complex(math.sqrt(max(0, 1 - p0)))
-    if rho_01.real < 0 and p0 > 0.01 and (1 - p0) > 0.01:
-        qubit.beta = -qubit.beta
+    p1 = max(0, 1 - p0)
+    if p0 > 1e-20 and p1 > 1e-20 and abs(rho_01) > 1e-12:
+        qubit.beta = complex(math.sqrt(p1)) * rho_01.conjugate() / abs(rho_01)
+    else:
+        qubit.beta = complex(math.sqrt(p1))
 
 
 def _try_separate_group(group):

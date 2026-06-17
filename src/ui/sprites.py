@@ -6,11 +6,12 @@ Resolution order: custom PNG -> gate.sprite_fn -> generic fallback.
 from __future__ import annotations
 
 from functools import lru_cache
+import math
 import os
 
 import pygame
 
-from ..core.config import RED, BLUE, PURPLE, WHITE, YELLOW, GOLD, PINK
+from ..core.config import RED, BLUE, PURPLE, WHITE, GOLD, PINK
 from ..core.entities import QubitState, Direction
 
 
@@ -94,7 +95,8 @@ def _generic_sprite(gate_id, direction, size):
     return s
 
 
-def _draw_qubit(state, size, disappearing=False, progress=1.0, entangled=False, phase_flipped=False):
+def _draw_qubit(state, size, disappearing=False, progress=1.0, entangled=False,
+                phase_flipped=False, phase_angle=None, bloch=None):
     s = _surf(size)
     cx, cy = size / 2, size / 2
     if disappearing:
@@ -115,26 +117,57 @@ def _draw_qubit(state, size, disappearing=False, progress=1.0, entangled=False, 
     pygame.draw.circle(s, _a(base, 255), (int(cx), int(cy)), radius)
     hx, hy = int(cx - radius * 0.3), int(cy - radius * 0.3)
     pygame.draw.circle(s, _a(WHITE, 110), (hx, hy), max(1, radius // 2))
+    _draw_bloch(s, cx, cy, radius, bloch)
     if entangled:
         pygame.draw.circle(s, GOLD, (int(cx), int(cy)), radius + 2, 2)
         pygame.draw.circle(s, _a(GOLD, 100), (int(cx), int(cy)), radius + 5, 1)
-    elif state == QubitState.SUPERPOSITION:
-        if phase_flipped:
-            pygame.draw.circle(s, PINK, (int(cx), int(cy)), radius + 1, 2)
-            d = max(2, radius // 2)
-            pygame.draw.line(s, _a(WHITE, 200),
-                             (int(cx) - d, int(cy)), (int(cx) + d, int(cy)), 2)
-        else:
-            pygame.draw.circle(s, WHITE, (int(cx), int(cy)), radius + 1, 2)
-            pygame.draw.circle(s, _a(YELLOW, 140), (int(cx), int(cy)), max(2, radius // 2), 1)
+    if state == QubitState.SUPERPOSITION:
+        pygame.draw.circle(s, PINK if phase_flipped else WHITE, (int(cx), int(cy)), radius + 1, 2)
     else:
         pygame.draw.circle(s, _a(WHITE, 130), (int(cx), int(cy)), radius + 1, 1)
+    angle = phase_angle if phase_angle is not None else (math.pi if phase_flipped else 0.0)
+    _draw_phase_arrow(s, cx, cy, radius, angle)
     return s
 
 
+def _draw_bloch(surface, cx, cy, radius, bloch):
+    if bloch is None:
+        return
+    x, _y, z = bloch
+    r = max(2, int(radius * 0.58))
+    center = (int(cx), int(cy))
+    pygame.draw.circle(surface, _a(WHITE, 70), center, r, 1)
+    pygame.draw.line(surface, _a(WHITE, 45),
+                     (int(cx - r), int(cy)), (int(cx + r), int(cy)), 1)
+    pygame.draw.line(surface, _a(WHITE, 45),
+                     (int(cx), int(cy - r)), (int(cx), int(cy + r)), 1)
+    end = (int(cx + x * r), int(cy - z * r))
+    pygame.draw.line(surface, _a(WHITE, 190), center, end, max(1, int(radius * 0.14)))
+    pygame.draw.circle(surface, WHITE, end, max(1, int(radius * 0.14)))
+
+
+def _draw_phase_arrow(surface, cx, cy, radius, angle):
+    ux, uy = math.cos(angle), -math.sin(angle)
+    outer = max(radius + 2, min(radius * 1.8, surface.get_width() / 2 - 2))
+    inner = max(radius, outer - max(2, radius * 0.55))
+    tip = (int(cx + ux * outer), int(cy + uy * outer))
+    base = (cx + ux * inner, cy + uy * inner)
+    px, py = -uy, ux
+    head = max(2, int(radius * 0.35))
+    width = max(1, int(radius * 0.22))
+    pygame.draw.line(surface, WHITE, (int(base[0]), int(base[1])), tip, width)
+    pygame.draw.polygon(surface, WHITE, [
+        tip,
+        (int(base[0] + px * head), int(base[1] + py * head)),
+        (int(base[0] - px * head), int(base[1] - py * head)),
+    ])
+
+
 @lru_cache(maxsize=512)
-def get_qubit_sprite(state, size, disappearing=False, progress=1.0, entangled=False, phase_flipped=False):
-    return _draw_qubit(state, size, disappearing, progress, entangled, phase_flipped)
+def get_qubit_sprite(state, size, disappearing=False, progress=1.0, entangled=False,
+                     phase_flipped=False, phase_angle=None, bloch=None):
+    return _draw_qubit(state, size, disappearing, progress, entangled,
+                       phase_flipped, phase_angle, bloch)
 
 
 # ponytail: gates that always face RIGHT regardless of tile rotation

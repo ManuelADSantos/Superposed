@@ -79,10 +79,31 @@ class QubitItem:
         return QubitState.SUPERPOSITION
 
     @property
+    def phase_angle(self) -> float:
+        if self.state != QubitState.SUPERPOSITION:
+            return 0.0
+        return math.atan2(
+            (self.alpha.conjugate() * self.beta).imag,
+            (self.alpha.conjugate() * self.beta).real,
+        )
+
+    @property
     def phase_flipped(self) -> bool:
         if self.state != QubitState.SUPERPOSITION:
             return False
-        return (self.alpha.conjugate() * self.beta).real < 0
+        return math.cos(self.phase_angle) < -1e-6
+
+    @property
+    def bloch(self) -> tuple[float, float, float]:
+        norm = abs(self.alpha) ** 2 + abs(self.beta) ** 2
+        if norm <= 1e-20:
+            return (0.0, 0.0, 1.0)
+        coherence = self.alpha.conjugate() * self.beta
+        return (
+            2 * coherence.real / norm,
+            2 * coherence.imag / norm,
+            (abs(self.alpha) ** 2 - abs(self.beta) ** 2) / norm,
+        )
 
 
 class Tile:

@@ -109,6 +109,23 @@ def chapter_progress(ch_idx):
     return done, total
 
 
+def xp_total():
+    return len(completed_levels) * 100
+
+
+def achievements():
+    got = []
+    if completed_levels:
+        got.append("First Clear")
+    if len(completed_levels) >= 10:
+        got.append("Ten Levels")
+    if any(is_chapter_complete(i) for i in range(len(CHAPTERS))):
+        got.append("Chapter Clear")
+    if len(completed_levels) >= len(ALL_LEVELS):
+        got.append("Quantum Master")
+    return got
+
+
 def _wrap_text(font, text, max_width):
     wrapped: list[str] = []
     for paragraph in text.split("\n"):
@@ -176,6 +193,12 @@ def draw_main_menu(screen):
         ("Exit", PURPLE),
     ], start_y=config.HEIGHT // 2 - 10)
 
+    stats_font = pygame.font.SysFont("consolas", 14)
+    stats = stats_font.render(
+        f"XP {xp_total()} - {len(achievements())}/4 achievements",
+        True, LIGHT_GRAY)
+    screen.blit(stats, stats.get_rect(center=(config.WIDTH // 2, config.HEIGHT // 2 + 210)))
+
     from .. import __version__
     ver = pygame.font.SysFont("consolas", 12).render(f"v{__version__}", True, DARK_GRAY)
     screen.blit(ver, ver.get_rect(bottomright=(config.WIDTH - 12, config.HEIGHT - 8)))
@@ -217,6 +240,10 @@ def draw_chapter_select(screen):
     card_font = pygame.font.SysFont("consolas", 18, bold=True)
     sub_font = pygame.font.SysFont("consolas", 13)
     small_font = pygame.font.SysFont("consolas", 12)
+    stats = small_font.render(
+        f"XP {xp_total()} - {len(achievements())}/4 achievements",
+        True, LIGHT_GRAY)
+    screen.blit(stats, stats.get_rect(topright=(config.WIDTH - 20, 18)))
 
     cards = []
     cols = 2
@@ -586,7 +613,7 @@ def draw_win_screen(screen, level_index):
     overlay.fill((0, 0, 0, 160))
     screen.blit(overlay, (0, 0))
 
-    pw, ph = 400, 220
+    pw, ph = 420, 250
     panel = pygame.Rect((config.WIDTH - pw) // 2, (config.HEIGHT - ph) // 2, pw, ph)
     pygame.draw.rect(screen, _PANEL, panel, border_radius=14)
     pygame.draw.rect(screen, GREEN, panel, 2, border_radius=14)
@@ -604,6 +631,15 @@ def draw_win_screen(screen, level_index):
         ch = CHAPTERS[ch_idx]
         msg = sf.render(f"Chapter {ch_idx + 1} complete!", True, ch.get("color", GOLD))
         screen.blit(msg, msg.get_rect(center=(panel.centerx, panel.top + 108)))
+
+    small = pygame.font.SysFont("consolas", 14)
+    xp = small.render(
+        f"XP {xp_total()} - {len(achievements())}/4 achievements",
+        True, CYAN)
+    screen.blit(xp, xp.get_rect(center=(panel.centerx, panel.top + 136)))
+    if achievements():
+        last = small.render(f"Latest: {achievements()[-1]}", True, LIGHT_GRAY)
+        screen.blit(last, last.get_rect(center=(panel.centerx, panel.top + 158)))
 
     btn_font = pygame.font.SysFont("consolas", 18, bold=True)
     mx, my = pygame.mouse.get_pos()

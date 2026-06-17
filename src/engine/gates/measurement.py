@@ -43,8 +43,10 @@ def _overlay(surface, rect, tile):
     pygame.draw.rect(surface, SBLU, pygame.Rect(chart.left + bw + gap, chart.bottom - bh, bw, bh))
     ty = rect.top + int(49 * s)
     tw = max(2, chart.width // 20)
+    th = max(1, int(3 * s))
+    inset = max(1, int(s))
     for i, o in enumerate(tile.measurements[-20:]):
-        tr = pygame.Rect(chart.left + i * tw, ty, tw - 1, 3)
+        tr = pygame.Rect(chart.left + i * tw, ty, max(1, tw - inset), th)
         pygame.draw.rect(surface, state_color(o), tr)
     if tile.measure_flash > 0:
         alpha = int(160 * min(tile.measure_flash / 0.35, 1.0))

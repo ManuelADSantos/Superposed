@@ -128,7 +128,7 @@ def draw_qubit_item(surface, item: QubitItem, x, y, size):
     sprite = get_qubit_sprite(item.state, sprite_size,
                               item.is_disappearing, scale,
                               item.entangle_group is not None,
-                              item.phase_flipped)
+                              item.phase_flipped, item.phase_angle, item.bloch)
     sprite_rect = sprite.get_rect(center=(x + size // 2, y + size // 2))
     surface.blit(sprite, sprite_rect)
 

@@ -166,7 +166,14 @@ def generate_qiskit_script(grid: dict | None = None) -> str:
                 if pos not in emitted_pairs:
                     pair = pair_map.get(pos, {})
                     tgt = pair.get("target")
-                    method = _TWO_QUBIT_MAP.get(step.building, "cx")
+                    method = _TWO_QUBIT_MAP.get(step.building)
+                    if method is None:
+                        warnings.append(
+                            f"# WARNING: {step.building} at ({pos[0]},{pos[1]}) "
+                            "has no Qiskit export yet — skipped"
+                        )
+                        emitted_pairs.add(pos)
+                        continue
                     if method == "ccx":
                         ctrl1 = pair.get("control1")
                         ctrl2 = pair.get("control2")

@@ -25,6 +25,9 @@ from src.engine.gates.cnot import _transform as cnot
 from src.engine.gates.toffoli import _transform as toffoli
 from src.engine.gates.measurement import _transform as measure
 from src.engine.gates.splitter import _transform as splitter
+from src.engine.gates.sx_gate import _transform as sx_gate
+from src.engine.gates.sy_gate import _transform as sy_gate
+from src.engine.gates.s_gate import _transform as s_gate
 
 
 def _qubit(state=QubitState.ZERO, phase=False):
@@ -54,9 +57,9 @@ class TestXGate(unittest.TestCase):
         self.assertEqual(q.state, QubitState.ZERO)
 
     def test_superposition_unchanged(self):
-        q = _qubit(QubitState.SUPERPOSITION)
+        q = _qubit(QubitState.PLUS)
         x_gate(q)
-        self.assertEqual(q.state, QubitState.SUPERPOSITION)
+        self.assertEqual(q.state, QubitState.PLUS)
 
     def test_double_x_is_identity(self):
         q = _qubit(QubitState.ZERO)
@@ -72,23 +75,23 @@ class TestHadamard(unittest.TestCase):
     def test_zero_to_superposition(self):
         q = _qubit(QubitState.ZERO)
         hadamard(q)
-        self.assertEqual(q.state, QubitState.SUPERPOSITION)
+        self.assertEqual(q.state, QubitState.PLUS)
         self.assertFalse(q.phase_flipped)
 
     def test_one_to_superposition_with_phase(self):
         q = _qubit(QubitState.ONE)
         hadamard(q)
-        self.assertEqual(q.state, QubitState.SUPERPOSITION)
+        self.assertEqual(q.state, QubitState.MINUS)
         self.assertTrue(q.phase_flipped)
 
     def test_superposition_no_phase_to_zero(self):
-        q = _qubit(QubitState.SUPERPOSITION, phase=False)
+        q = _qubit(QubitState.PLUS, phase=False)
         hadamard(q)
         self.assertEqual(q.state, QubitState.ZERO)
         self.assertFalse(q.phase_flipped)
 
     def test_superposition_with_phase_to_one(self):
-        q = _qubit(QubitState.SUPERPOSITION, phase=True)
+        q = _qubit(QubitState.PLUS, phase=True)
         hadamard(q)
         self.assertEqual(q.state, QubitState.ONE)
         self.assertFalse(q.phase_flipped)
@@ -106,7 +109,7 @@ class TestHadamard(unittest.TestCase):
         self.assertEqual(q.state, QubitState.ONE)
 
     def test_arbitrary_phase_angle(self):
-        q = _qubit(QubitState.SUPERPOSITION)
+        q = _qubit(QubitState.PLUS)
         q.beta *= 1j
         self.assertAlmostEqual(q.phase_angle, math.pi / 2)
         self.assertAlmostEqual(q.bloch[1], 1.0)
@@ -123,7 +126,7 @@ class TestHadamard(unittest.TestCase):
         try:
             sprites.clear_sprite_caches()
             sprites._draw_phase_tick = spy
-            sprites.get_qubit_sprite(QubitState.SUPERPOSITION, 32, phase_angle=0.5)
+            sprites.get_qubit_sprite(QubitState.PLUS, 32, phase_angle=0.5)
         finally:
             sprites._draw_phase_tick = draw_tick
             sprites.clear_sprite_caches()
@@ -147,12 +150,12 @@ class TestZGate(unittest.TestCase):
         self.assertEqual(q.state, QubitState.ONE)
 
     def test_z_on_superposition_flips_phase(self):
-        q = _qubit(QubitState.SUPERPOSITION, phase=False)
+        q = _qubit(QubitState.PLUS, phase=False)
         z_gate(q)
         self.assertTrue(q.phase_flipped)
 
     def test_z_on_superposition_double_is_identity(self):
-        q = _qubit(QubitState.SUPERPOSITION, phase=False)
+        q = _qubit(QubitState.PLUS, phase=False)
         z_gate(q)
         z_gate(q)
         self.assertFalse(q.phase_flipped)
@@ -180,6 +183,63 @@ class TestInterference(unittest.TestCase):
 
 # CNOT gate
 
+class TestSXGate(unittest.TestCase):
+
+    def test_zero_to_minus_i(self):
+        q = _qubit(QubitState.ZERO)
+        sx_gate(q)
+        self.assertEqual(q.state, QubitState.MINUS_I)
+
+    def test_one_to_plus_i(self):
+        q = _qubit(QubitState.ONE)
+        sx_gate(q)
+        self.assertEqual(q.state, QubitState.PLUS_I)
+
+    def test_double_sx_is_x(self):
+        q = _qubit(QubitState.ZERO)
+        sx_gate(q)
+        sx_gate(q)
+        self.assertEqual(q.state, QubitState.ONE)
+
+
+class TestSYGate(unittest.TestCase):
+
+    def test_zero_to_plus(self):
+        q = _qubit(QubitState.ZERO)
+        sy_gate(q)
+        self.assertEqual(q.state, QubitState.PLUS)
+
+    def test_one_to_minus(self):
+        q = _qubit(QubitState.ONE)
+        sy_gate(q)
+        self.assertEqual(q.state, QubitState.MINUS)
+
+    def test_double_sy_is_y(self):
+        q = _qubit(QubitState.ZERO)
+        sy_gate(q)
+        sy_gate(q)
+        self.assertEqual(q.state, QubitState.ONE)
+
+
+class TestSGate(unittest.TestCase):
+
+    def test_zero_unchanged(self):
+        q = _qubit(QubitState.ZERO)
+        s_gate(q)
+        self.assertEqual(q.state, QubitState.ZERO)
+
+    def test_plus_to_plus_i(self):
+        q = _qubit(QubitState.PLUS)
+        s_gate(q)
+        self.assertEqual(q.state, QubitState.PLUS_I)
+
+    def test_double_s_is_z(self):
+        q = _qubit(QubitState.PLUS)
+        s_gate(q)
+        s_gate(q)
+        self.assertEqual(q.state, QubitState.MINUS)
+
+
 class TestCNOT(unittest.TestCase):
 
     def setUp(self):
@@ -204,24 +264,24 @@ class TestCNOT(unittest.TestCase):
         self.assertEqual(t.state, QubitState.ZERO)
 
     def test_control_superposition_entangles(self):
-        c = _qubit(QubitState.SUPERPOSITION)
+        c = _qubit(QubitState.PLUS)
         t = _qubit(QubitState.ZERO)
         cnot(c, t)
-        self.assertEqual(t.state, QubitState.SUPERPOSITION)
+        self.assertEqual(t.state, QubitState.PLUS)
         self.assertIsNotNone(c.entangle_group)
         self.assertEqual(c.entangle_group, t.entangle_group)
 
     def test_control_superposition_target_already_one(self):
         """Superposed control + |1> target — target becomes superposition and entangled."""
-        c = _qubit(QubitState.SUPERPOSITION)
+        c = _qubit(QubitState.PLUS)
         t = _qubit(QubitState.ONE)
         cnot(c, t)
         # CNOT puts any basis-state target into superposition when control is superposed
-        self.assertEqual(t.state, QubitState.SUPERPOSITION)
+        self.assertEqual(t.state, QubitState.PLUS)
         self.assertIsNotNone(t.entangle_group)
 
     def test_entangled_partners_found(self):
-        c = _qubit(QubitState.SUPERPOSITION)
+        c = _qubit(QubitState.PLUS)
         t = _qubit(QubitState.ZERO)
         cnot(c, t)
         partners = get_entangled_partners(c)
@@ -229,14 +289,14 @@ class TestCNOT(unittest.TestCase):
         self.assertEqual(partners[0].uid, t.uid)
 
     def test_entangled_pair_can_merge_with_third_qubit(self):
-        q1 = _qubit(QubitState.SUPERPOSITION)
+        q1 = _qubit(QubitState.PLUS)
         q2 = _qubit(QubitState.ZERO)
         q3 = _qubit(QubitState.ZERO)
         cnot(q1, q2)
         cnot(q2, q3)
         self.assertEqual(q1.entangle_group, q2.entangle_group)
         self.assertEqual(q1.entangle_group, q3.entangle_group)
-        self.assertEqual(q3.state, QubitState.SUPERPOSITION)
+        self.assertEqual(q3.state, QubitState.PLUS)
         self.assertEqual({p.uid for p in get_entangled_partners(q1)}, {q2.uid, q3.uid})
 
 
@@ -261,11 +321,11 @@ class TestToffoli(unittest.TestCase):
         self.assertEqual(t.state, QubitState.ZERO)
 
     def test_superposed_control_entangles_target(self):
-        c1 = _qubit(QubitState.SUPERPOSITION)
+        c1 = _qubit(QubitState.PLUS)
         c2 = _qubit(QubitState.ONE)
         t = _qubit(QubitState.ZERO)
         toffoli(c1, c2, t)
-        self.assertEqual(t.state, QubitState.SUPERPOSITION)
+        self.assertEqual(t.state, QubitState.PLUS)
         self.assertEqual(c1.entangle_group, t.entangle_group)
         self.assertIsNone(c2.entangle_group)
 
@@ -291,7 +351,7 @@ class TestMeasurement(unittest.TestCase):
         self.assertEqual(q.state, QubitState.ONE)
 
     def test_measure_superposition_collapses(self):
-        q = _qubit(QubitState.SUPERPOSITION)
+        q = _qubit(QubitState.PLUS)
         tile = _tile()
         measure(q, tile)
         self.assertIn(q.state, (QubitState.ZERO, QubitState.ONE))
@@ -302,7 +362,7 @@ class TestMeasurement(unittest.TestCase):
         random.seed(42)
         zeros = 0
         for _ in range(200):
-            q = _qubit(QubitState.SUPERPOSITION)
+            q = _qubit(QubitState.PLUS)
             tile = _tile()
             measure(q, tile)
             if q.state == QubitState.ZERO:
@@ -312,7 +372,7 @@ class TestMeasurement(unittest.TestCase):
         self.assertLess(zeros, 150)
 
     def test_measure_collapses_entangled_partner(self):
-        c = _qubit(QubitState.SUPERPOSITION)
+        c = _qubit(QubitState.PLUS)
         t = _qubit(QubitState.ZERO)
         cnot(c, t)  # entangles them
         tile = _tile()
@@ -358,8 +418,8 @@ class TestMeasurement(unittest.TestCase):
 
     def test_sink_counts_superposition_without_measuring(self):
         from src.engine.simulation import _collect_sink
-        q = _qubit(QubitState.SUPERPOSITION)
-        tile = _tile(sink_target=QubitState.SUPERPOSITION)
+        q = _qubit(QubitState.PLUS)
+        tile = _tile(sink_target=QubitState.PLUS)
         _collect_sink(tile, q)
         self.assertEqual(tile.sink_total, 1)
         self.assertEqual(tile.sink_match, 1)
@@ -375,19 +435,19 @@ class TestGenerator(unittest.TestCase):
         from src.engine.gate_registry import GENERATOR
         from src.engine.simulation import _spawn_qubit
 
-        for state in (QubitState.ZERO, QubitState.ONE, QubitState.SUPERPOSITION):
+        for state in (QubitState.ZERO, QubitState.ONE, QubitState.PLUS):
             with self.subTest(state=state):
                 self.assertEqual(_spawn_qubit(_tile(spawn_state=state)).state, state)
 
         load_level({
-            "pre_placed": {(0, 0): (GENERATOR, Direction.RIGHT, (QubitState.SUPERPOSITION, math.pi))},
+            "pre_placed": {(0, 0): (GENERATOR, Direction.RIGHT, (QubitState.PLUS, math.pi))},
             "locked": {(0, 0)},
             "available": [],
         }, 0)
 
         q = _spawn_qubit(get_tile(0, 0))
 
-        self.assertEqual(q.state, QubitState.SUPERPOSITION)
+        self.assertEqual(q.state, QubitState.MINUS)
         self.assertAlmostEqual(q.phase_angle, math.pi)
 
 
@@ -418,7 +478,7 @@ class TestSplitter(unittest.TestCase):
         self.assertEqual(ejected[0][:2], (0, 1))  # CW of RIGHT = DOWN = (0, 1)
 
     def test_superposition_collapses(self):
-        q, ejected = self._run_splitter(QubitState.SUPERPOSITION)
+        q, ejected = self._run_splitter(QubitState.PLUS)
         self.assertIn(q.state, (QubitState.ZERO, QubitState.ONE))
         self.assertEqual(len(ejected), 1)
 
@@ -427,7 +487,7 @@ class TestSplitter(unittest.TestCase):
         random.seed(42)
         ccw_count = 0
         for _ in range(200):
-            _, ejected = self._run_splitter(QubitState.SUPERPOSITION)
+            _, ejected = self._run_splitter(QubitState.PLUS)
             if ejected[0][:2] == (0, -1):  # CCW of RIGHT = UP
                 ccw_count += 1
         self.assertGreater(ccw_count, 50)
@@ -449,8 +509,8 @@ class TestEntanglement(unittest.TestCase):
         reset_world()
 
     def test_break_entanglement(self):
-        q1 = _qubit(QubitState.SUPERPOSITION)
-        q2 = _qubit(QubitState.SUPERPOSITION)
+        q1 = _qubit(QubitState.PLUS)
+        q2 = _qubit(QubitState.PLUS)
         gid = create_entangle_group()
         register_entangled(gid, q1)
         register_entangled(gid, q2)
@@ -461,8 +521,8 @@ class TestEntanglement(unittest.TestCase):
 
     def test_hadamard_breaks_entanglement(self):
         """H on a superposed qubit collapses it, which should break entanglement."""
-        q1 = _qubit(QubitState.SUPERPOSITION)
-        q2 = _qubit(QubitState.SUPERPOSITION)
+        q1 = _qubit(QubitState.PLUS)
+        q2 = _qubit(QubitState.PLUS)
         gid = create_entangle_group()
         register_entangled(gid, q1)
         register_entangled(gid, q2)

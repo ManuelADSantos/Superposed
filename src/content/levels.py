@@ -12,7 +12,8 @@ import math
 from ..core.entities import Direction as D, QubitState as Q
 
 UP, RIGHT, DOWN, LEFT = D.UP, D.RIGHT, D.DOWN, D.LEFT
-ZERO, ONE, SUP = Q.ZERO, Q.ONE, Q.SUPERPOSITION
+ZERO, ONE = Q.ZERO, Q.ONE
+PLUS, MINUS, PLUS_I, MINUS_I = Q.PLUS, Q.MINUS, Q.PLUS_I, Q.MINUS_I
 
 BELT = "belt"
 GEN = "generator"
@@ -139,7 +140,7 @@ CH2_L1 = {
     "hint": "H gate turns red |0> qubits purple (superposition)",
     "pre_placed": {
         (0, 2): (GEN, RIGHT, None),
-        (7, 2): (SINK, RIGHT, SUP),
+        (7, 2): (SINK, RIGHT, PLUS),
     },
     "locked": {(0, 2), (7, 2)},
     "available": [BELT, H],
@@ -165,7 +166,7 @@ CH2_L2 = {
         (0, 4): (GEN, RIGHT, None),
         (9, 4): (SINK, RIGHT, ONE),
         (0, 8): (GEN, RIGHT, None),
-        (9, 8): (SINK, RIGHT, SUP),
+        (9, 8): (SINK, RIGHT, PLUS),
     },
     "locked": {(0, 0), (9, 0), (0, 4), (9, 4), (0, 8), (9, 8)},
     "available": [BELT, X, H],
@@ -191,7 +192,7 @@ CH2_L3 = {
         (4, 0): (X, RIGHT, None),
         (9, 0): (SINK, RIGHT, ONE),
         (0, 5): (GEN, RIGHT, None),
-        (9, 5): (SINK, RIGHT, SUP),
+        (9, 5): (SINK, RIGHT, PLUS),
     },
     "locked": {(0, 0), (4, 0), (9, 0), (0, 5), (9, 5)},
     "available": [BELT, H],
@@ -326,7 +327,7 @@ CH4_L2 = {
     "pre_placed": {
         (0, 2): (GEN, RIGHT, None),
         (2, 2): (H, RIGHT, None),
-        (9, 2): (SINK, RIGHT, (SUP, math.pi)),
+        (9, 2): (SINK, RIGHT, MINUS),
     },
     "locked": {(0, 2), (2, 2), (9, 2)},
     "available": [BELT, Y],
@@ -1035,7 +1036,7 @@ CH13_L1 = {
         (5, 4): (SWAP, RIGHT, None),
         (9, 3): (SINK, RIGHT, ZERO),
         (9, 4): (SINK, RIGHT, ONE),
-        (9, 6): (SINK, RIGHT, SUP),
+        (9, 6): (SINK, RIGHT, PLUS),
     },
     "locked": {(0, 3), (0, 4), (0, 6), (5, 4), (9, 3), (9, 4), (9, 6)},
     "available": [BELT, H, X],
@@ -1180,8 +1181,8 @@ CH15_L1 = {
     "pre_placed": {
         (-1, 2): (GEN, RIGHT, None),
         (-1, 3): (GEN, RIGHT, None),
-        (9, 2): (SINK, RIGHT, SUP),
-        (9, 3): (SINK, RIGHT, SUP),
+        (9, 2): (SINK, RIGHT, PLUS),
+        (9, 3): (SINK, RIGHT, PLUS),
     },
     "locked": {(-1, 2), (-1, 3), (9, 2), (9, 3)},
     "available": [BELT, H, CZ, SWAP],

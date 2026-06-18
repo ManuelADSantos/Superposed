@@ -105,12 +105,12 @@ def _draw_qubit(state, size, disappearing=False, progress=1.0, entangled=False,
     else:
         radius = max(4, int(size * 0.36))
     glow_r = int(radius * 1.8)
-    if state == QubitState.SUPERPOSITION:
-        base = PURPLE
-    elif state == QubitState.ZERO:
+    if state == QubitState.ZERO:
         base = RED
-    else:
+    elif state == QubitState.ONE:
         base = BLUE
+    else:
+        base = PURPLE
     glow = pygame.Surface((size, size), pygame.SRCALPHA)
     pygame.draw.circle(glow, _a(base, 55), (int(cx), int(cy)), glow_r)
     s.blit(glow, (0, 0))
@@ -121,7 +121,7 @@ def _draw_qubit(state, size, disappearing=False, progress=1.0, entangled=False,
     if entangled:
         pygame.draw.circle(s, GOLD, (int(cx), int(cy)), radius + 2, 2)
         pygame.draw.circle(s, _a(GOLD, 100), (int(cx), int(cy)), radius + 5, 1)
-    pygame.draw.circle(s, _a(WHITE, 130 if state != QubitState.SUPERPOSITION else 220),
+    pygame.draw.circle(s, _a(WHITE, 130 if state in (QubitState.ZERO, QubitState.ONE) else 220),
                        (int(cx), int(cy)), radius + 1, 2)
     angle = phase_angle if phase_angle is not None else (math.pi if phase_flipped else 0.0)
     _draw_phase_tick(s, cx, cy, radius, angle)

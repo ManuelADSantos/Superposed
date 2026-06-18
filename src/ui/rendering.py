@@ -470,6 +470,13 @@ def get_help_button_rect():
     return pygame.Rect(r.right + 6, r.top, 26, r.height)
 
 
+_HOVER_LABELS = {
+    QubitState.ZERO: "|0>", QubitState.ONE: "|1>",
+    QubitState.PLUS: "|+>", QubitState.MINUS: "|->",
+    QubitState.PLUS_I: "|i>", QubitState.MINUS_I: "|-i>",
+}
+
+
 def _draw_qubit_hover(surface):
     mx, my = pygame.mouse.get_pos()
     if my >= config.HEIGHT - TOOLBAR_HEIGHT:
@@ -478,16 +485,8 @@ def _draw_qubit_hover(surface):
     tile = get_tile(wx, wy)
     if not tile.item or tile.item.is_disappearing:
         return
-    import math
     item = tile.item
-    s = item.state
-    if s == QubitState.ZERO:
-        label = "|0>"
-    elif s == QubitState.ONE:
-        label = "|1>"
-    else:
-        deg = round(math.degrees(item.phase_angle))
-        label = f"|+>  phase {deg}deg"
+    label = _HOVER_LABELS.get(item.state, "?")
     font = pygame.font.SysFont("consolas", 14)
     txt = font.render(label, True, WHITE)
     pad = 8

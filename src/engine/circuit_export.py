@@ -24,6 +24,8 @@ _SINGLE_MAP = {
     "x_gate":    "x",
     "y_gate":    "y",
     "z_gate":    "z",
+    "sx_gate":   "sx",
+    "s_gate":    "s",
 }
 
 _TWO_QUBIT_MAP = {
@@ -200,6 +202,9 @@ def generate_qiskit_script(grid: dict | None = None) -> str:
             elif step.building in _SINGLE_MAP:
                 method = _SINGLE_MAP[step.building]
                 ops.append(f"qc.{method}({qi})")
+
+            elif step.building == "sy_gate":
+                ops.append(f"qc.ry(math.pi/2, {qi})")
 
             elif step.building in ("measurement", "splitter"):
                 ops.append(f"qc.measure({qi}, {classical_idx})")

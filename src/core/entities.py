@@ -41,7 +41,10 @@ def ccw_dir(d: Direction) -> Direction:
 class QubitState(Enum):
     ZERO = 0
     ONE = 1
-    SUPERPOSITION = 2
+    PLUS = 2       # |+⟩ = (|0⟩+|1⟩)/√2
+    MINUS = 3      # |−⟩ = (|0⟩−|1⟩)/√2
+    PLUS_I = 4     # |i⟩ = (|0⟩+i|1⟩)/√2
+    MINUS_I = 5    # |−i⟩ = (|0⟩−i|1⟩)/√2
 
 
 def state_color(state):
@@ -49,7 +52,7 @@ def state_color(state):
         return RED
     if state == QubitState.ONE:
         return BLUE
-    return PURPLE
+    return PURPLE  # ponytail: all supers purple, per-state colors if visual distinction needed
 
 
 class QubitItem:
@@ -61,8 +64,14 @@ class QubitItem:
         self.progress = 0.0
         if state == QubitState.ONE:
             self.alpha, self.beta = 0 + 0j, 1 + 0j
-        elif state == QubitState.SUPERPOSITION:
+        elif state == QubitState.PLUS:
             self.alpha, self.beta = complex(_S), complex(_S)
+        elif state == QubitState.MINUS:
+            self.alpha, self.beta = complex(_S), complex(-_S)
+        elif state == QubitState.PLUS_I:
+            self.alpha, self.beta = complex(_S), complex(0, _S)
+        elif state == QubitState.MINUS_I:
+            self.alpha, self.beta = complex(_S), complex(0, -_S)
         else:
             self.alpha, self.beta = 1 + 0j, 0 + 0j
         self.entangle_group: int | None = None
@@ -76,11 +85,13 @@ class QubitItem:
             return QubitState.ZERO
         if p0 < 0.001:
             return QubitState.ONE
-        return QubitState.SUPERPOSITION
+        c = self.alpha.conjugate() * self.beta
+        q = round(math.atan2(c.imag, c.real) / (math.pi / 2)) % 4
+        return (QubitState.PLUS, QubitState.PLUS_I, QubitState.MINUS, QubitState.MINUS_I)[q]
 
     @property
     def phase_angle(self) -> float:
-        if self.state == QubitState.SUPERPOSITION:
+        if self.state not in (QubitState.ZERO, QubitState.ONE):
             c = self.alpha.conjugate() * self.beta
             return math.atan2(c.imag, c.real)
         amp = self.beta if abs(self.alpha) < abs(self.beta) else self.alpha
@@ -88,7 +99,7 @@ class QubitItem:
 
     @property
     def phase_flipped(self) -> bool:
-        if self.state != QubitState.SUPERPOSITION:
+        if self.state in (QubitState.ZERO, QubitState.ONE):
             return False
         return math.cos(self.phase_angle) < -1e-6
 

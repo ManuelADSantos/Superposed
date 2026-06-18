@@ -8,7 +8,6 @@ remain stable for completion tracking.
 
 from __future__ import annotations
 
-import math
 from ..core.entities import Direction as D, QubitState as Q
 
 UP, RIGHT, DOWN, LEFT = D.UP, D.RIGHT, D.DOWN, D.LEFT

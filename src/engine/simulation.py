@@ -7,7 +7,7 @@ import math
 from ..core.config import BELT_SPEED, GENERATOR_SPEED, CNOT_PROCESS_DELAY
 from ..core.entities import (
     QubitState, QubitItem, Direction,
-    DIR_VECTORS, opposite_dir, cw_dir, ccw_dir,
+    DIR_VECTORS, opposite_dir, ccw_dir,
 )
 from ..core import world as _world_mod
 from ..core.world import get_tile

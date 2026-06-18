@@ -233,11 +233,12 @@ CH3_L1 = {
     "win_type": "measure",
     "pre_placed": {
         (0, 2): (GEN, RIGHT, None),
+        (4, 2): (MEAS, RIGHT, None)
     },
-    "locked": {(0, 2)},
-    "available": [BELT, H, MEAS],
+    "locked": {(0, 2), (4, 2)},
+    "available": [BELT, H],
     "win_count": 10,
-    "camera": (4, 2),
+    "camera": (3, 2),
 }
 
 CH3_L2 = {
@@ -251,18 +252,18 @@ CH3_L2 = {
         "Feed superposed qubits into the Splitter to split\n"
         "the stream 50/50. Route each output to the\n"
         "matching sink: red to the |0> sink, blue to the |1> sink.\n\n"
-        "Both sinks must collect 3 qubits to win."
+        "Both sinks must collect 10 qubits to win."
     ),
     "hint": "H -> Splitter sorts by state. Belt each output to its sink.",
     "pre_placed": {
         (0, 2): (GEN, RIGHT, None),
-        (9, 2): (SINK, RIGHT, ZERO),
-        (5, 6): (SINK, DOWN, ONE),
+        (5, -1): (SINK, RIGHT, ZERO),
+        (5, 5): (SINK, DOWN, ONE),
     },
-    "locked": {(0, 2), (9, 2), (5, 6)},
+    "locked": {(0, 2), (5, -1), (5, 5)},
     "available": [BELT, H, SPLIT],
-    "win_count": 3,
-    "camera": (4, 3),
+    "win_count": 10,
+    "camera": (4, 2),
 }
 
 

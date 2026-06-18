@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pygame
 from ..core import config
-from ..core.config import TILE_SIZE, TOOLBAR_HEIGHT, TOOLBAR_PAD
+from ..core.config import TILE_SIZE, TOOLBAR_HEIGHT
 from ..core.entities import Direction, QubitState, cw_dir, ccw_dir, DIR_VECTORS
 from ..core.world import screen_to_world, get_tile, count_placed, is_locked
 from ..engine.gate_registry import get_gate, active_toolbar, Category, EMPTY, OUTPUT_SINK, BELT

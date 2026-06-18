@@ -12,7 +12,7 @@ import math
 import random
 
 from .entities import Tile, QubitItem, QubitState
-from ..engine.gate_registry import EMPTY, GENERATOR, OUTPUT_SINK
+from ..engine.gate_registry import GENERATOR, OUTPUT_SINK
 
 
 # ---------------------------------------------------------------------------

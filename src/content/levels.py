@@ -873,27 +873,6 @@ _CH11_CONCEPT = (
     "  Balanced -> |1>  (destructive interference)"
 )
 
-CH11_L1 = {
-    "name": "Constant Function",
-    "description": "Build the constant Deutsch case from H gates.",
-    "briefing": (
-        "A constant function does not flip phase.\n\n"
-        "Build the Deutsch detection circuit without a phase gate:\n"
-        "  H -> H\n\n"
-        "The first H creates |+>. With no phase flip, the second\n"
-        "H brings it back to |0>. The sink wants |0>."
-    ),
-    "hint": "H then H. No Z in the constant case.",
-    "pre_placed": {
-        (0, 3): (GEN, RIGHT, None),
-        (10, 3): (SINK, RIGHT, ZERO),
-    },
-    "locked": {(0, 3), (10, 3)},
-    "available": [BELT, H],
-    "win_count": 5,
-    "camera": (5, 3),
-}
-
 CH11_L2 = {
     "name": "Balanced Function",
     "description": "Build the balanced Deutsch case with Z.",

@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from enum import Enum
 
-from .config import RED, BLUE, PURPLE, WHITE
+from .config import RED, BLUE, PURPLE
 
 _S = 1 / math.sqrt(2)
 

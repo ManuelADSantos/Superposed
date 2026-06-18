@@ -12,7 +12,7 @@ from ..core.config import (
     GOLD, PURPLE, CYAN,
 )
 from ..core.entities import (
-    QubitState, QubitItem, Direction, DIR_VECTORS, state_color, ccw_dir,
+    QubitItem, Direction, DIR_VECTORS, ccw_dir,
 )
 from .sprites import get_building_sprite, get_qubit_sprite
 from ..core.world import get_tile, world_to_screen, screen_to_world, count_placed

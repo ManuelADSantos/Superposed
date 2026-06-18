@@ -26,7 +26,6 @@ class GateDef:
     color: tuple
     category: str
     transform: Callable | None = None
-    sprite_fn: Callable | None = None
     overlay_fn: Callable | None = None
     qubits: int = 1
     order: int = 100
@@ -38,28 +37,18 @@ GENERATOR = "generator"
 OUTPUT_SINK = "output_sink"
 
 GATES: dict[str, GateDef] = {}
-_toolbar_cache: list | None = None
 
 
 def register(gate: GateDef):
-    global _toolbar_cache
     GATES[gate.id] = gate
-    _toolbar_cache = None
 
 
 def get_gate(building_id: str) -> GateDef | None:
     return GATES.get(building_id)
 
 
-def toolbar_order() -> list[GateDef]:
-    global _toolbar_cache
-    if _toolbar_cache is None:
-        _toolbar_cache = sorted(GATES.values(), key=lambda g: g.order)
-    return _toolbar_cache
-
-
 def active_toolbar(available: list[str] | None = None) -> list[str]:
-    all_ids = [g.id for g in toolbar_order()]
+    all_ids = [g.id for g in sorted(GATES.values(), key=lambda g: g.order)]
     if available is not None:
         return [gid for gid in all_ids if gid in available]
     return all_ids

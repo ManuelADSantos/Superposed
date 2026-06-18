@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from functools import lru_cache
 import pygame
 from ..core import config
 from ..core.config import TILE_SIZE, TOOLBAR_HEIGHT, TOOLBAR_PAD
@@ -23,16 +22,6 @@ def _toolbar_hit(mx, my):
         if rect.collidepoint(mx, my):
             return gid
     return None
-
-
-@lru_cache(maxsize=32)
-def _build_key_map(available: tuple | None) -> dict:
-    active = active_toolbar(list(available) if available is not None else None)
-    return {
-        kc: gid
-        for idx, gid in enumerate(active)
-        if (kc := getattr(pygame, f"K_{idx + 1}", None))
-    }
 
 
 def _companion_pos(wx, wy, direction):
@@ -156,8 +145,12 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
     if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
         W._state.camera_x += speed
 
-    avail = tuple(W.available_buildings) if W.available_buildings is not None else None
-    key_map = _build_key_map(avail)
+    active = active_toolbar(W.available_buildings)
+    key_map = {
+        kc: gid
+        for idx, gid in enumerate(active)
+        if (kc := getattr(pygame, f"K_{idx + 1}", None))
+    }
 
     if events is None:
         events = pygame.event.get()
@@ -315,7 +308,6 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
             _erase_active = False
             _erase_last_cell = None
 
-    active = active_toolbar(W.available_buildings)
     if active and selected_building not in active:
         selected_building = active[0]
 

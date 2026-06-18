@@ -11,14 +11,12 @@ from .engine.gate_registry import load_gates, BELT
 from .core.entities import Direction
 from .ui.input_handler import handle_input
 from .engine.simulation import update_items
-from .ui.rendering import draw_grid, draw_ui, tick_toast, reset_briefing
+from .ui.rendering import draw_grid, draw_ui, tick_toast, reset_briefing, draw_briefing_overlay
 from .ui.menu import (
     GameState,
     draw_main_menu, handle_main_menu,
     draw_chapter_select, handle_chapter_select,
-    draw_concept_intro, handle_concept_intro,
     draw_level_select, handle_level_select,
-    draw_briefing, handle_briefing,
     draw_win_screen, handle_win_screen,
     completed_levels, _find_chapter,
 )
@@ -50,7 +48,21 @@ def main():
     selected_rotation = Direction.RIGHT
     paused = False
     step_requested = False
+    show_briefing = False
     running = True
+
+    def _load_and_start(idx):
+        nonlocal level_index, selected_building, paused, step_requested, show_briefing
+        level_index = idx
+        load_level(ALL_LEVELS[level_index], level_index)
+        reset_briefing()
+        selected_building = BELT
+        paused = False
+        step_requested = False
+        avail = W.available_buildings
+        if avail and selected_building not in avail:
+            selected_building = avail[0]
+        show_briefing = True
 
     while running:
         dt = clock.tick(FPS) / 1000.0
@@ -87,18 +99,8 @@ def main():
             new_state, idx = handle_chapter_select(events, cards)
             if new_state is None:
                 running = False
-            elif new_state == GameState.CONCEPT_INTRO:
-                chapter_index = idx
-                state = GameState.CONCEPT_INTRO
-            elif new_state != state:
-                state = new_state
-
-        elif state == GameState.CONCEPT_INTRO:
-            btn = draw_concept_intro(screen, chapter_index)
-            new_state, idx = handle_concept_intro(events, btn, chapter_index)
-            if new_state is None:
-                running = False
             elif new_state == GameState.LEVEL_SELECT:
+                chapter_index = idx
                 state = GameState.LEVEL_SELECT
             elif new_state != state:
                 state = new_state
@@ -108,29 +110,9 @@ def main():
             new_state, idx = handle_level_select(events, cards, chapter_index)
             if new_state is None:
                 running = False
-            elif new_state == GameState.BRIEFING:
-                level_index = idx
-                state = GameState.BRIEFING
-            elif new_state != state:
-                state = new_state
-
-        elif state == GameState.BRIEFING:
-            screen.fill(BG)
-            start_btn = draw_briefing(screen, level_index)
-            new_state, idx = handle_briefing(events, start_btn, level_index)
-            if new_state is None:
-                running = False
             elif new_state == GameState.LEVEL_PLAY:
-                load_level(ALL_LEVELS[level_index], level_index)
-                reset_briefing()
-                selected_building = BELT
-                paused = False
-                avail = W.available_buildings
-                if avail and selected_building not in avail:
-                    selected_building = avail[0]
+                _load_and_start(idx)
                 state = GameState.LEVEL_PLAY
-            elif new_state == GameState.LEVEL_SELECT:
-                state = GameState.LEVEL_SELECT
             elif new_state != state:
                 state = new_state
 
@@ -142,45 +124,57 @@ def main():
             new_state, idx = handle_win_screen(events, menu_btn, next_btn, level_index)
             if new_state is None:
                 running = False
-            elif new_state == GameState.BRIEFING:
-                level_index = idx
-                ch_idx, _ = _find_chapter(level_index)
+            elif new_state == GameState.LEVEL_PLAY:
+                ch_idx, _ = _find_chapter(idx)
                 if ch_idx is not None:
                     chapter_index = ch_idx
-                state = GameState.BRIEFING
+                _load_and_start(idx)
+                state = GameState.LEVEL_PLAY
             elif new_state == GameState.CHAPTER_SELECT:
                 state = GameState.CHAPTER_SELECT
             elif new_state != state:
                 state = new_state
 
         elif state in (GameState.SANDBOX, GameState.LEVEL_PLAY):
-            result = handle_input(
-                dt, selected_building, selected_rotation, paused, step_requested,
-                events=events,
-            )
-            run_ok, selected_building, selected_rotation, paused, step_requested, back_to_menu = result
+            if show_briefing and state == GameState.LEVEL_PLAY:
+                screen.fill(BG)
+                draw_grid(screen)
+                draw_ui(screen, selected_building, selected_rotation, paused)
+                draw_briefing_overlay(screen, "Click anywhere to begin", force=True)
+                for ev in events:
+                    if ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE:
+                        show_briefing = False
+                        state = GameState.LEVEL_SELECT
+                    elif ev.type in (pygame.MOUSEBUTTONDOWN, pygame.KEYDOWN):
+                        show_briefing = False
+            else:
+                result = handle_input(
+                    dt, selected_building, selected_rotation, paused, step_requested,
+                    events=events,
+                )
+                run_ok, selected_building, selected_rotation, paused, step_requested, back_to_menu = result
 
-            if not run_ok:
-                state = GameState.CHAPTER_SELECT if state == GameState.LEVEL_PLAY else GameState.MAIN_MENU
-                if state == GameState.MAIN_MENU:
-                    running = False
-                continue
+                if not run_ok:
+                    state = GameState.CHAPTER_SELECT if state == GameState.LEVEL_PLAY else GameState.MAIN_MENU
+                    if state == GameState.MAIN_MENU:
+                        running = False
+                    continue
 
-            if back_to_menu:
-                state = GameState.CHAPTER_SELECT if state == GameState.LEVEL_PLAY else GameState.MAIN_MENU
-                continue
+                if back_to_menu:
+                    state = GameState.CHAPTER_SELECT if state == GameState.LEVEL_PLAY else GameState.MAIN_MENU
+                    continue
 
-            if not paused or step_requested:
-                update_items(dt * config.SPEED_MULT)
-                step_requested = False
+                if not paused or step_requested:
+                    update_items(dt * config.SPEED_MULT)
+                    step_requested = False
 
-            if state == GameState.LEVEL_PLAY and check_win_condition():
-                completed_levels.add(level_index)
-                state = GameState.WIN_SCREEN
+                if state == GameState.LEVEL_PLAY and check_win_condition():
+                    completed_levels.add(level_index)
+                    state = GameState.WIN_SCREEN
 
-            screen.fill(BG)
-            draw_grid(screen)
-            draw_ui(screen, selected_building, selected_rotation, paused)
+                screen.fill(BG)
+                draw_grid(screen)
+                draw_ui(screen, selected_building, selected_rotation, paused)
 
         pygame.display.flip()
 

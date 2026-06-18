@@ -1,4 +1,4 @@
-"""Menu screens: main menu, chapter select, level select, briefing, concept intro, and win screen."""
+"""Menu screens: main menu, campaign select, level briefing overlay, and win screen."""
 
 from __future__ import annotations
 
@@ -54,9 +54,7 @@ class GameState(Enum):
     LEVEL_SELECT = 2
     SANDBOX = 3
     LEVEL_PLAY = 4
-    BRIEFING = 5
-    WIN_SCREEN = 6
-    CONCEPT_INTRO = 7
+    WIN_SCREEN = 5
 
 
 _BG_MENU = (10, 10, 14)
@@ -71,6 +69,8 @@ _level_scrolls: dict[int, int] = {}
 _MENU_TOP = 84
 _MENU_BOTTOM = 56
 _SCROLL_STEP = 48
+_LEVEL_CONCEPT_TOP = 90
+_LEVEL_CONCEPT_LINE_H = 17
 
 
 def _is_back(event):
@@ -109,23 +109,6 @@ def chapter_progress(ch_idx):
     return done, total
 
 
-def xp_total():
-    return len(completed_levels) * 100
-
-
-def achievements():
-    got = []
-    if completed_levels:
-        got.append("First Clear")
-    if len(completed_levels) >= 10:
-        got.append("Ten Levels")
-    if any(is_chapter_complete(i) for i in range(len(CHAPTERS))):
-        got.append("Chapter Clear")
-    if len(completed_levels) >= len(ALL_LEVELS):
-        got.append("Quantum Master")
-    return got
-
-
 def _wrap_text(font, text, max_width):
     wrapped: list[str] = []
     for paragraph in text.split("\n"):
@@ -143,6 +126,13 @@ def _wrap_text(font, text, max_width):
                 current = word
         wrapped.append(current)
     return wrapped
+
+
+def _level_list_start_y(chapter_index):
+    font = pygame.font.SysFont("consolas", 13)
+    concept_w = max(180, min(config.WIDTH - 80, 660))
+    concept_lines = _wrap_text(font, CHAPTERS[chapter_index].get("concept", ""), concept_w)
+    return _LEVEL_CONCEPT_TOP + len(concept_lines) * _LEVEL_CONCEPT_LINE_H + 36
 
 
 def _draw_menu_buttons(screen, font, labels_colors, start_y, btn_w=260, btn_h=52, gap=16):
@@ -193,12 +183,6 @@ def draw_main_menu(screen):
         ("Exit", PURPLE),
     ], start_y=config.HEIGHT // 2 - 10)
 
-    stats_font = pygame.font.SysFont("consolas", 14)
-    stats = stats_font.render(
-        f"XP {xp_total()} - {len(achievements())}/4 achievements",
-        True, LIGHT_GRAY)
-    screen.blit(stats, stats.get_rect(center=(config.WIDTH // 2, config.HEIGHT // 2 + 210)))
-
     from .. import __version__
     ver = pygame.font.SysFont("consolas", 12).render(f"v{__version__}", True, DARK_GRAY)
     screen.blit(ver, ver.get_rect(bottomright=(config.WIDTH - 12, config.HEIGHT - 8)))
@@ -240,10 +224,6 @@ def draw_chapter_select(screen):
     card_font = pygame.font.SysFont("consolas", 18, bold=True)
     sub_font = pygame.font.SysFont("consolas", 13)
     small_font = pygame.font.SysFont("consolas", 12)
-    stats = small_font.render(
-        f"XP {xp_total()} - {len(achievements())}/4 achievements",
-        True, LIGHT_GRAY)
-    screen.blit(stats, stats.get_rect(topright=(config.WIDTH - 20, 18)))
 
     cards = []
     cols = 2
@@ -345,80 +325,8 @@ def handle_chapter_select(events, cards):
                 if rect.collidepoint(mx, my):
                     if idx == -1:
                         return GameState.MAIN_MENU, None
-                    return GameState.CONCEPT_INTRO, idx
+                    return GameState.LEVEL_SELECT, idx
     return GameState.CHAPTER_SELECT, None
-
-
-# ── Concept Intro (chapter overview) ──
-
-def draw_concept_intro(screen, chapter_index):
-    ch = CHAPTERS[chapter_index]
-    screen.fill(_BG_MENU)
-    _draw_particles(screen)
-
-    tf = pygame.font.SysFont("consolas", 30, bold=True)
-    sf = pygame.font.SysFont("consolas", 14)
-    bf = pygame.font.SysFont("consolas", 22, bold=True)
-
-    pw = 580
-    pad = 28
-    text_w = pw - pad * 2
-    line_h = 19
-
-    lines = _wrap_text(sf, ch["concept"], text_w)
-    text_h = len(lines) * line_h
-    title_h = 64
-    btn_h = 58
-    ph = min(title_h + text_h + btn_h, config.HEIGHT - 20)
-
-    panel = pygame.Rect((config.WIDTH - pw) // 2, max(10, (config.HEIGHT - ph) // 2), pw, ph)
-    pygame.draw.rect(screen, _PANEL, panel, border_radius=14)
-    pygame.draw.rect(screen, ch.get("color", _ACCENT), panel, 2, border_radius=14)
-
-    ch_label = sf.render(f"Chapter {chapter_index + 1}", True, DARK_GRAY)
-    screen.blit(ch_label, ch_label.get_rect(midtop=(panel.centerx, panel.top + 10)))
-
-    title = tf.render(ch["name"], True, ch.get("color", CYAN))
-    screen.blit(title, title.get_rect(midtop=(panel.centerx, panel.top + 28)))
-
-    clip = pygame.Rect(panel.left + pad, panel.top + title_h,
-                       text_w, ph - title_h - btn_h)
-    screen.set_clip(clip)
-    y = panel.top + title_h
-    for line in lines:
-        if line:
-            txt = sf.render(line, True, LIGHT_GRAY)
-            screen.blit(txt, (panel.left + pad, y))
-        y += line_h
-    screen.set_clip(None)
-
-    btn_rect = pygame.Rect(0, 0, 200, 40)
-    btn_rect.center = (panel.centerx, panel.bottom - 30)
-
-    mx, my = pygame.mouse.get_pos()
-    hovered = btn_rect.collidepoint(mx, my)
-    c = ch.get("color", _ACCENT)
-    pygame.draw.rect(screen, c if hovered else _ACCENT_DIM, btn_rect, border_radius=8)
-    btn_text = bf.render("VIEW LEVELS", True, WHITE)
-    screen.blit(btn_text, btn_text.get_rect(center=btn_rect.center))
-
-    return btn_rect
-
-
-def handle_concept_intro(events, btn_rect, chapter_index):
-    mx, my = pygame.mouse.get_pos()
-    for event in events:
-        if event.type == pygame.QUIT:
-            return None, None
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                return GameState.CHAPTER_SELECT, None
-            if event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                return GameState.LEVEL_SELECT, chapter_index
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            if btn_rect.collidepoint(mx, my):
-                return GameState.LEVEL_SELECT, chapter_index
-    return GameState.CONCEPT_INTRO, chapter_index
 
 
 # ── Level Select (per chapter) ──
@@ -440,6 +348,12 @@ def draw_level_select(screen, chapter_index):
     header = header_font.render(ch["name"], True, ch_color)
     screen.blit(header, header.get_rect(center=(config.WIDTH // 2, 52)))
 
+    concept_w = max(180, min(config.WIDTH - 80, 660))
+    concept_lines = _wrap_text(desc_font, ch.get("concept", ""), concept_w)
+    concept_line_h = _LEVEL_CONCEPT_LINE_H
+    concept_h = len(concept_lines) * concept_line_h + 20
+    concept_top = _LEVEL_CONCEPT_TOP
+
     offset = chapter_level_offset(chapter_index)
     levels = ch["levels"]
 
@@ -449,7 +363,7 @@ def draw_level_select(screen, chapter_index):
     gap = 20
     total_w = cols * card_w + (cols - 1) * gap
     start_x = (config.WIDTH - total_w) // 2
-    start_y = 100
+    start_y = _level_list_start_y(chapter_index)
     scroll = min(_level_scrolls.get(chapter_index, 0),
                  _scroll_limit(len(levels), cols, card_h, gap, start_y))
     _level_scrolls[chapter_index] = scroll
@@ -458,6 +372,18 @@ def draw_level_select(screen, chapter_index):
     mx, my = pygame.mouse.get_pos()
 
     screen.set_clip(clip)
+
+    cp_x = (config.WIDTH - concept_w - 24) // 2
+    cp_y = concept_top - scroll
+    cp_rect = pygame.Rect(cp_x, cp_y, concept_w + 24, concept_h)
+    pygame.draw.rect(screen, _PANEL, cp_rect, border_radius=10)
+    pygame.draw.rect(screen, _PANEL_BORDER, cp_rect, 1, border_radius=10)
+    ty = cp_y + 10
+    for line in concept_lines:
+        if line:
+            screen.blit(desc_font.render(line, True, LIGHT_GRAY), (cp_x + 12, ty))
+        ty += concept_line_h
+
     for i, lev in enumerate(levels):
         col = i % cols
         row = i // cols
@@ -520,7 +446,7 @@ def handle_level_select(events, cards, chapter_index):
         if event.type == pygame.MOUSEWHEEL:
             levels = CHAPTERS[chapter_index]["levels"]
             cols = min(3, len(levels))
-            limit = _scroll_limit(len(levels), cols, 110, 20, 100)
+            limit = _scroll_limit(len(levels), cols, 110, 20, _level_list_start_y(chapter_index))
             scroll = _level_scrolls.get(chapter_index, 0) - event.y * _SCROLL_STEP
             _level_scrolls[chapter_index] = max(0, min(limit, scroll))
             continue
@@ -529,79 +455,8 @@ def handle_level_select(events, cards, chapter_index):
                 if rect.collidepoint(mx, my):
                     if idx == -1:
                         return GameState.CHAPTER_SELECT, None
-                    return GameState.BRIEFING, idx
+                    return GameState.LEVEL_PLAY, idx
     return GameState.LEVEL_SELECT, None
-
-
-# ── Briefing ──
-
-def draw_briefing(screen, level_index):
-    lev = ALL_LEVELS[level_index]
-
-    tf = pygame.font.SysFont("consolas", 28, bold=True)
-    bf = pygame.font.SysFont("consolas", 15)
-    btn_font = pygame.font.SysFont("consolas", 22, bold=True)
-
-    pw = 520
-    pad_x = 24
-    text_area_w = pw - pad_x * 2
-    line_h = 22
-    title_h = 60
-    btn_h = 70
-
-    lines = _wrap_text(bf, lev["briefing"], text_area_w)
-    text_block_h = len(lines) * line_h
-
-    ph = min(title_h + text_block_h + btn_h, config.HEIGHT - 40)
-
-    overlay = pygame.Surface((config.WIDTH, config.HEIGHT), pygame.SRCALPHA)
-    overlay.fill((0, 0, 0, 180))
-    screen.blit(overlay, (0, 0))
-
-    panel = pygame.Rect((config.WIDTH - pw) // 2, (config.HEIGHT - ph) // 2, pw, ph)
-    pygame.draw.rect(screen, _PANEL, panel, border_radius=14)
-    pygame.draw.rect(screen, _ACCENT, panel, 2, border_radius=14)
-
-    title = tf.render(lev["name"], True, CYAN)
-    screen.blit(title, title.get_rect(midtop=(panel.centerx, panel.top + 18)))
-
-    clip = pygame.Rect(panel.left + pad_x, panel.top + title_h,
-                       text_area_w, ph - title_h - btn_h)
-    screen.set_clip(clip)
-    y = panel.top + title_h
-    for line in lines:
-        if line:
-            txt = bf.render(line, True, LIGHT_GRAY)
-            screen.blit(txt, (panel.left + pad_x, y))
-        y += line_h
-    screen.set_clip(None)
-
-    btn_rect = pygame.Rect(0, 0, 180, 44)
-    btn_rect.center = (panel.centerx, panel.bottom - 40)
-
-    mx, my = pygame.mouse.get_pos()
-    hovered = btn_rect.collidepoint(mx, my)
-    pygame.draw.rect(screen, _ACCENT if hovered else _ACCENT_DIM, btn_rect, border_radius=8)
-    start = btn_font.render("START", True, WHITE)
-    screen.blit(start, start.get_rect(center=btn_rect.center))
-
-    return btn_rect
-
-
-def handle_briefing(events, start_btn, level_index):
-    mx, my = pygame.mouse.get_pos()
-    for event in events:
-        if event.type == pygame.QUIT:
-            return None, None
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                return GameState.LEVEL_SELECT, None
-            if event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                return GameState.LEVEL_PLAY, level_index
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            if start_btn.collidepoint(mx, my):
-                return GameState.LEVEL_PLAY, level_index
-    return GameState.BRIEFING, level_index
 
 
 # ── Win Screen ──
@@ -631,15 +486,6 @@ def draw_win_screen(screen, level_index):
         ch = CHAPTERS[ch_idx]
         msg = sf.render(f"Chapter {ch_idx + 1} complete!", True, ch.get("color", GOLD))
         screen.blit(msg, msg.get_rect(center=(panel.centerx, panel.top + 108)))
-
-    small = pygame.font.SysFont("consolas", 14)
-    xp = small.render(
-        f"XP {xp_total()} - {len(achievements())}/4 achievements",
-        True, CYAN)
-    screen.blit(xp, xp.get_rect(center=(panel.centerx, panel.top + 136)))
-    if achievements():
-        last = small.render(f"Latest: {achievements()[-1]}", True, LIGHT_GRAY)
-        screen.blit(last, last.get_rect(center=(panel.centerx, panel.top + 158)))
 
     btn_font = pygame.font.SysFont("consolas", 18, bold=True)
     mx, my = pygame.mouse.get_pos()
@@ -693,12 +539,12 @@ def handle_win_screen(events, menu_btn, next_btn, level_index):
             if event.key == pygame.K_ESCAPE:
                 return GameState.CHAPTER_SELECT, None
             if event.key in (pygame.K_RETURN, pygame.K_SPACE) and nxt is not None:
-                return GameState.BRIEFING, nxt
+                return GameState.LEVEL_PLAY, nxt
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if menu_btn.collidepoint(mx, my):
                 return GameState.CHAPTER_SELECT, None
             if next_btn.collidepoint(mx, my):
                 if nxt is not None:
-                    return GameState.BRIEFING, nxt
+                    return GameState.LEVEL_PLAY, nxt
                 return GameState.CHAPTER_SELECT, None
     return GameState.WIN_SCREEN, level_index

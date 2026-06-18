@@ -419,8 +419,8 @@ def reset_briefing():
     _show_briefing = False
 
 
-def _draw_briefing_overlay(surface):
-    if not _show_briefing:
+def draw_briefing_overlay(surface, hint="Press H to close", force=False):
+    if not force and not _show_briefing:
         return
     lev = world_module.current_level_def
     if lev is None:
@@ -443,8 +443,8 @@ def _draw_briefing_overlay(surface):
     pygame.draw.rect(surface, CYAN, box, 1, border_radius=8)
     for i, r in enumerate(rendered):
         surface.blit(r, (box.left + pad, box.top + pad + i * line_h))
-    hint = font.render("Press B to close", True, DARK_GRAY)
-    surface.blit(hint, hint.get_rect(midtop=(box.centerx, box.bottom + 4)))
+    hint_txt = font.render(hint, True, DARK_GRAY)
+    surface.blit(hint_txt, hint_txt.get_rect(midtop=(box.centerx, box.bottom + 4)))
 
 
 def get_export_button_rect():
@@ -475,5 +475,5 @@ def draw_ui(surface, selected_building, selected_rotation, paused):
     draw_tooltip(surface, mouse_pos, selected_building)
     draw_level_hud(surface)
     draw_hud(surface, selected_rotation)
-    _draw_briefing_overlay(surface)
+    draw_briefing_overlay(surface)
     _draw_toast(surface)

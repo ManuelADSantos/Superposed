@@ -1,6 +1,6 @@
 """Sprite generation and caching.
 
-Resolution order: custom PNG -> gate.sprite_fn -> generic fallback.
+Resolution order: custom PNG -> generic fallback.
 """
 
 from __future__ import annotations
@@ -198,10 +198,6 @@ def get_building_sprite(building_id, direction, size, ctrl=False, role=1):
     custom = _load_custom_png(building_id, direction, size, role)
     if custom is not None:
         return custom
-    from ..engine.gate_registry import get_gate
-    gate = get_gate(building_id)
-    if gate and gate.sprite_fn:
-        return gate.sprite_fn(direction, size)
     return _generic_sprite(building_id, direction, size)
 
 

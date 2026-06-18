@@ -467,6 +467,42 @@ class TestSafeTransform(unittest.TestCase):
         self.assertEqual(q.state, QubitState.ZERO)
 
 
+class TestSprites(unittest.TestCase):
+
+    def setUp(self):
+        os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+        pygame.init()
+        pygame.display.set_mode((1, 1))
+        from src.ui import sprites
+        sprites.clear_sprite_caches()
+
+    def tearDown(self):
+        from src.ui import sprites
+        sprites.clear_sprite_caches()
+
+    def test_custom_gate_sprite_loads(self):
+        from src.ui.sprites import get_building_sprite
+
+        sprite = get_building_sprite("cnot", Direction.RIGHT, 32, role=1)
+        self.assertEqual(sprite.get_size(), (32, 32))
+
+    def test_known_gate_without_sprite_falls_back(self):
+        from unittest import mock
+        from src.ui import sprites
+
+        with mock.patch.object(sprites.os.path, "isfile", return_value=False):
+            sprite = sprites.get_building_sprite("cnot", Direction.RIGHT, 32)
+        self.assertEqual(sprite.get_size(), (32, 32))
+
+    def test_broken_gate_sprite_falls_back(self):
+        from unittest import mock
+        from src.ui import sprites
+
+        with mock.patch.object(sprites.pygame.image, "load", side_effect=pygame.error("bad image")):
+            sprite = sprites.get_building_sprite("cnot", Direction.RIGHT, 32, role=1)
+        self.assertEqual(sprite.get_size(), (32, 32))
+
+
 class TestInputHandler(unittest.TestCase):
 
     def test_right_drag_deletes_tiles(self):
@@ -497,17 +533,17 @@ class TestInputHandler(unittest.TestCase):
 
 class TestProgressMeta(unittest.TestCase):
 
-    def test_xp_and_achievements_are_derived_from_completed_levels(self):
+    def test_progress_stays_level_based_without_xp_or_achievements(self):
         from src.ui import menu
 
         old = set(menu.completed_levels)
         try:
             menu.completed_levels.clear()
-            self.assertEqual(menu.xp_total(), 0)
-            self.assertEqual(menu.achievements(), [])
+            self.assertFalse(hasattr(menu, "xp_total"))
+            self.assertFalse(hasattr(menu, "achievements"))
+            self.assertEqual(menu.chapter_progress(0), (0, len(menu.CHAPTERS[0]["levels"])))
             menu.completed_levels.add(0)
-            self.assertEqual(menu.xp_total(), 100)
-            self.assertIn("First Clear", menu.achievements())
+            self.assertEqual(menu.chapter_progress(0)[0], 1)
         finally:
             menu.completed_levels.clear()
             menu.completed_levels.update(old)

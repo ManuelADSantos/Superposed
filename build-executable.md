@@ -50,11 +50,11 @@ The finished executable appears in `dist/Superposed` (macOS/Linux) or `dist/Supe
 
 ---
 
-## 4. Fix asset paths at runtime
+## 4. Asset paths
 
-pygame loads assets with relative paths like `"assets/gates_sprites/..."`. These break inside a PyInstaller bundle because the CWD is no longer the project root.
+The current sprite loader resolves `assets/gates_sprites/` from the package path, so the `--add-data "assets:assets"` flag above is enough.
 
-Add this helper near the top of `src/main.py` (or a shared `utils.py`):
+If a future asset loader uses bare paths like `"assets/..."`, add this helper near that loader:
 
 ```python
 import sys, os
@@ -65,9 +65,7 @@ def resource_path(relative: str) -> str:
     return os.path.join(base, relative)
 ```
 
-Then replace any bare `open("assets/...")` or `pygame.image.load("assets/...")` calls with `resource_path("assets/...")`.
-
-> If your sprites are generated procedurally (no files loaded from disk), you can skip this step.
+Then replace that bare `open("assets/...")` or `pygame.image.load("assets/...")` call with `resource_path("assets/...")`.
 
 ---
 

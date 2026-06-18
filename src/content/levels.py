@@ -816,16 +816,17 @@ CH10_L1 = {
     "hint": "Connect clean gen to CNOT control (top), noisy gen to target (left).",
     "win_type": "measure",
     "pre_placed": {
-        (5, -1): (GEN, DOWN, None),
+        (5, 0): (GEN, DOWN, None),
         (-1, 3): (GEN, RIGHT, None),
         (2, 3): (NOISE, RIGHT, None),
-        (9, 3): (SINK, RIGHT, None),
-        (5, 8): (MEAS, DOWN, None),
+        (8, 3): (SINK, RIGHT, None),
+        (5, 6): (MEAS, DOWN, None),
     },
-    "locked": {(5, -1), (-1, 3), (2, 3), (9, 3), (5, 8)},
+    "locked": {(5, 0), (-1, 3), (2, 3), (8, 3), (5, 6)},
     "available": [BELT, CNOT],
+    "gate_limits": {CNOT: 1},
     "win_count": 10,
-    "camera": (5, 3),
+    "camera": (4, 3),
 }
 
 CH10_L2 = {
@@ -886,12 +887,13 @@ CH11_L2 = {
     "hint": "H -> Z -> H gives guaranteed |1>.",
     "pre_placed": {
         (0, 3): (GEN, RIGHT, None),
-        (10, 3): (SINK, RIGHT, ONE),
+        (7, 3): (SINK, RIGHT, ONE),
     },
-    "locked": {(0, 3), (10, 3)},
+    "locked": {(0, 3), (7, 3)},
     "available": [BELT, H, Z],
+    "gate_limits": {H: 2, Z: 1},
     "win_count": 5,
-    "camera": (5, 3),
+    "camera": (3, 3),
 }
 
 CH11_L3 = {
@@ -908,17 +910,18 @@ CH11_L3 = {
     "hint": "Top: H-H. Bottom: H-Z-H. Splitters are already placed.",
     "pre_placed": {
         (0, 2): (GEN, RIGHT, None),
-        (11, 2): (SPLIT, RIGHT, None),
-        (11, 1): (SINK, DOWN, ZERO),
-        (0, 6): (GEN, RIGHT, None),
-        (11, 6): (SPLIT, RIGHT, None),
-        (11, 9): (SINK, DOWN, ONE),
+        (8, 2): (SPLIT, RIGHT, None),
+        (8, 1): (SINK, DOWN, ZERO),
+        (0, 4): (GEN, RIGHT, None),
+        (8, 4): (SPLIT, RIGHT, None),
+        (8, 5): (SINK, DOWN, ONE),
     },
-    "locked": {(0, 2), (11, 2), (11, 1),
-               (0, 6), (11, 6), (11, 9)},
+    "locked": {(0, 2), (8, 2), (8, 1),
+               (0, 4), (8, 4), (8, 5)},
     "available": [BELT, H, Z],
+    "gate_limits": {H: 4, Z: 1},
     "win_count": 5,
-    "camera": (7, 4),
+    "camera": (4, 3),
 }
 
 
@@ -957,6 +960,7 @@ CH12_L1 = {
     },
     "locked": {(-1, 2), (1, 2), (-1, 3), (9, 2), (9, 3)},
     "available": [BELT, CNOT],
+    "gate_limits": {CNOT: 1},
     "win_count": 5,
     "camera": (4, 3),
 }
@@ -977,13 +981,14 @@ CH12_L2 = {
         (1, 3): (X, RIGHT, None),
         (7, 3): (NOISE, RIGHT, None),
         (-1, 4): (GEN, RIGHT, None),
-        (13, 3): (SINK, RIGHT, None),
-        (13, 4): (SINK, RIGHT, ONE),
+        (9, 3): (SINK, RIGHT, None),
+        (9, 4): (SINK, RIGHT, ONE),
     },
-    "locked": {(-1, 3), (1, 3), (7, 3), (-1, 4), (13, 3), (13, 4)},
+    "locked": {(-1, 3), (1, 3), (7, 3), (-1, 4), (9, 3), (9, 4)},
     "available": [BELT, CNOT],
+    "gate_limits": {CNOT: 1},
     "win_count": 5,
-    "camera": (6, 4),
+    "camera": (4, 4),
 }
 
 
@@ -1020,16 +1025,17 @@ CH13_L1 = {
     "pre_placed": {
         (0, 3): (GEN, RIGHT, None),
         (0, 4): (GEN, RIGHT, None),
-        (0, 8): (GEN, RIGHT, None),
+        (0, 6): (GEN, RIGHT, None),
         (5, 4): (SWAP, RIGHT, None),
-        (11, 3): (SINK, RIGHT, ZERO),
-        (11, 4): (SINK, RIGHT, ONE),
-        (11, 8): (SINK, RIGHT, SUP),
+        (9, 3): (SINK, RIGHT, ZERO),
+        (9, 4): (SINK, RIGHT, ONE),
+        (9, 6): (SINK, RIGHT, SUP),
     },
-    "locked": {(0, 3), (0, 4), (0, 8), (5, 4), (11, 3), (11, 4), (11, 8)},
+    "locked": {(0, 3), (0, 4), (0, 6), (5, 4), (9, 3), (9, 4), (9, 6)},
     "available": [BELT, H, X],
+    "gate_limits": {X: 1, H: 1},
     "win_count": 5,
-    "camera": (5, 4),
+    "camera": (4, 4),
 }
 
 CH13_L2 = {
@@ -1099,12 +1105,13 @@ CH14_L1 = {
         (2, 3): (H, RIGHT, None),
         (4, 3): (Z, RIGHT, None),
         (6, 3): (NOISE, RIGHT, None),
-        (13, 7): (SINK, DOWN, ONE),
+        (9, 5): (SINK, DOWN, ONE),
     },
-    "locked": {(0, 3), (2, 3), (4, 3), (6, 3), (13, 7)},
+    "locked": {(0, 3), (2, 3), (4, 3), (6, 3), (9, 5)},
     "available": [BELT, H, SPLIT],
+    "gate_limits": {H: 1, SPLIT: 1},
     "win_count": 5,
-    "camera": (7, 4),
+    "camera": (5, 4),
 }
 
 CH14_L2 = {
@@ -1127,13 +1134,14 @@ CH14_L2 = {
         (-1, 4): (GEN, RIGHT, None),
         (2, 3): (NOISE, RIGHT, None),
         (5, 4): (CZ, RIGHT, None),
-        (11, 3): (SINK, RIGHT, ONE),
-        (11, 4): (SINK, RIGHT, ONE),
+        (9, 3): (SINK, RIGHT, ONE),
+        (9, 4): (SINK, RIGHT, ONE),
     },
-    "locked": {(-1, 3), (-1, 4), (2, 3), (5, 4), (11, 3), (11, 4)},
+    "locked": {(-1, 3), (-1, 4), (2, 3), (5, 4), (9, 3), (9, 4)},
     "available": [BELT, H, X],
+    "gate_limits": {H: 2, X: 1},
     "win_count": 5,
-    "camera": (5, 4),
+    "camera": (4, 4),
 }
 
 
@@ -1166,13 +1174,14 @@ CH15_L1 = {
     "pre_placed": {
         (-1, 2): (GEN, RIGHT, None),
         (-1, 3): (GEN, RIGHT, None),
-        (12, 2): (SINK, RIGHT, SUP),
-        (12, 3): (SINK, RIGHT, SUP),
+        (9, 2): (SINK, RIGHT, SUP),
+        (9, 3): (SINK, RIGHT, SUP),
     },
-    "locked": {(-1, 2), (-1, 3), (12, 2), (12, 3)},
+    "locked": {(-1, 2), (-1, 3), (9, 2), (9, 3)},
     "available": [BELT, H, CZ, SWAP],
+    "gate_limits": {H: 2, CZ: 1, SWAP: 1},
     "win_count": 5,
-    "camera": (5, 3),
+    "camera": (4, 3),
 }
 
 CH15_L2 = {
@@ -1190,13 +1199,14 @@ CH15_L2 = {
     "pre_placed": {
         (-1, 2): (GEN, RIGHT, None),
         (-1, 3): (GEN, RIGHT, None),
-        (18, 2): (SINK, RIGHT, ONE),
-        (18, 3): (SINK, RIGHT, ONE),
+        (14, 2): (SINK, RIGHT, ONE),
+        (14, 3): (SINK, RIGHT, ONE),
     },
-    "locked": {(-1, 2), (-1, 3), (18, 2), (18, 3)},
+    "locked": {(-1, 2), (-1, 3), (14, 2), (14, 3)},
     "available": [BELT, H, X, CZ],
+    "gate_limits": {H: 6, X: 4, CZ: 2},
     "win_count": 5,
-    "camera": (8, 3),
+    "camera": (6, 3),
 }
 
 CH15_L3 = {
@@ -1216,14 +1226,15 @@ CH15_L3 = {
         (-1, 1): (GEN, RIGHT, None),
         (-1, 2): (GEN, RIGHT, None),
         (-1, 3): (GEN, RIGHT, None),
-        (14, 1): (MEAS, RIGHT, None),
-        (14, 2): (MEAS, RIGHT, None),
-        (14, 3): (SINK, RIGHT, None),
+        (10, 1): (MEAS, RIGHT, None),
+        (10, 2): (MEAS, RIGHT, None),
+        (10, 3): (SINK, RIGHT, None),
     },
-    "locked": {(-1, 1), (-1, 2), (-1, 3), (14, 1), (14, 2), (14, 3)},
+    "locked": {(-1, 1), (-1, 2), (-1, 3), (10, 1), (10, 2), (10, 3)},
     "available": [BELT, H, CNOT],
+    "gate_limits": {H: 2, CNOT: 2},
     "win_count": 10,
-    "camera": (6, 2),
+    "camera": (4, 2),
 }
 
 CH15_L4 = {
@@ -1241,13 +1252,14 @@ CH15_L4 = {
     "pre_placed": {
         (-1, 2): (GEN, RIGHT, None),
         (-1, 3): (GEN, RIGHT, None),
-        (14, 2): (MEAS, RIGHT, None),
-        (14, 3): (MEAS, RIGHT, None),
+        (9, 2): (MEAS, RIGHT, None),
+        (9, 3): (MEAS, RIGHT, None),
     },
-    "locked": {(-1, 2), (-1, 3), (14, 2), (14, 3)},
+    "locked": {(-1, 2), (-1, 3), (9, 2), (9, 3)},
     "available": [BELT, H, CZ],
+    "gate_limits": {H: 4, CZ: 1},
     "win_count": 10,
-    "camera": (6, 3),
+    "camera": (4, 3),
 }
 
 

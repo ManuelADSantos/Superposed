@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 from ..core.config import BELT_SPEED, GENERATOR_SPEED, CNOT_PROCESS_DELAY
 from ..core.entities import (
     QubitState, QubitItem, Direction,
@@ -23,7 +25,6 @@ def _start_disappear(item):
 
 
 def _collect_sink(tile, item):
-    import math
     from ..core.world import break_entanglement
     state = item.state
     phase = item.phase_angle
@@ -81,6 +82,17 @@ def reset_spawn_clock():
     _spawn_clock = 0.0
 
 
+def _spawn_qubit(tile):
+    q = QubitItem(tile.spawn_state or QubitState.ZERO)
+    if tile.spawn_phase is not None:
+        phase = complex(math.cos(tile.spawn_phase), math.sin(tile.spawn_phase))
+        if q.state == QubitState.ZERO:
+            q.alpha *= phase
+        else:
+            q.beta *= phase
+    return q
+
+
 def update_items(dt):
     global _spawn_clock
     ready_to_move = []
@@ -100,7 +112,7 @@ def update_items(dt):
                 tile.item = None
 
         if tile.building == GENERATOR and spawn_now and tile.item is None:
-            tile.item = QubitItem(QubitState.ZERO)
+            tile.item = _spawn_qubit(tile)
 
         gate = get_gate(tile.building)
 

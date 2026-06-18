@@ -12,7 +12,7 @@ import math
 import random
 
 from .entities import Tile, QubitItem, QubitState
-from ..engine.gate_registry import EMPTY, OUTPUT_SINK
+from ..engine.gate_registry import EMPTY, GENERATOR, OUTPUT_SINK
 
 
 # ---------------------------------------------------------------------------
@@ -644,6 +644,12 @@ def load_level(level_def, level_index):
                     tile.sink_target, tile.sink_phase = target
                 else:
                     tile.sink_target = target
+            elif tile.building == GENERATOR:
+                spawn = data[2]
+                if isinstance(spawn, tuple):
+                    tile.spawn_state, tile.spawn_phase = spawn
+                else:
+                    tile.spawn_state = spawn
 
     # Auto-create companions for pre-placed multi-qubit gates
     for (x, y), data in level_def.get("pre_placed", {}).items():

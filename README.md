@@ -63,9 +63,9 @@ The game has two modes accessible from the main menu:
 | Right click / drag | Remove gates |
 | R | Rotate selected gate |
 | Space | Pause simulation |
-| N | Single step (while paused) |
 | C | Clear all non-locked tiles |
-| H | Show level briefing |
+| F | Show level briefing |
+| X | Recenter camera |
 | Tab | Return to menu |
 | Middle-click sink | Cycle sink target state |
 

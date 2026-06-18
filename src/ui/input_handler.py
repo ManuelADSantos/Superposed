@@ -45,6 +45,8 @@ def _multi_cells(wx, wy, tile):
 def _clear_tile(tile):
     tile.building = EMPTY
     tile.item = None
+    tile.spawn_state = None
+    tile.spawn_phase = None
     tile.peer = None
     tile.is_ctrl = False
     tile.role = 1
@@ -78,6 +80,8 @@ def _place_building(wx, wy, building, direction):
     tile.direction = direction
     tile.process_timer = 0.0
     tile.measurements = []
+    tile.spawn_state = None
+    tile.spawn_phase = None
     tile.peer = None
     tile.is_ctrl = False
     tile.role = 1
@@ -173,8 +177,6 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
                 config.SPEED_MULT = {0.5: 0.5, 1: 0.5, 2: 1, 4: 2}[config.SPEED_MULT]
             elif event.key == pygame.K_e:
                 config.SPEED_MULT = {0.5: 1, 1: 2, 2: 4, 4: 4}[config.SPEED_MULT]
-            elif event.key == pygame.K_n:
-                step_requested = True
             elif event.key == pygame.K_c:
                 for pos in list(W.world.keys()):
                     if pos not in W.locked_tiles:
@@ -183,9 +185,9 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
                         tile.is_ctrl = False
                         tile.role = 1
                         del W.world[pos]
-            elif event.key == pygame.K_h:
+            elif event.key == pygame.K_f:
                 toggle_briefing()
-            elif event.key == pygame.K_o:
+            elif event.key == pygame.K_x:
                 ldef = W._state.current_level_def
                 cx, cy = (ldef or {}).get("camera", (0, 0))
                 W._state.camera_x = cx * TILE_SIZE - config.WIDTH / 2

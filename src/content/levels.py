@@ -496,22 +496,23 @@ CH6_L2 = {
         "The SWAP gate exchanges the quantum states of two qubits.\n"
         "After a SWAP, each qubit carries the other's original state.\n\n"
         "Two parallel streams flow through a SWAP gate:\n"
-        "  Top stream:    |1> (use X to flip from |0>)\n"
+        "  Top stream:    |1> (straight from the generator)\n"
         "  Bottom stream: |0> (straight from the generator)\n\n"
         "After the SWAP:\n"
         "  Top exit carries the bottom stream's state -> |0>\n"
         "  Bottom exit carries the top stream's state -> |1>\n\n"
         "Route each exit to the matching sink."
     ),
-    "hint": "X on the top path, SWAP in the middle, belt the exits to sinks",
+    "hint": "SWAP in the middle, then belt the exits to matching sinks",
     "pre_placed": {
         (-1, 2): (GEN, RIGHT, None),
         (-1, 3): (GEN, RIGHT, None),
         (10, 2): (SINK, RIGHT, ZERO),
         (10, 3): (SINK, RIGHT, ONE),
+
     },
     "locked": {(-1, 2), (-1, 3), (10, 2), (10, 3)},
-    "available": [BELT, X, SWAP],
+    "available": [BELT, SWAP],
     "win_count": 5,
     "camera": (5, 3),
 }

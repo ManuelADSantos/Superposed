@@ -52,7 +52,7 @@ Defines the fundamental data types:
 
 **QubitItem** — a qubit particle flowing through the factory. Tracks its amplitudes (`alpha`, `beta`), derived display state/phase, entanglement group, progress along the current tile, and disappearance animation state. Each instance gets a unique `uid` from a counter.
 
-**Tile** — a single grid cell. Holds the building ID (a string like `"hadamard"`), direction, the qubit currently on it, optional peer metadata for two-cell gates, spawn/process timers, measurement histogram, and sink output counters.
+**Tile** — a single grid cell. Holds the building ID (a string like `"hadamard"`), direction, the qubit currently on it, optional peer metadata for two-cell gates, generator spawn state/phase, process timers, measurement histogram, and sink output counters.
 
 ### world.py
 
@@ -92,7 +92,7 @@ The central registry is a dictionary mapping string IDs to `GateDef` dataclass i
 `update_items(dt)` is the physics loop, called once per frame. It iterates every tile in the world and:
 
 1. **Advances progress** — qubits on belts move forward by `BELT_SPEED * dt`. When progress reaches 1.0, the qubit is ready to transfer.
-2. **Spawns qubits** — generator tiles create new `QubitItem(ZERO)` at a fixed rate.
+2. **Spawns qubits** — generator tiles create new `QubitItem`s at a fixed rate, defaulting to `|0>` unless the level config sets a spawn state.
 3. **Processes two-qubit gates** — the primary tile waits for its control-dot peer and target tile to fill (with a short delay for visual clarity), then calls the gate's transform and ejects both qubits.
 4. **Applies single-qubit gates** — when a qubit arrives (progress crosses 0.0), the gate's transform is called immediately.
 5. **Transfers qubits** — when a qubit finishes a tile, it moves to the next tile in the facing direction. If the next tile doesn't exist or is full, the qubit starts a disappearance animation.
@@ -149,7 +149,7 @@ Implements the menu flow as draw/handle function pairs:
 
 ### input_handler.py
 
-Translates pygame events into game actions. Returns an updated `(run_ok, selected_building, selected_rotation, paused, step_requested, back_to_menu)` tuple each frame. Handles camera panning (WASD), zoom (scroll wheel), building placement (left click), removal (right click), rotation (R), single-step (N), and toolbar selection (number keys or clicking toolbar buttons). Placing a two-qubit gate auto-creates its control-dot companion one cell counter-clockwise; deleting either half removes both. Dragging with the belt selected lays a continuous run of belts that follow the cursor.
+Translates pygame events into game actions. Returns an updated `(run_ok, selected_building, selected_rotation, paused, step_requested, back_to_menu)` tuple each frame. Handles camera panning (WASD), recentering (X), zoom (scroll wheel), building placement (left click), removal (right click), rotation (R), briefing toggle (F), and toolbar selection (number keys or clicking toolbar buttons). Placing a two-qubit gate auto-creates its control-dot companion one cell counter-clockwise; deleting either half removes both. Dragging with the belt selected lays a continuous run of belts that follow the cursor.
 
 ## Content Subpackage
 
@@ -158,7 +158,7 @@ Translates pygame events into game actions. Returns an updated `(run_ok, selecte
 Thirty-seven tutorial levels across 15 chapters, flattened into `ALL_LEVELS` from the per-chapter lists in `CHAPTERS`. Each level is a dictionary with:
 
 - `name`, `description`, `briefing` — text shown to the player.
-- `pre_placed` — dict mapping `(x, y)` to a `(building_id, direction, target)` tuple for tiles the level starts with (`target` is the sink's desired state, or `None`). Companions for two-qubit gates are generated automatically at load time.
+- `pre_placed` — dict mapping `(x, y)` to a `(building_id, direction, param)` tuple for tiles the level starts with. For sinks, `param` is the desired output state or `(state, phase)`. For generators, `param` is the spawn state or `(state, phase)`. Companions for two-qubit gates are generated automatically at load time.
 - `locked` — set of `(x, y)` coordinates the player cannot modify.
 - `available` — list of gate IDs the player can use (restricts the toolbar).
 - `gate_limits` — optional per-level caps for specific gates.

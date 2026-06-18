@@ -190,15 +190,14 @@ def _draw_help_tooltip(surface, anchor_rect):
         "R  Rotate direction",
         "SPACE  Pause / Resume",
         "Q / E  Slow / Fast",
-        "N  Single step",
         "C  Clear all placed",
-        "O  Recenter camera",
+        "X  Recenter camera",
         "WASD  Pan camera",
         "Scroll  Zoom",
         "ESC  Back to menu",
     ]
     if world_module.current_level_index is not None:
-        lines.insert(3, "H  Show briefing")
+        lines.insert(3, "F  Show briefing")
     rendered = [font.render(l, True, WHITE) for l in lines]
     lh = font.get_linesize()
     pad = 10
@@ -419,7 +418,7 @@ def reset_briefing():
     _show_briefing = False
 
 
-def draw_briefing_overlay(surface, hint="Press H to close", force=False):
+def draw_briefing_overlay(surface, hint="Press F to close", force=False):
     if not force and not _show_briefing:
         return
     lev = world_module.current_level_def

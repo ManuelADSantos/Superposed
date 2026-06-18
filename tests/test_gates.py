@@ -365,6 +365,32 @@ class TestMeasurement(unittest.TestCase):
         self.assertEqual(tile.sink_match, 1)
 
 
+class TestGenerator(unittest.TestCase):
+
+    def setUp(self):
+        reset_world()
+
+    def test_generator_spawn_state_and_phase_from_level(self):
+        from src.core.world import load_level, get_tile
+        from src.engine.gate_registry import GENERATOR
+        from src.engine.simulation import _spawn_qubit
+
+        for state in (QubitState.ZERO, QubitState.ONE, QubitState.SUPERPOSITION):
+            with self.subTest(state=state):
+                self.assertEqual(_spawn_qubit(_tile(spawn_state=state)).state, state)
+
+        load_level({
+            "pre_placed": {(0, 0): (GENERATOR, Direction.RIGHT, (QubitState.SUPERPOSITION, math.pi))},
+            "locked": {(0, 0)},
+            "available": [],
+        }, 0)
+
+        q = _spawn_qubit(get_tile(0, 0))
+
+        self.assertEqual(q.state, QubitState.SUPERPOSITION)
+        self.assertAlmostEqual(q.phase_angle, math.pi)
+
+
 # Splitter
 
 class TestSplitter(unittest.TestCase):
@@ -528,6 +554,40 @@ class TestInputHandler(unittest.TestCase):
             self.assertEqual(get_tile(0, 0).building, EMPTY)
             self.assertEqual(get_tile(1, 0).building, EMPTY)
         finally:
+            config.WIDTH, config.HEIGHT = old_size
+
+    def test_shortcuts_are_current(self):
+        from src.core import config
+        from src.engine.gate_registry import BELT
+        from src.ui import rendering
+        from src.ui.input_handler import handle_input
+
+        os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+        pygame.init()
+        pygame.display.set_mode((1, 1))
+        old_size = config.WIDTH, config.HEIGHT
+        try:
+            config.WIDTH, config.HEIGHT = 320, 240
+            reset_world()
+            from src.core import world as W
+            W._state.current_level_def = {"camera": (3, 2)}
+            W.current_level_def = W._state.current_level_def
+            W._state.camera_x = 999
+            W._state.camera_y = 999
+            rendering.reset_briefing()
+
+            result = handle_input(0, BELT, Direction.RIGHT, False, False, [
+                pygame.event.Event(pygame.KEYDOWN, key=pygame.K_f),
+                pygame.event.Event(pygame.KEYDOWN, key=pygame.K_x),
+            ])
+
+            self.assertFalse(result[4])
+            self.assertTrue(rendering._show_briefing)
+            self.assertEqual(W._state.zoom, 1.0)
+            self.assertNotEqual(W._state.camera_x, 999)
+            self.assertNotEqual(W._state.camera_y, 999)
+        finally:
+            rendering.reset_briefing()
             config.WIDTH, config.HEIGHT = old_size
 
 

@@ -16,6 +16,7 @@ from ..core.entities import (
 )
 from .sprites import get_building_sprite, get_qubit_sprite
 from ..core.world import get_tile, world_to_screen, screen_to_world, count_placed, is_locked
+from ..content.levels import CHAPTERS
 from ..engine.gate_registry import (
     get_gate, active_toolbar, Category,
     EMPTY, GENERATOR, OUTPUT_SINK,
@@ -146,12 +147,6 @@ def _draw_item_on_tile(surface, tile, item, sx, sy, size):
     draw_qubit_item(surface, item, px - q // 2, py - q // 2, q)
 
 
-def _companion_offset(direction):
-    """Return (dx, dy) for companion tile position — CCW from gate direction."""
-    cd = ccw_dir(direction)
-    return DIR_VECTORS[cd]
-
-
 def draw_ghost(surface, selected_building, selected_rotation, mouse_pos):
     if selected_building == EMPTY:
         return
@@ -172,7 +167,7 @@ def draw_ghost(surface, selected_building, selected_rotation, mouse_pos):
     # Show companion ghosts for multi-qubit gates
     gate = get_gate(selected_building)
     if gate and gate.category == Category.TWO_QUBIT:
-        cdx, cdy = _companion_offset(selected_rotation)
+        cdx, cdy = DIR_VECTORS[ccw_dir(selected_rotation)]
         for role in range(2, gate.qubits + 1):
             cw, ch = wx + cdx * (role - 1), wy + cdy * (role - 1)
             csx, csy = world_to_screen(cw, ch, TILE_SIZE)
@@ -324,7 +319,15 @@ def draw_level_hud(surface):
     surface.blit(bar, (0, 0))
     font = pygame.font.SysFont("consolas", 16)
     small = pygame.font.SysFont("consolas", 13)
-    surface.blit(font.render(f"Level {idx + 1}: {lev['name']}", True, CYAN), (12, 6))
+    ch_num = local = idx
+    offset = 0
+    for ci, ch in enumerate(CHAPTERS):
+        n = len(ch["levels"])
+        if offset + n > idx:
+            ch_num, local = ci + 1, idx - offset + 1
+            break
+        offset += n
+    surface.blit(font.render(f"Chapter {ch_num}, Level {local}: {lev['name']}", True, CYAN), (12, 6))
     surface.blit(small.render(lev.get("hint", ""), True, LIGHT_GRAY), (12, 26))
     bar_w, bar_h2 = 160, 14
     bx = config.WIDTH - bar_w - 60

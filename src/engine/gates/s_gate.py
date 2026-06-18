@@ -14,7 +14,7 @@ def _transform(item):
 
 register(GateDef(
     id="s_gate",
-    name="S Gate",
+    name="√Z",
     tip="Phase: 90° rotation over Z-axis",
     color=(240, 160, 200),
     category=Category.SINGLE,

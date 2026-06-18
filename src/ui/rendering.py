@@ -12,7 +12,7 @@ from ..core.config import (
     GOLD, PURPLE, CYAN,
 )
 from ..core.entities import (
-    QubitItem, Direction, DIR_VECTORS, ccw_dir,
+    QubitItem, QubitState, Direction, DIR_VECTORS, ccw_dir,
 )
 from .sprites import get_building_sprite, get_qubit_sprite
 from ..core.world import get_tile, world_to_screen, screen_to_world, count_placed, is_locked
@@ -470,6 +470,36 @@ def get_help_button_rect():
     return pygame.Rect(r.right + 6, r.top, 26, r.height)
 
 
+def _draw_qubit_hover(surface):
+    mx, my = pygame.mouse.get_pos()
+    if my >= config.HEIGHT - TOOLBAR_HEIGHT:
+        return
+    wx, wy = screen_to_world(mx, my, TILE_SIZE)
+    tile = get_tile(wx, wy)
+    if not tile.item or tile.item.is_disappearing:
+        return
+    import math
+    item = tile.item
+    s = item.state
+    if s == QubitState.ZERO:
+        label = "|0>"
+    elif s == QubitState.ONE:
+        label = "|1>"
+    else:
+        deg = round(math.degrees(item.phase_angle))
+        label = f"|+>  phase {deg}deg"
+    font = pygame.font.SysFont("consolas", 14)
+    txt = font.render(label, True, WHITE)
+    pad = 8
+    box = pygame.Rect(mx + 16, my - 10, txt.get_width() + pad * 2, txt.get_height() + pad)
+    box.right = min(box.right, config.WIDTH - 4)
+    bg = pygame.Surface(box.size, pygame.SRCALPHA)
+    bg.fill((15, 12, 25, 220))
+    surface.blit(bg, box.topleft)
+    pygame.draw.rect(surface, CYAN, box, 1, border_radius=4)
+    surface.blit(txt, (box.left + pad, box.top + pad // 2))
+
+
 def draw_ui(surface, selected_building, selected_rotation, paused):
     mouse_pos = pygame.mouse.get_pos()
     draw_ghost(surface, selected_building, selected_rotation, mouse_pos)
@@ -478,4 +508,6 @@ def draw_ui(surface, selected_building, selected_rotation, paused):
     draw_level_hud(surface)
     draw_hud(surface, selected_rotation)
     draw_briefing_overlay(surface)
+    if paused:
+        _draw_qubit_hover(surface)
     _draw_toast(surface)

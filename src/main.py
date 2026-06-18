@@ -40,6 +40,7 @@ def main():
     clock = pygame.time.Clock()
 
     load_gates()
+    print(f"[Superposed] font: {config.FONT_PATH}")
 
     state = GameState.MAIN_MENU
     level_index = 0

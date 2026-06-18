@@ -2,6 +2,28 @@
 
 from __future__ import annotations
 
+import os
+
+_FONTS_DIR = os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'fonts')
+FONT_PATH = next((os.path.join(_FONTS_DIR, f) for f in os.listdir(_FONTS_DIR)
+                   if f.endswith(('.ttf', '.otf'))), None)
+
+_font_cache = {}
+
+
+def game_font(size, bold=False):
+    key = (size, bold)
+    if key not in _font_cache:
+        import pygame
+        if FONT_PATH:
+            f = pygame.font.Font(FONT_PATH, size)
+        else:
+            f = pygame.font.SysFont("consolas", size)
+        if bold:
+            f.set_bold(True)
+        _font_cache[key] = f
+    return _font_cache[key]
+
 # Display settings — WIDTH and HEIGHT are fallback defaults.
 # main.py overwrites them at startup with the actual display size.
 WIDTH = 1280

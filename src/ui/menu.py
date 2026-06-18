@@ -129,7 +129,7 @@ def _wrap_text(font, text, max_width):
 
 
 def _level_list_start_y(chapter_index):
-    font = pygame.font.SysFont("consolas", 13)
+    font = config.game_font(13)
     concept_w = max(180, min(config.WIDTH - 80, 660))
     concept_lines = _wrap_text(font, CHAPTERS[chapter_index].get("concept", ""), concept_w)
     return _LEVEL_CONCEPT_TOP + len(concept_lines) * _LEVEL_CONCEPT_LINE_H + 36
@@ -162,8 +162,8 @@ def draw_main_menu(screen):
     screen.fill(_BG_MENU)
     _draw_particles(screen)
 
-    title_font = pygame.font.SysFont("consolas", 62, bold=True)
-    sub_font = pygame.font.SysFont("consolas", 18)
+    title_font = config.game_font(62, bold=True)
+    sub_font = config.game_font(18)
 
     title = title_font.render("SUPERPOSED", True, _ACCENT)
     screen.blit(title, title.get_rect(center=(config.WIDTH // 2, config.HEIGHT // 2 - 120)))
@@ -176,7 +176,7 @@ def draw_main_menu(screen):
                      (config.WIDTH // 2 - lw // 2, config.HEIGHT // 2 - 48),
                      (config.WIDTH // 2 + lw // 2, config.HEIGHT // 2 - 48), 1)
 
-    btn_font = pygame.font.SysFont("consolas", 26)
+    btn_font = config.game_font(26)
     buttons = _draw_menu_buttons(screen, btn_font, [
         ("Campaign", BLUE),
         ("Sandbox", RED),
@@ -184,7 +184,7 @@ def draw_main_menu(screen):
     ], start_y=config.HEIGHT // 2 - 10)
 
     from .. import __version__
-    ver = pygame.font.SysFont("consolas", 12).render(f"v{__version__}", True, DARK_GRAY)
+    ver = config.game_font(12).render(f"v{__version__}", True, DARK_GRAY)
     screen.blit(ver, ver.get_rect(bottomright=(config.WIDTH - 12, config.HEIGHT - 8)))
 
     return buttons
@@ -217,13 +217,13 @@ def draw_chapter_select(screen):
     screen.fill(_BG_MENU)
     _draw_particles(screen)
 
-    header_font = pygame.font.SysFont("consolas", 36, bold=True)
+    header_font = config.game_font(36, bold=True)
     header = header_font.render("CAMPAIGN", True, WHITE)
     screen.blit(header, header.get_rect(center=(config.WIDTH // 2, 48)))
 
-    card_font = pygame.font.SysFont("consolas", 18, bold=True)
-    sub_font = pygame.font.SysFont("consolas", 13)
-    small_font = pygame.font.SysFont("consolas", 12)
+    card_font = config.game_font(18, bold=True)
+    sub_font = config.game_font(13)
+    small_font = config.game_font(12)
 
     cards = []
     cols = 2
@@ -298,7 +298,7 @@ def draw_chapter_select(screen):
             cards.append((visible, ch_idx))
     screen.set_clip(None)
 
-    back_font = pygame.font.SysFont("consolas", 18)
+    back_font = config.game_font(18)
     back_txt = back_font.render("<< Back", True, LIGHT_GRAY)
     back_rect = back_txt.get_rect(topleft=(20, config.HEIGHT - 40))
     screen.blit(back_txt, back_rect)
@@ -336,11 +336,11 @@ def draw_level_select(screen, chapter_index):
     screen.fill(_BG_MENU)
     _draw_particles(screen)
 
-    header_font = pygame.font.SysFont("consolas", 28, bold=True)
-    sub_font = pygame.font.SysFont("consolas", 14)
-    card_font = pygame.font.SysFont("consolas", 18, bold=True)
-    desc_font = pygame.font.SysFont("consolas", 13)
-    small_font = pygame.font.SysFont("consolas", 12)
+    header_font = config.game_font(28, bold=True)
+    sub_font = config.game_font(14)
+    card_font = config.game_font(18, bold=True)
+    desc_font = config.game_font(13)
+    small_font = config.game_font(12)
 
     ch_color = ch.get("color", CYAN)
     label = sub_font.render(f"Chapter {chapter_index + 1}", True, DARK_GRAY)
@@ -427,7 +427,7 @@ def draw_level_select(screen, chapter_index):
         cards.append((visible, global_idx))
     screen.set_clip(None)
 
-    back_font = pygame.font.SysFont("consolas", 18)
+    back_font = config.game_font(18)
     back_txt = back_font.render("<< Back to chapters", True, LIGHT_GRAY)
     back_rect = back_txt.get_rect(topleft=(20, config.HEIGHT - 40))
     screen.blit(back_txt, back_rect)
@@ -473,11 +473,11 @@ def draw_win_screen(screen, level_index):
     pygame.draw.rect(screen, _PANEL, panel, border_radius=14)
     pygame.draw.rect(screen, GREEN, panel, 2, border_radius=14)
 
-    tf = pygame.font.SysFont("consolas", 32, bold=True)
+    tf = config.game_font(32, bold=True)
     title = tf.render("LEVEL COMPLETE!", True, GREEN)
     screen.blit(title, title.get_rect(center=(panel.centerx, panel.top + 40)))
 
-    sf = pygame.font.SysFont("consolas", 18)
+    sf = config.game_font(18)
     sub = sf.render(f"{lev['name']} — cleared!", True, LIGHT_GRAY)
     screen.blit(sub, sub.get_rect(center=(panel.centerx, panel.top + 80)))
 
@@ -487,7 +487,7 @@ def draw_win_screen(screen, level_index):
         msg = sf.render(f"Chapter {ch_idx + 1} complete!", True, ch.get("color", GOLD))
         screen.blit(msg, msg.get_rect(center=(panel.centerx, panel.top + 108)))
 
-    btn_font = pygame.font.SysFont("consolas", 18, bold=True)
+    btn_font = config.game_font(18, bold=True)
     mx, my = pygame.mouse.get_pos()
 
     next_rect = pygame.Rect(0, 0, 150, 38)

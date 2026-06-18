@@ -11,6 +11,7 @@ import os
 
 import pygame
 
+from ..core import config
 from ..core.config import RED, BLUE, PURPLE, WHITE, GOLD
 from ..core.entities import QubitState, Direction
 
@@ -88,7 +89,7 @@ def _generic_sprite(gate_id, direction, size):
     b = pygame.Rect(4, 4, size - 8, size - 8)
     _panel(s, b, tuple(c // 3 for c in color), color, 10)
     label = (gate.name[:3].upper()) if gate else "?"
-    font = pygame.font.SysFont("consolas", max(10, int(size * 0.28)), bold=True)
+    font = config.game_font(max(10, int(size * 0.28)), bold=True)
     txt = font.render(label, True, WHITE)
     s.blit(txt, txt.get_rect(center=b.center))
     _dir_mark(s, direction, b, color)

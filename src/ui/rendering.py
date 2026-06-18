@@ -48,7 +48,7 @@ def _draw_sink_status(surface, rect, tile):
     win_count = lev.get("win_count", 5)
     match = tile.sink_match if tile.sink_target is not None else tile.sink_total
     color = GREEN if match >= win_count else (CYAN if match > 0 else LIGHT_GRAY)
-    font = pygame.font.SysFont("consolas", max(10, int(rect.height * 0.18)))
+    font = config.game_font(max(10, int(rect.height * 0.18)))
     txt = font.render(f"{min(match, win_count)}/{win_count}", True, color)
     surface.blit(txt, txt.get_rect(center=(rect.centerx, rect.bottom - 10)))
 
@@ -181,7 +181,7 @@ def draw_ghost(surface, selected_building, selected_rotation, mouse_pos):
 
 
 def _draw_help_tooltip(surface, anchor_rect):
-    font = pygame.font.SysFont("consolas", 13)
+    font = config.game_font(13)
     lines = [
         "R  Rotate direction",
         "SPACE  Pause / Resume",
@@ -213,8 +213,8 @@ def draw_toolbar(surface, selected_building, selected_rotation, paused):
     pygame.draw.rect(surface, (22, 22, 28), (0, tb_y, config.WIDTH, TOOLBAR_HEIGHT))
     pygame.draw.line(surface, DARK_GRAY, (0, tb_y), (config.WIDTH, tb_y), 1)
 
-    font = pygame.font.SysFont("consolas", UI_FONT_SIZE)
-    small = pygame.font.SysFont("consolas", TOOLTIP_FONT_SIZE)
+    font = config.game_font(UI_FONT_SIZE)
+    small = config.game_font(TOOLTIP_FONT_SIZE)
 
     for i, (rect, gid) in enumerate(toolbar_button_rects(world_module.available_buildings)):
         gate = get_gate(gid)
@@ -236,12 +236,12 @@ def draw_toolbar(surface, selected_building, selected_rotation, paused):
         limit = world_module.gate_limits.get(gid)
         if limit is not None:
             remaining = max(0, limit - count_placed(gid))
-            badge_font = pygame.font.SysFont("consolas", max(10, int(btn_size * 0.3)), bold=True)
+            badge_font = config.game_font(max(10, int(btn_size * 0.3)), bold=True)
             badge_color = WHITE if remaining > 0 else RED
             badge = badge_font.render(str(remaining), True, badge_color)
             surface.blit(badge, badge.get_rect(topright=(rect.right - 2, rect.top + 2)))
 
-    export_font = pygame.font.SysFont("consolas", 13, bold=True)
+    export_font = config.game_font(13, bold=True)
     export_rect = get_export_button_rect()
     mx, my = pygame.mouse.get_pos()
     export_hover = export_rect.collidepoint(mx, my)
@@ -284,7 +284,7 @@ def draw_tooltip(surface, mouse_pos, selected_building):
         if rect.collidepoint(mx, my):
             gate = get_gate(gid)
             if gate:
-                font = pygame.font.SysFont("consolas", TOOLTIP_FONT_SIZE)
+                font = config.game_font(TOOLTIP_FONT_SIZE)
                 tip = font.render(f"{gate.name}: {gate.tip}", True, WHITE)
                 tb_y = config.HEIGHT - TOOLBAR_HEIGHT
                 tip_rect = tip.get_rect(midbottom=(rect.centerx, tb_y - 4))
@@ -317,8 +317,8 @@ def draw_level_hud(surface):
     bar = pygame.Surface((config.WIDTH, bar_h), pygame.SRCALPHA)
     bar.fill((10, 10, 14, 200))
     surface.blit(bar, (0, 0))
-    font = pygame.font.SysFont("consolas", 16)
-    small = pygame.font.SysFont("consolas", 13)
+    font = config.game_font(16)
+    small = config.game_font(13)
     ch_num = local = idx
     offset = 0
     for ci, ch in enumerate(CHAPTERS):
@@ -356,13 +356,13 @@ def _draw_compass(surface, direction, cx, cy):
     ey = cy + int(r * 0.7 * math.sin(angle))
     pygame.draw.line(surface, CYAN, (cx, cy), (ex, ey), 2)
     pygame.draw.circle(surface, CYAN, (ex, ey), 3)
-    font = pygame.font.SysFont("consolas", 10)
+    font = config.game_font(10)
     label = font.render(direction.name[0], True, CYAN)
     surface.blit(label, label.get_rect(center=(cx, cy + r + 10)))
 
 
 def draw_hud(surface, selected_rotation):
-    font = pygame.font.SysFont("consolas", UI_FONT_SIZE)
+    font = config.game_font(UI_FONT_SIZE)
     mx, my = pygame.mouse.get_pos()
     wx, wy = screen_to_world(mx, my, TILE_SIZE)
     coord = font.render(f"({wx}, {wy})", True, DARK_GRAY)
@@ -393,7 +393,7 @@ def tick_toast(dt: float):
 def _draw_toast(surface):
     if _toast_timer <= 0:
         return
-    font = pygame.font.SysFont("consolas", 15)
+    font = config.game_font(15)
     txt = font.render(_toast_text, True, WHITE)
     padding = 12
     tw, th = txt.get_size()
@@ -430,7 +430,7 @@ def draw_briefing_overlay(surface, hint="Press F to close", force=False):
     text = lev.get("briefing", "")
     if not text:
         return
-    font = pygame.font.SysFont("consolas", 15)
+    font = config.game_font(15)
     lines = text.split("\n")
     rendered = [font.render(line, True, WHITE) for line in lines]
     line_h = font.get_linesize()
@@ -487,7 +487,7 @@ def _draw_qubit_hover(surface):
         return
     item = tile.item
     label = _HOVER_LABELS.get(item.state, "?")
-    font = pygame.font.SysFont("consolas", 14)
+    font = config.game_font(14)
     txt = font.render(label, True, WHITE)
     pad = 8
     box = pygame.Rect(mx + 16, my - 10, txt.get_width() + pad * 2, txt.get_height() + pad)

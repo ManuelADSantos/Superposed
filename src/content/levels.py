@@ -233,10 +233,11 @@ CH3_L1 = {
     "win_type": "measure",
     "pre_placed": {
         (0, 2): (GEN, RIGHT, None),
-        (4, 2): (MEAS, RIGHT, None)
+        (4, 2): (MEAS, RIGHT, None),
+        (2,2): (H, RIGHT, None),
     },
-    "locked": {(0, 2), (4, 2)},
-    "available": [BELT, H],
+    "locked": {(0, 2), (4, 2), (2, 2)},
+    "available": [BELT],
     "win_count": 10,
     "camera": (3, 2),
 }

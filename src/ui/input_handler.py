@@ -7,7 +7,7 @@ import pygame
 from ..core import config
 from ..core.config import TILE_SIZE, TOOLBAR_HEIGHT, TOOLBAR_PAD
 from ..core.entities import Direction, QubitState, cw_dir, ccw_dir, DIR_VECTORS
-from ..core.world import screen_to_world, get_tile
+from ..core.world import screen_to_world, get_tile, count_placed
 from ..engine.gate_registry import get_gate, active_toolbar, Category, EMPTY, OUTPUT_SINK, BELT
 from .rendering import (
     get_export_button_rect, get_speed_button_rect, get_pause_button_rect,
@@ -72,6 +72,9 @@ def _can_place_at(wx, wy, available, building):
         return False
     if available is not None and building not in available:
         return False
+    limit = W.gate_limits.get(building)
+    if limit is not None and count_placed(building) >= limit:
+        return False
     return True
 
 
@@ -93,6 +96,7 @@ def _place_building(wx, wy, building, direction):
         tile.sink_total = 0
         tile.sink_match = 0
         tile.sink_target = None
+        tile.sink_phase = None
 
     gate = get_gate(building)
     if gate and gate.category == Category.TWO_QUBIT:
@@ -125,6 +129,8 @@ def _delete_building(wx, wy):
         return
     _clear_tile(tile)
 
+
+_SINK_CYCLE = [None, QubitState.ZERO, QubitState.ONE, QubitState.SUPERPOSITION]
 
 # Belt drag state
 _drag_active = False
@@ -168,8 +174,12 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
                 selected_building = key_map[event.key]
             elif event.key == pygame.K_r:
                 selected_rotation = cw_dir(selected_rotation)
-            elif event.key == pygame.K_p:
+            elif event.key == pygame.K_SPACE:
                 paused = not paused
+            elif event.key == pygame.K_q:
+                config.SPEED_MULT = {0.5: 0.5, 1: 0.5, 2: 1, 4: 2}[config.SPEED_MULT]
+            elif event.key == pygame.K_e:
+                config.SPEED_MULT = {0.5: 1, 1: 2, 2: 4, 4: 4}[config.SPEED_MULT]
             elif event.key == pygame.K_n:
                 step_requested = True
             elif event.key == pygame.K_c:
@@ -180,7 +190,7 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
                         tile.is_ctrl = False
                         tile.role = 1
                         del W.world[pos]
-            elif event.key == pygame.K_b:
+            elif event.key == pygame.K_h:
                 toggle_briefing()
             elif event.key == pygame.K_o:
                 ldef = W._state.current_level_def
@@ -196,8 +206,8 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
             old_zoom = W._state.zoom
             W._state.zoom = max(0.3, min(3.0, W._state.zoom + event.y * 0.12))
             factor = W._state.zoom / old_zoom
-            W._state.camera_x = mx + (W._state.camera_x - mx) * factor
-            W._state.camera_y = my + (W._state.camera_y - my) * factor
+            W._state.camera_x = (mx + W._state.camera_x) * factor - mx
+            W._state.camera_y = (my + W._state.camera_y) * factor - my
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             mx, my = event.pos
@@ -260,14 +270,9 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
                 elif event.button == 2:
                     tile = get_tile(wx, wy)
                     if tile.building == OUTPUT_SINK and not is_locked:
-                        if tile.sink_target is None:
-                            tile.sink_target = QubitState.ZERO
-                        elif tile.sink_target == QubitState.ZERO:
-                            tile.sink_target = QubitState.ONE
-                        elif tile.sink_target == QubitState.ONE:
-                            tile.sink_target = QubitState.SUPERPOSITION
-                        else:
-                            tile.sink_target = None
+                        idx = _SINK_CYCLE.index(tile.sink_target) if tile.sink_target in _SINK_CYCLE else 0
+                        tile.sink_target = _SINK_CYCLE[(idx + 1) % len(_SINK_CYCLE)]
+                        tile.sink_phase = None
                         tile.sink_total = 0
                         tile.sink_match = 0
 

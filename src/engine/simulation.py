@@ -23,12 +23,21 @@ def _start_disappear(item):
 
 
 def _collect_sink(tile, item):
+    import math
     from ..core.world import break_entanglement
     state = item.state
+    phase = item.phase_angle
     break_entanglement(item)
     tile.sink_total += 1
-    if tile.sink_target is not None and state == tile.sink_target:
-        tile.sink_match += 1
+    if tile.sink_target is None:
+        return
+    if state != tile.sink_target:
+        return
+    if tile.sink_phase is not None:
+        diff = abs((phase - tile.sink_phase + math.pi) % (2 * math.pi) - math.pi)
+        if diff > 0.15:
+            return
+    tile.sink_match += 1
 
 
 def _safe_transform(gate, *args):
@@ -64,8 +73,22 @@ def _multi_tiles(px, py, primary, gate):
     ]
 
 
+_spawn_clock = 0.0
+
+
+def reset_spawn_clock():
+    global _spawn_clock
+    _spawn_clock = 0.0
+
+
 def update_items(dt):
+    global _spawn_clock
     ready_to_move = []
+
+    _spawn_clock += dt
+    spawn_now = _spawn_clock >= GENERATOR_SPEED
+    if spawn_now:
+        _spawn_clock -= GENERATOR_SPEED
 
     for (x, y), tile in list(_world_mod.world.items()):
         if tile.measure_flash > 0:
@@ -76,11 +99,8 @@ def update_items(dt):
             if tile.item.disappear_time <= 0:
                 tile.item = None
 
-        if tile.building == GENERATOR:
-            tile.spawn_timer += dt
-            if tile.spawn_timer >= GENERATOR_SPEED and tile.item is None:
-                tile.spawn_timer = 0.0
-                tile.item = QubitItem(QubitState.ZERO)
+        if tile.building == GENERATOR and spawn_now and tile.item is None:
+            tile.item = QubitItem(QubitState.ZERO)
 
         gate = get_gate(tile.building)
 

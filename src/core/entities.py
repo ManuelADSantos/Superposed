@@ -80,12 +80,11 @@ class QubitItem:
 
     @property
     def phase_angle(self) -> float:
-        if self.state != QubitState.SUPERPOSITION:
-            return 0.0
-        return math.atan2(
-            (self.alpha.conjugate() * self.beta).imag,
-            (self.alpha.conjugate() * self.beta).real,
-        )
+        if self.state == QubitState.SUPERPOSITION:
+            c = self.alpha.conjugate() * self.beta
+            return math.atan2(c.imag, c.real)
+        amp = self.beta if abs(self.alpha) < abs(self.beta) else self.alpha
+        return math.atan2(amp.imag, amp.real) if abs(amp) > 1e-10 else 0.0
 
     @property
     def phase_flipped(self) -> bool:
@@ -116,6 +115,7 @@ class Tile:
         self.measurements = []
         self.measure_flash = 0.0
         self.sink_target: QubitState | None = None
+        self.sink_phase: float | None = None
         self.sink_total = 0
         self.sink_match = 0
         self.peer: tuple[int, int] | None = None

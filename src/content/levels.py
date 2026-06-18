@@ -8,6 +8,7 @@ remain stable for completion tracking.
 
 from __future__ import annotations
 
+import math
 from ..core.entities import Direction as D, QubitState as Q
 
 UP, RIGHT, DOWN, LEFT = D.UP, D.RIGHT, D.DOWN, D.LEFT
@@ -23,7 +24,6 @@ Z = "z_gate"
 CNOT = "cnot"
 CZ = "cz"
 SWAP = "swap"
-TOFFOLI = "toffoli"
 MEAS = "measurement"
 SPLIT = "splitter"
 NOISE = "noise"
@@ -287,10 +287,13 @@ CH4_L1 = {
     "description": "Discover how H -> Z -> H always produces |1>.",
     "briefing": (
         "The Z gate flips the phase of a qubit.\n"
-        "You can't see phase directly, but it matters!\n\n"
-        "Try this: route qubits through  H -> Z -> H.\n"
-        "Something remarkable happens — the output is\n"
-        "always |1>, never random.  This is interference.\n\n"
+        "Watch the tick on the qubit ring — Z rotates it 180°.\n\n"
+        "Route qubits through  H -> Z -> H.\n"
+        "H creates |+>, Z flips its phase to |->.\n"
+        "The second H converts that phase difference into\n"
+        "a bit flip: |-> always becomes |1>, never random.\n\n"
+        "This is interference — the phase is consumed\n"
+        "by the second H to produce a deterministic output.\n\n"
         "The sink wants blue |1> qubits.  Build the circuit!"
     ),
     "hint": "H -> Z -> H = guaranteed |1>  (interference!)",
@@ -309,20 +312,21 @@ CH4_L2 = {
     "description": "Meet the Y gate — bit flip AND phase flip in one.",
     "briefing": (
         "The Y gate is the third Pauli gate.\n\n"
-        "Like X, it flips bits:  Y|0> = |1>,  Y|1> = |0>.\n"
-        "Unlike X, it also flips the phase of superposition:\n"
+        "Like X, it flips bits. Unlike X, it also flips\n"
+        "the phase of a superposition:\n"
         "  Y|+> = |−>   and   Y|−> = |+>\n\n"
-        "The sink wants |1> and the generator makes |0>.\n"
-        "Route the qubit through Y to flip it.\n\n"
-        "Note: Y alone looks like X here — the phase difference\n"
-        "only shows up in interference.  That comes next."
+        "A locked H gate puts the qubit into |+>.\n"
+        "The sink wants |−> — a superposition with the phase\n"
+        "tick pointing left (180°).\n"
+        "Place Y after H to flip the phase."
     ),
-    "hint": "Place a Y gate on the path — it flips |0> to |1>",
+    "hint": "H makes |+>, Y flips it to |−> — match the phase tick.",
     "pre_placed": {
         (0, 2): (GEN, RIGHT, None),
-        (8, 2): (SINK, RIGHT, ONE),
+        (2, 2): (H, RIGHT, None),
+        (9, 2): (SINK, RIGHT, (SUP, math.pi)),
     },
-    "locked": {(0, 2), (8, 2)},
+    "locked": {(0, 2), (2, 2), (9, 2)},
     "available": [BELT, Y],
     "win_count": 5,
     "camera": (4, 2),
@@ -393,12 +397,24 @@ CH5_L1 = {
     "pre_placed": {
         (-1, 1): (GEN, RIGHT, None),
         (-1, 2): (GEN, RIGHT, None),
+        (0, 2): (BELT, RIGHT, None),
+        (1, 2): (BELT, RIGHT, None),
+        (2, 2): (BELT, RIGHT, None),
+        (3, 2): (BELT, RIGHT, None),
+        (4, 2): (BELT, RIGHT, None),
         (5, 2): (CNOT, RIGHT, None),
+        (6, 2): (BELT, RIGHT, None),
+        (7, 2): (BELT, RIGHT, None),
+        (8, 2): (BELT, RIGHT, None),
         (9, 1): (SINK, RIGHT, ONE),
         (9, 2): (SINK, RIGHT, ONE),
     },
-    "locked": {(-1, 1), (-1, 2), (5, 2), (9, 1), (9, 2)},
+    "locked": {(-1, 1), (-1, 2),
+               (0, 2), (1, 2), (2, 2), (3, 2), (4, 2),
+               (5, 2), (6, 2), (7, 2), (8, 2),
+               (9, 1), (9, 2)},
     "available": [BELT, X],
+    "gate_limits": {X: 1},
     "win_count": 5,
     "camera": (4, 2),
 }
@@ -407,27 +423,23 @@ CH5_L2 = {
     "name": "Bell State",
     "description": "Superposition + CNOT creates entangled pairs.",
     "briefing": (
-        "Use H on the control path to create superposition.\n\n"
-        "When the control is in superposition:\n"
-        "  CNOT doesn't flip or not-flip — it does BOTH.\n"
-        "  The two qubits become entangled.\n\n"
-        "A locked Measurement gate sits on the control exit.\n"
-        "When one entangled qubit is measured, watch what\n"
-        "happens to its partner on the target path —\n"
-        "it collapses to the same value instantly!\n\n"
+        "Create entangled pairs with H + CNOT, then\n"
+        "measure BOTH qubits to see the correlation.\n\n"
+        "Place two Measurement gates — one on each path,\n"
+        "one block apart. The first measurement collapses\n"
+        "the entangled pair. The second measures the partner\n"
+        "that was instantly determined.\n\n"
         "Watch for the golden ring — it marks entanglement.\n"
-        "Place the CNOT yourself."
+        "Both qubits always collapse to matching values!"
     ),
-    "hint": "H on the control (top) path, CNOT below it — watch the entanglement",
+    "hint": "H on control, CNOT to entangle, MEAS on both paths side by side",
     "pre_placed": {
         (-1, 2): (GEN, RIGHT, None),
         (-1, 3): (GEN, RIGHT, None),
-        (9, 2): (MEAS, RIGHT, None),
-        (9, 3): (SINK, RIGHT, None),
     },
-    "locked": {(-1, 2), (-1, 3), (9, 2), (9, 3)},
-    "available": [BELT, H, CNOT],
-    "win_count": 5,
+    "locked": {(-1, 2), (-1, 3)},
+    "available": [BELT, H, CNOT, MEAS],
+    "win_count": 10,
     "win_type": "measure",
     "camera": (4, 3),
 }
@@ -513,7 +525,7 @@ _CH7_CONCEPT = (
     "In Chapter 4 you learned that H→Z→H always produces |1>.\n"
     "That was a single path. Now let's use interference to CONTROL\n"
     "where qubits go.\n\n"
-    "Key insight: a Splitter routes |0> straight and |1> clockwise.\n"
+    "Key insight: a Splitter routes |0> up and |1> down.\n"
     "Without interference, superposition collapses randomly — 50/50.\n"
     "With interference, you decide the outcome: H→H keeps |0>,\n"
     "H→Z→H forces |1>.\n\n"
@@ -526,9 +538,8 @@ CH7_L1 = {
     "description": "Use interference to guarantee every qubit reaches the sink.",
     "briefing": (
         "The locked Hadamard puts every qubit into superposition.\n"
-        "The locked Splitter then measures them — 50/50 random.\n\n"
-        "The sink only accepts |1> qubits, arriving from the\n"
-        "Splitter's clockwise exit (downward).\n\n"
+        "The locked Splitter routes |0> up and |1> down.\n\n"
+        "The sink below accepts |1> qubits.\n\n"
         "Random means ~half your qubits are wasted.\n"
         "Can you guarantee EVERY qubit reaches the sink?\n\n"
         "Hint: what happens between two Hadamard gates\n"
@@ -553,8 +564,9 @@ CH7_L2 = {
     "briefing": (
         "Two assembly lines, each with a locked Hadamard\n"
         "and a locked Splitter.\n\n"
-        "Top sink wants |0> (exits straight from Splitter).\n"
-        "Bottom sink wants |1> (exits clockwise from Splitter).\n\n"
+        "Splitter routes |0> up and |1> down.\n"
+        "Top sink (above) wants |0>.\n"
+        "Bottom sink (below) wants |1>.\n\n"
         "Use constructive interference (H·H = identity) on the\n"
         "top path to keep qubits as |0>.\n\n"
         "Use destructive interference (H·Z·H) on the bottom\n"
@@ -562,17 +574,17 @@ CH7_L2 = {
     ),
     "hint": "Top: add H before Splitter. Bottom: add Z then H.",
     "pre_placed": {
-        (0, 1): (GEN, RIGHT, None),
-        (3, 1): (H, RIGHT, None),
-        (9, 1): (SPLIT, RIGHT, None),
-        (13, 1): (SINK, RIGHT, ZERO),
-        (0, 5): (GEN, RIGHT, None),
-        (3, 5): (H, RIGHT, None),
-        (9, 5): (SPLIT, RIGHT, None),
+        (0, 2): (GEN, RIGHT, None),
+        (3, 2): (H, RIGHT, None),
+        (9, 2): (SPLIT, RIGHT, None),
+        (9, 1): (SINK, DOWN, ZERO),
+        (0, 6): (GEN, RIGHT, None),
+        (3, 6): (H, RIGHT, None),
+        (9, 6): (SPLIT, RIGHT, None),
         (9, 9): (SINK, DOWN, ONE),
     },
-    "locked": {(0, 1), (3, 1), (9, 1), (13, 1),
-               (0, 5), (3, 5), (9, 5), (9, 9)},
+    "locked": {(0, 2), (3, 2), (9, 2), (9, 1),
+               (0, 6), (3, 6), (9, 6), (9, 9)},
     "available": [BELT, H, Z],
     "win_count": 5,
     "camera": (6, 4),
@@ -593,16 +605,16 @@ CH7_L3 = {
     "hint": "Top: H→Z→H or just X. Middle: belts only. Bottom: Y or X.",
     "pre_placed": {
         (0, 1): (GEN, RIGHT, None),
-        (11, 1): (SINK, RIGHT, ONE),
+        (7, 1): (SINK, RIGHT, ONE),
+        (0, 3): (GEN, RIGHT, None),
+        (7, 3): (SINK, RIGHT, ZERO),
         (0, 5): (GEN, RIGHT, None),
-        (11, 5): (SINK, RIGHT, ZERO),
-        (0, 9): (GEN, RIGHT, None),
-        (11, 9): (SINK, RIGHT, ONE),
+        (7, 5): (SINK, RIGHT, ONE),
     },
-    "locked": {(0, 1), (11, 1), (0, 5), (11, 5), (0, 9), (11, 9)},
+    "locked": {(0, 1), (7, 1), (0, 3), (7, 3), (0, 5), (7, 5)},
     "available": [BELT, H, X, Y, Z],
     "win_count": 5,
-    "camera": (5, 5),
+    "camera": (3, 3),
 }
 
 
@@ -639,43 +651,43 @@ CH8_L1 = {
     "pre_placed": {
         (-1, 2): (GEN, RIGHT, None),
         (-1, 3): (GEN, RIGHT, None),
-        (5, 3): (CZ, RIGHT, None),
-        (10, 2): (SINK, RIGHT, ONE),
-        (10, 3): (SINK, RIGHT, ONE),
+        (4, 3): (CZ, RIGHT, None),
+        (8, 2): (SINK, RIGHT, ONE),
+        (8, 3): (SINK, RIGHT, ONE),
     },
-    "locked": {(-1, 2), (-1, 3), (5, 3), (10, 2), (10, 3)},
+    "locked": {(-1, 2), (-1, 3), (4, 3), (8, 2), (8, 3)},
     "available": [BELT, H, X],
     "win_count": 5,
-    "camera": (5, 3),
+    "camera": (4, 3),
 }
 
 CH8_L2 = {
     "name": "Entanglement Chain",
     "description": "Chain entanglement across three qubits with two CNOTs.",
     "briefing": (
-        "Three parallel qubit streams, two CNOTs.\n\n"
-        "Use H on the top stream, then route it through\n"
-        "two CNOT control inputs. Each CNOT entangles its\n"
-        "control with its target.\n\n"
-        "The top stream is control for the first CNOT.\n"
-        "Route its output down to be control for the second.\n"
-        "When the Measurement gate collapses one qubit,\n"
-        "watch all three snap to the same value."
+        "Three parallel streams, three sinks — all want |1>.\n"
+        "You only have ONE Hadamard gate.\n\n"
+        "H alone converts one stream, but the others stay |0>.\n"
+        "Use CNOT to chain entanglement across all three:\n"
+        "  when the H-qubit collapses to |1>,\n"
+        "  all entangled partners become |1> too.\n\n"
+        "Place H on one stream, then CNOT-chain the others.\n"
+        "About half the waves will match — that's expected."
     ),
-    "hint": "H on top, CNOT1 links top+middle, route top down to CNOT2 for middle+bottom.",
+    "hint": "H on one path, CNOT1 to entangle with second, CNOT2 to chain to third.",
     "pre_placed": {
         (-1, 2): (GEN, RIGHT, None),
+        (-1, 3): (GEN, RIGHT, None),
         (-1, 4): (GEN, RIGHT, None),
-        (-1, 6): (GEN, RIGHT, None),
-        (12, 2): (MEAS, RIGHT, None),
-        (12, 4): (SINK, RIGHT, None),
-        (12, 6): (SINK, RIGHT, None),
+        (9, 2): (SINK, RIGHT, ONE),
+        (9, 3): (SINK, RIGHT, ONE),
+        (9, 4): (SINK, RIGHT, ONE),
     },
-    "locked": {(-1, 2), (-1, 4), (-1, 6), (12, 2), (12, 4), (12, 6)},
+    "locked": {(-1, 2), (-1, 3), (-1, 4), (9, 2), (9, 3), (9, 4)},
     "available": [BELT, H, CNOT],
-    "win_count": 5,
-    "win_type": "measure",
-    "camera": (5, 4),
+    "gate_limits": {H: 1},
+    "win_count": 3,
+    "camera": (4, 3),
 }
 
 
@@ -823,23 +835,23 @@ CH10_L2 = {
         "Same setup as before, but now we FILTER the output.\n\n"
         "After the CNOT compares clean and noisy qubits,\n"
         "feed the target into a Splitter:\n"
-        "  |0> (uncorrupted) → straight to the sink\n"
-        "  |1> (corrupted)   → discarded\n\n"
+        "  |0> (uncorrupted) → exits up to the sink\n"
+        "  |1> (corrupted)   → exits down, discarded\n\n"
         "The sink wants |0>. Only clean qubits should\n"
         "reach it. Corrupted qubits go to the discard path.\n\n"
         "Place the CNOT and Splitter to build the filter."
     ),
-    "hint": "CNOT at the crossing, Splitter after target exit. |0> to sink.",
+    "hint": "CNOT at the crossing, Splitter after target exit. |0> up to sink.",
     "pre_placed": {
-        (5, -1): (GEN, DOWN, None),
+        (5, 0): (GEN, DOWN, None),
         (-1, 3): (GEN, RIGHT, None),
         (2, 3): (NOISE, RIGHT, None),
-        (13, 3): (SINK, RIGHT, ZERO),
+        (8, 2): (SINK, RIGHT, ZERO),
     },
-    "locked": {(5, -1), (-1, 3), (2, 3), (13, 3)},
+    "locked": {(5, 0), (-1, 3), (2, 3), (8, 2)},
     "available": [BELT, CNOT, SPLIT],
     "win_count": 5,
-    "camera": (6, 3),
+    "camera": (4, 2),
 }
 
 
@@ -911,20 +923,20 @@ CH11_L3 = {
         "Top lane is constant: H -> H -> Splitter.\n"
         "Bottom lane is balanced: H -> Z -> H -> Splitter.\n\n"
         "The locked Splitters sort the deterministic answers:\n"
-        "  |0> goes straight to the constant sink\n"
-        "  |1> turns clockwise to the balanced sink."
+        "  |0> exits up to the constant sink\n"
+        "  |1> exits down to the balanced sink."
     ),
     "hint": "Top: H-H. Bottom: H-Z-H. Splitters are already placed.",
     "pre_placed": {
-        (0, 1): (GEN, RIGHT, None),
-        (11, 1): (SPLIT, RIGHT, None),
-        (15, 1): (SINK, RIGHT, ZERO),
+        (0, 2): (GEN, RIGHT, None),
+        (11, 2): (SPLIT, RIGHT, None),
+        (11, 1): (SINK, DOWN, ZERO),
         (0, 6): (GEN, RIGHT, None),
         (11, 6): (SPLIT, RIGHT, None),
-        (11, 10): (SINK, DOWN, ONE),
+        (11, 9): (SINK, DOWN, ONE),
     },
-    "locked": {(0, 1), (11, 1), (15, 1),
-               (0, 6), (11, 6), (11, 10)},
+    "locked": {(0, 2), (11, 2), (11, 1),
+               (0, 6), (11, 6), (11, 9)},
     "available": [BELT, H, Z],
     "win_count": 5,
     "camera": (7, 4),
@@ -1050,11 +1062,12 @@ CH13_L2 = {
         "  Top:    control of first CNOT, exits right\n"
         "  Middle: target of first, control of second\n"
         "  Bottom: target of second CNOT\n\n"
-        "Use X on the top path to flip control to |1>.\n"
+        "Place a single X gate to flip the top control to |1>.\n"
         "First CNOT flips middle to |1>.\n"
         "Middle feeds second CNOT's control.\n"
         "Second CNOT flips bottom to |1>.\n"
-        "All three sinks want |1>."
+        "All three sinks want |1>.\n\n"
+        "You only get one X gate — place it wisely."
     ),
     "hint": "X on the top path — the flip cascades through both CNOTs.",
     "pre_placed": {
@@ -1070,6 +1083,7 @@ CH13_L2 = {
     "locked": {(-1, 1), (-1, 2), (-1, 3), (4, 2), (8, 3),
                (12, 1), (12, 2), (12, 3)},
     "available": [BELT, X],
+    "gate_limits": {X: 1},
     "win_count": 5,
     "camera": (5, 2),
 }
@@ -1100,7 +1114,7 @@ CH14_L1 = {
         "Use a Splitter after the second H to catch the\n"
         "|1> qubits that survived. The sink wants |1>."
     ),
-    "hint": "Build: H(locked) → Z(locked) → Noise(locked) → H → Splitter → |1> CW to sink.",
+    "hint": "Build: H(locked) → Z(locked) → Noise(locked) → H → Splitter → |1> down to sink.",
     "pre_placed": {
         (0, 3): (GEN, RIGHT, None),
         (2, 3): (H, RIGHT, None),
@@ -1338,7 +1352,7 @@ CHAPTERS = [
         "subtitle": "The first quantum speedup",
         "concept": _CH11_CONCEPT,
         "color": (160, 100, 220),
-        "levels": [CH11_L1, CH11_L2, CH11_L3],
+        "levels": [CH11_L2, CH11_L3],
     },
     {
         "name": "Quantum Cloning",

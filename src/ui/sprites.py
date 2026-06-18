@@ -11,7 +11,7 @@ import os
 
 import pygame
 
-from ..core.config import RED, BLUE, PURPLE, WHITE, GOLD, PINK
+from ..core.config import RED, BLUE, PURPLE, WHITE, GOLD
 from ..core.entities import QubitState, Direction
 
 
@@ -101,9 +101,9 @@ def _draw_qubit(state, size, disappearing=False, progress=1.0, entangled=False,
     cx, cy = size / 2, size / 2
     if disappearing:
         sc = max(0.18, progress)
-        radius = max(2, int(size * 0.28 * sc))
+        radius = max(2, int(size * 0.36 * sc))
     else:
-        radius = max(3, int(size * 0.28))
+        radius = max(4, int(size * 0.36))
     glow_r = int(radius * 1.8)
     if state == QubitState.SUPERPOSITION:
         base = PURPLE
@@ -121,12 +121,10 @@ def _draw_qubit(state, size, disappearing=False, progress=1.0, entangled=False,
     if entangled:
         pygame.draw.circle(s, GOLD, (int(cx), int(cy)), radius + 2, 2)
         pygame.draw.circle(s, _a(GOLD, 100), (int(cx), int(cy)), radius + 5, 1)
-    if state == QubitState.SUPERPOSITION:
-        pygame.draw.circle(s, PINK if phase_flipped else WHITE, (int(cx), int(cy)), radius + 1, 2)
-    else:
-        pygame.draw.circle(s, _a(WHITE, 130), (int(cx), int(cy)), radius + 1, 1)
+    pygame.draw.circle(s, _a(WHITE, 130 if state != QubitState.SUPERPOSITION else 220),
+                       (int(cx), int(cy)), radius + 1, 2)
     angle = phase_angle if phase_angle is not None else (math.pi if phase_flipped else 0.0)
-    _draw_phase_arrow(s, cx, cy, radius, angle)
+    _draw_phase_tick(s, cx, cy, radius, angle)
     return s
 
 
@@ -146,21 +144,16 @@ def _draw_bloch(surface, cx, cy, radius, bloch):
     pygame.draw.circle(surface, WHITE, end, max(1, int(radius * 0.14)))
 
 
-def _draw_phase_arrow(surface, cx, cy, radius, angle):
+def _draw_phase_tick(surface, cx, cy, radius, angle):
     ux, uy = math.cos(angle), -math.sin(angle)
-    outer = max(radius + 2, min(radius * 1.8, surface.get_width() / 2 - 2))
-    inner = max(radius, outer - max(2, radius * 0.55))
-    tip = (int(cx + ux * outer), int(cy + uy * outer))
-    base = (cx + ux * inner, cy + uy * inner)
+    r_inner = radius - 1
+    r_outer = radius + max(3, int(radius * 0.45))
+    tip = (int(cx + ux * r_outer), int(cy + uy * r_outer))
     px, py = -uy, ux
-    head = max(2, int(radius * 0.35))
-    width = max(1, int(radius * 0.22))
-    pygame.draw.line(surface, WHITE, (int(base[0]), int(base[1])), tip, width)
-    pygame.draw.polygon(surface, WHITE, [
-        tip,
-        (int(base[0] + px * head), int(base[1] + py * head)),
-        (int(base[0] - px * head), int(base[1] - py * head)),
-    ])
+    hw = max(2, int(radius * 0.25))
+    base_l = (int(cx + ux * r_inner + px * hw), int(cy + uy * r_inner + py * hw))
+    base_r = (int(cx + ux * r_inner - px * hw), int(cy + uy * r_inner - py * hw))
+    pygame.draw.polygon(surface, WHITE, [tip, base_l, base_r])
 
 
 @lru_cache(maxsize=512)

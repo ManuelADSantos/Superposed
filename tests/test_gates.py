@@ -111,21 +111,21 @@ class TestHadamard(unittest.TestCase):
         self.assertAlmostEqual(q.phase_angle, math.pi / 2)
         self.assertAlmostEqual(q.bloch[1], 1.0)
 
-    def test_basis_state_sprite_draws_phase_arrow(self):
+    def test_superposition_sprite_draws_phase_tick(self):
         from src.ui import sprites
 
         calls = []
-        draw_arrow = sprites._draw_phase_arrow
+        draw_tick = sprites._draw_phase_tick
 
         def spy(*args):
             calls.append(args)
 
         try:
             sprites.clear_sprite_caches()
-            sprites._draw_phase_arrow = spy
-            sprites.get_qubit_sprite(QubitState.ZERO, 32, phase_angle=0.0, bloch=(0, 0, 1))
+            sprites._draw_phase_tick = spy
+            sprites.get_qubit_sprite(QubitState.SUPERPOSITION, 32, phase_angle=0.5)
         finally:
-            sprites._draw_phase_arrow = draw_arrow
+            sprites._draw_phase_tick = draw_tick
             sprites.clear_sprite_caches()
 
         self.assertEqual(len(calls), 1)
@@ -381,10 +381,10 @@ class TestSplitter(unittest.TestCase):
         splitter(0, 0, tile, q, eject)
         return q, ejected
 
-    def test_zero_goes_straight(self):
+    def test_zero_goes_ccw(self):
         q, ejected = self._run_splitter(QubitState.ZERO)
         self.assertEqual(len(ejected), 1)
-        self.assertEqual(ejected[0][:2], (1, 0))  # RIGHT = (1, 0)
+        self.assertEqual(ejected[0][:2], (0, -1))  # CCW of RIGHT = UP = (0, -1)
 
     def test_one_goes_cw(self):
         q, ejected = self._run_splitter(QubitState.ONE)
@@ -399,18 +399,18 @@ class TestSplitter(unittest.TestCase):
     def test_superposition_distribution(self):
         """Over many trials, splitter should route roughly 50/50."""
         random.seed(42)
-        straight = 0
+        ccw_count = 0
         for _ in range(200):
             _, ejected = self._run_splitter(QubitState.SUPERPOSITION)
-            if ejected[0][:2] == (1, 0):
-                straight += 1
-        self.assertGreater(straight, 50)
-        self.assertLess(straight, 150)
+            if ejected[0][:2] == (0, -1):  # CCW of RIGHT = UP
+                ccw_count += 1
+        self.assertGreater(ccw_count, 50)
+        self.assertLess(ccw_count, 150)
 
     def test_direction_down_routes_correctly(self):
-        """When gate faces DOWN, |0> goes (0,1) and |1> goes (-1,0)."""
+        """When gate faces DOWN, |0> goes CCW=RIGHT=(1,0), |1> goes CW=LEFT=(-1,0)."""
         _, ej_zero = self._run_splitter(QubitState.ZERO, Direction.DOWN)
-        self.assertEqual(ej_zero[0][:2], (0, 1))
+        self.assertEqual(ej_zero[0][:2], (1, 0))
         _, ej_one = self._run_splitter(QubitState.ONE, Direction.DOWN)
         self.assertEqual(ej_one[0][:2], (-1, 0))
 
@@ -602,6 +602,34 @@ class TestCircuitExport(unittest.TestCase):
         script = self._three_cell_script()
         self.assertIn("qc.ccx(1, 0, 2)", script)
         self.assertNotIn("WARNING", script)
+
+
+class TestGateLimits(unittest.TestCase):
+    def setUp(self):
+        reset_world()
+
+    def test_count_placed_ignores_locked(self):
+        from src.core.world import load_level, count_placed
+        load_level({
+            "pre_placed": {(0, 0): ("x", Direction.RIGHT, None)},
+            "locked": {(0, 0)},
+            "available": ["x", "belt"],
+            "gate_limits": {"x": 1},
+        }, 0)
+        self.assertEqual(count_placed("x"), 0)
+
+    def test_gate_limit_enforcement(self):
+        from src.core.world import load_level, count_placed, get_tile
+        load_level({
+            "available": ["x", "belt"],
+            "gate_limits": {"x": 1},
+        }, 0)
+        tile = get_tile(5, 5)
+        tile.building = "x"
+        self.assertEqual(count_placed("x"), 1)
+        from src.ui.input_handler import _can_place_at
+        self.assertFalse(_can_place_at(6, 6, ["x", "belt"], "x"))
+        self.assertTrue(_can_place_at(6, 6, ["x", "belt"], "belt"))
 
 
 if __name__ == "__main__":

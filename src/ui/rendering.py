@@ -7,7 +7,7 @@ from ..core import world as world_module
 from ..core import config
 from ..core.config import (
     TILE_SIZE, BG, GRID_COLOR,
-    WHITE, LIGHT_GRAY, DARK_GRAY, YELLOW, RED, GREEN, BLUE,
+    WHITE, LIGHT_GRAY, DARK_GRAY, RED, GREEN, BLUE,
     TOOLBAR_HEIGHT, TOOLBAR_PAD, TOOLTIP_FONT_SIZE, UI_FONT_SIZE,
     GOLD, PURPLE, CYAN,
 )
@@ -15,7 +15,7 @@ from ..core.entities import (
     QubitState, QubitItem, Direction, DIR_VECTORS, state_color, ccw_dir,
 )
 from .sprites import get_building_sprite, get_qubit_sprite
-from ..core.world import get_tile, world_to_screen, screen_to_world
+from ..core.world import get_tile, world_to_screen, screen_to_world, count_placed
 from ..engine.gate_registry import (
     get_gate, active_toolbar, Category,
     EMPTY, GENERATOR, OUTPUT_SINK,
@@ -35,19 +35,20 @@ def toolbar_button_rects(available=None):
 
 
 def _draw_sink_status(surface, rect, tile):
-    font = pygame.font.SysFont("consolas", max(10, int(rect.height * 0.18)))
+    lev = world_module.current_level_def
     if tile.sink_target is not None:
-        ic = state_color(tile.sink_target)
-        ir = max(4, int(rect.height * 0.08))
-        pygame.draw.circle(surface, ic, (rect.centerx, rect.top + ir + 4), ir)
-    if tile.sink_total == 0:
+        sz = max(20, int(rect.height * 0.35))
+        sprite = get_qubit_sprite(
+            tile.sink_target, sz, phase_angle=tile.sink_phase or 0.0)
+        surface.blit(sprite,
+                     sprite.get_rect(center=(rect.centerx, rect.top + sz // 2 + 4)))
+    if lev is None:
         return
-    if tile.sink_target is not None:
-        pct = int(100 * tile.sink_match / max(1, tile.sink_total))
-        color = GREEN if pct > 80 else (YELLOW if pct > 40 else RED)
-        txt = font.render(f"{tile.sink_match}/{tile.sink_total}", True, color)
-    else:
-        txt = font.render(f"#{tile.sink_total}", True, WHITE)
+    win_count = lev.get("win_count", 5)
+    match = tile.sink_match if tile.sink_target is not None else tile.sink_total
+    color = GREEN if match >= win_count else (CYAN if match > 0 else LIGHT_GRAY)
+    font = pygame.font.SysFont("consolas", max(10, int(rect.height * 0.18)))
+    txt = font.render(f"{min(match, win_count)}/{win_count}", True, color)
     surface.blit(txt, txt.get_rect(center=(rect.centerx, rect.bottom - 10)))
 
 
@@ -140,7 +141,8 @@ def _draw_item_on_tile(surface, tile, item, sx, sy, size):
     else:
         px = sx + size / 2 + dx * item.progress * size * 0.4
         py = sy + size / 2 + dy * item.progress * size * 0.4
-    draw_qubit_item(surface, item, px - 10, py - 10, 20)
+    q = max(20, int(size * 0.45))
+    draw_qubit_item(surface, item, px - q // 2, py - q // 2, q)
 
 
 def _companion_offset(direction):
@@ -186,7 +188,8 @@ def _draw_help_tooltip(surface, anchor_rect):
     font = pygame.font.SysFont("consolas", 13)
     lines = [
         "R  Rotate direction",
-        "P  Pause / Resume",
+        "SPACE  Pause / Resume",
+        "Q / E  Slow / Fast",
         "N  Single step",
         "C  Clear all placed",
         "O  Recenter camera",
@@ -195,7 +198,7 @@ def _draw_help_tooltip(surface, anchor_rect):
         "ESC  Back to menu",
     ]
     if world_module.current_level_index is not None:
-        lines.insert(2, "B  Show briefing")
+        lines.insert(3, "H  Show briefing")
     rendered = [font.render(l, True, WHITE) for l in lines]
     lh = font.get_linesize()
     pad = 10
@@ -235,6 +238,13 @@ def draw_toolbar(surface, selected_building, selected_rotation, paused):
         if mini:
             surface.blit(mini, mini.get_rect(center=rect.center))
 
+        limit = world_module.gate_limits.get(gid)
+        if limit is not None:
+            remaining = max(0, limit - count_placed(gid))
+            badge_font = pygame.font.SysFont("consolas", max(10, int(btn_size * 0.3)), bold=True)
+            badge_color = WHITE if remaining > 0 else RED
+            badge = badge_font.render(str(remaining), True, badge_color)
+            surface.blit(badge, badge.get_rect(topright=(rect.right - 2, rect.top + 2)))
 
     export_font = pygame.font.SysFont("consolas", 13, bold=True)
     export_rect = get_export_button_rect()

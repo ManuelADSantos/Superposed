@@ -46,6 +46,7 @@ class WorldState:
         self.current_level_def: dict | None = None
         self.locked_tiles: set[tuple[int, int]] = set()
         self.available_buildings: list[str] | None = None
+        self.gate_limits: dict[str, int] = {}
 
     def create_entangle_group(self) -> int:
         self._next_entangle_id += 1
@@ -125,6 +126,7 @@ current_level_index  = _state.current_level_index
 current_level_def    = _state.current_level_def
 locked_tiles         = _state.locked_tiles
 available_buildings  = _state.available_buildings
+gate_limits          = _state.gate_limits
 
 
 # ---------------------------------------------------------------------------
@@ -585,6 +587,7 @@ def _sync_from_state():
     _self.current_level_def   = _state.current_level_def
     _self.locked_tiles        = _state.locked_tiles
     _self.available_buildings = _state.available_buildings
+    _self.gate_limits        = _state.gate_limits
 
 
 def reset_world():
@@ -603,16 +606,28 @@ def reset_world():
     clear_sprite_caches()
 
 
+def count_placed(building: str) -> int:
+    """Count player-placed (non-locked, non-companion) instances of a gate."""
+    return sum(
+        1 for pos, tile in _state.world.items()
+        if tile.building == building and not tile.is_ctrl and pos not in _state.locked_tiles
+    )
+
+
 def load_level(level_def, level_index):
     global current_level_index, current_level_def
-    global locked_tiles, available_buildings
+    global locked_tiles, available_buildings, gate_limits
 
     reset_world()
+
+    from ..engine.simulation import reset_spawn_clock
+    reset_spawn_clock()
 
     _state.current_level_index = level_index
     _state.current_level_def   = level_def
     _state.locked_tiles        = set(level_def.get("locked", set()))
     _state.available_buildings = list(level_def.get("available", []))
+    _state.gate_limits         = dict(level_def.get("gate_limits", {}))
 
     from ..engine.gate_registry import get_gate, Category
     from .entities import ccw_dir, DIR_VECTORS
@@ -624,7 +639,11 @@ def load_level(level_def, level_index):
         tile.role = 1
         if len(data) > 2 and data[2] is not None:
             if tile.building == OUTPUT_SINK:
-                tile.sink_target = data[2]
+                target = data[2]
+                if isinstance(target, tuple):
+                    tile.sink_target, tile.sink_phase = target
+                else:
+                    tile.sink_target = target
 
     # Auto-create companions for pre-placed multi-qubit gates
     for (x, y), data in level_def.get("pre_placed", {}).items():

@@ -507,14 +507,17 @@ CH6_L2 = {
     "pre_placed": {
         (-1, 2): (GEN, RIGHT, None),
         (-1, 3): (GEN, RIGHT, None),
-        (10, 2): (SINK, RIGHT, ZERO),
-        (10, 3): (SINK, RIGHT, ONE),
+        (0, 2): (X, RIGHT, None),
+        (3, 2): (SINK, RIGHT, ZERO),
+        (3, 3): (SINK, RIGHT, ONE),
 
     },
-    "locked": {(-1, 2), (-1, 3), (10, 2), (10, 3)},
+    "unlocked": {(1, 2), (2, 2),(0, 3), (1, 3), (2, 3)},
+    
     "available": [BELT, SWAP],
-    "win_count": 5,
-    "camera": (5, 3),
+    "gate_limits": {SWAP: 1},
+    "win_count": 10,
+    "camera": (2, 3),
 }
 
 

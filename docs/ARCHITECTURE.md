@@ -60,7 +60,7 @@ All mutable game state lives in the `WorldState` class: the sparse grid (a `dict
 
 The entanglement registry is a pair of structures: `entangle_groups` maps a group ID to an `EntangleGroup` (`qubit_order` plus joint `statevec`), and `entangle_lookup` maps each qubit UID to its live `QubitItem`. This keeps partner lookup simple while allowing two-qubit gates to operate on entangled groups.
 
-Module-level proxy variables (`world`, `locked_tiles`, `available_buildings`, etc.) are re-bound to the live `WorldState` on reset/load via `_sync_from_state()`, so `import world as W; W.world` always resolves to the current dict.
+Module-level proxy variables (`world`, `locked_tiles`, `unlocked_tiles`, `available_buildings`, etc.) are re-bound to the live `WorldState` on reset/load via `_sync_from_state()`, so `import world as W; W.world` always resolves to the current dict.
 
 **Key functions:**
 - `reset_world()` — reinitialises all state, clears sprite caches.
@@ -159,7 +159,8 @@ Thirty-seven tutorial levels across 15 chapters, flattened into `ALL_LEVELS` fro
 
 - `name`, `description`, `briefing` — text shown to the player.
 - `pre_placed` — dict mapping `(x, y)` to a `(building_id, direction, param)` tuple for tiles the level starts with. For sinks, `param` is the desired output state or `(state, phase)`. For generators, `param` is the spawn state or `(state, phase)`. Companions for two-qubit gates are generated automatically at load time.
-- `locked` — set of `(x, y)` coordinates the player cannot modify.
+- `locked` — set of `(x, y)` coordinates the player cannot modify. It may include empty cells; locked cells render with a light tint.
+- `unlocked` — optional whitelist of cells the player may modify. When present, every other campaign cell behaves as locked. Sandbox mode never sets this, so the whole grid remains free.
 - `available` — list of gate IDs the player can use (restricts the toolbar).
 - `gate_limits` — optional per-level caps for specific gates.
 - `win_count` — how many qubits the sink must collect to complete the level.

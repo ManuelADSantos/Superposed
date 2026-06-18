@@ -15,7 +15,7 @@ from ..core.entities import (
     QubitItem, Direction, DIR_VECTORS, ccw_dir,
 )
 from .sprites import get_building_sprite, get_qubit_sprite
-from ..core.world import get_tile, world_to_screen, screen_to_world, count_placed
+from ..core.world import get_tile, world_to_screen, screen_to_world, count_placed, is_locked
 from ..engine.gate_registry import (
     get_gate, active_toolbar, Category,
     EMPTY, GENERATOR, OUTPUT_SINK,
@@ -54,6 +54,7 @@ def _draw_sink_status(surface, rect, tile):
 
 def _draw_locked_indicator(surface, rect):
     s = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+    s.fill((255, 255, 255, 18))
     sz = max(8, int(rect.width * 0.18))
     pygame.draw.polygon(s, (255, 255, 255, 30), [
         (rect.width - sz, 0), (rect.width, 0), (rect.width, sz)
@@ -113,8 +114,8 @@ def draw_grid(surface):
                 if tile.building == OUTPUT_SINK:
                     _draw_sink_status(surface, rect, tile)
 
-                if (wx, wy) in world_module.locked_tiles:
-                    _draw_locked_indicator(surface, rect)
+            if is_locked((wx, wy)):
+                _draw_locked_indicator(surface, rect)
 
             if tile.item:
                 _draw_item_on_tile(surface, tile, tile.item, sx, sy, size)
@@ -158,7 +159,7 @@ def draw_ghost(surface, selected_building, selected_rotation, mouse_pos):
     if my >= config.HEIGHT - TOOLBAR_HEIGHT:
         return
     wx, wy = screen_to_world(mx, my, TILE_SIZE)
-    if (wx, wy) in world_module.locked_tiles:
+    if is_locked((wx, wy)):
         return
     sx, sy = world_to_screen(wx, wy, TILE_SIZE)
     size = int(TILE_SIZE * world_module._state.zoom)
@@ -178,7 +179,7 @@ def draw_ghost(surface, selected_building, selected_rotation, mouse_pos):
             ctrl_sprite = get_building_sprite(selected_building, selected_rotation, size, role=role)
             if ctrl_sprite:
                 ctrl_ghost = ctrl_sprite.copy()
-                blocked = (cw, ch) in world_module.locked_tiles
+                blocked = is_locked((cw, ch))
                 ctrl_ghost.set_alpha(40 if blocked else 90)
                 surface.blit(ctrl_ghost, ctrl_ghost.get_rect(
                     center=(csx + size // 2, csy + size // 2)))
@@ -312,8 +313,7 @@ def draw_level_hud(surface):
                    if t.building == "measurement")
     else:
         sink_counts = []
-        for (x, y) in world_module.locked_tiles:
-            tile = get_tile(x, y)
+        for tile in world_module.world.values():
             if tile.building == OUTPUT_SINK:
                 c = tile.sink_total if tile.sink_target is None else tile.sink_match
                 sink_counts.append(c)

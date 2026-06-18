@@ -727,6 +727,57 @@ class TestGateLimits(unittest.TestCase):
         self.assertFalse(_can_place_at(6, 6, ["x", "belt"], "x"))
         self.assertTrue(_can_place_at(6, 6, ["x", "belt"], "belt"))
 
+    def test_empty_locked_cell_blocks_and_draws(self):
+        from src.core import config
+        from src.core.world import load_level
+        from src.ui import rendering
+
+        os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+        pygame.init()
+        pygame.display.set_mode((1, 1))
+        old_size = config.WIDTH, config.HEIGHT
+        draw_locked = rendering._draw_locked_indicator
+        calls = []
+
+        def spy(*args):
+            calls.append(args)
+
+        try:
+            config.WIDTH, config.HEIGHT = 160, 160
+            load_level({"locked": {(0, 0)}, "available": ["belt"]}, 0)
+            from src.ui.input_handler import _can_place_at
+            self.assertFalse(_can_place_at(0, 0, ["belt"], "belt"))
+            rendering._draw_locked_indicator = spy
+            rendering.draw_grid(pygame.Surface((160, 160)))
+            self.assertTrue(calls)
+        finally:
+            rendering._draw_locked_indicator = draw_locked
+            config.WIDTH, config.HEIGHT = old_size
+
+    def test_unlocked_whitelist_blocks_everything_else(self):
+        from src.core.world import load_level, is_locked, reset_world
+        from src.ui.input_handler import _can_place_at
+        from src.ui import rendering
+
+        load_level({"unlocked": {(1, 1)}, "available": ["belt"]}, 0)
+
+        self.assertFalse(is_locked((1, 1)))
+        self.assertTrue(is_locked((1, 2)))
+        self.assertTrue(_can_place_at(1, 1, ["belt"], "belt"))
+        self.assertFalse(_can_place_at(1, 2, ["belt"], "belt"))
+
+        draw_locked = rendering._draw_locked_indicator
+        calls = []
+        try:
+            rendering._draw_locked_indicator = lambda *args: calls.append(args)
+            rendering.draw_grid(pygame.Surface((160, 160)))
+            self.assertTrue(calls)
+        finally:
+            rendering._draw_locked_indicator = draw_locked
+
+        reset_world()
+        self.assertFalse(is_locked((1, 2)))
+
 
 if __name__ == "__main__":
     unittest.main()

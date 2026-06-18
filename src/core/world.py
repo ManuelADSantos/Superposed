@@ -45,6 +45,7 @@ class WorldState:
         self.current_level_index: int | None = None
         self.current_level_def: dict | None = None
         self.locked_tiles: set[tuple[int, int]] = set()
+        self.unlocked_tiles: set[tuple[int, int]] | None = None
         self.available_buildings: list[str] | None = None
         self.gate_limits: dict[str, int] = {}
 
@@ -125,6 +126,7 @@ entangle_lookup = _state.entangle_lookup
 current_level_index  = _state.current_level_index
 current_level_def    = _state.current_level_def
 locked_tiles         = _state.locked_tiles
+unlocked_tiles       = _state.unlocked_tiles
 available_buildings  = _state.available_buildings
 gate_limits          = _state.gate_limits
 
@@ -586,13 +588,14 @@ def _sync_from_state():
     _self.current_level_index = _state.current_level_index
     _self.current_level_def   = _state.current_level_def
     _self.locked_tiles        = _state.locked_tiles
+    _self.unlocked_tiles      = _state.unlocked_tiles
     _self.available_buildings = _state.available_buildings
     _self.gate_limits        = _state.gate_limits
 
 
 def reset_world():
     global current_level_index, current_level_def
-    global locked_tiles, available_buildings
+    global locked_tiles, unlocked_tiles, available_buildings
 
     _state.__init__()
 
@@ -610,13 +613,19 @@ def count_placed(building: str) -> int:
     """Count player-placed (non-locked, non-companion) instances of a gate."""
     return sum(
         1 for pos, tile in _state.world.items()
-        if tile.building == building and not tile.is_ctrl and pos not in _state.locked_tiles
+        if tile.building == building and not tile.is_ctrl and not is_locked(pos)
+    )
+
+
+def is_locked(pos: tuple[int, int]) -> bool:
+    return pos in _state.locked_tiles or (
+        _state.unlocked_tiles is not None and pos not in _state.unlocked_tiles
     )
 
 
 def load_level(level_def, level_index):
     global current_level_index, current_level_def
-    global locked_tiles, available_buildings, gate_limits
+    global locked_tiles, unlocked_tiles, available_buildings, gate_limits
 
     reset_world()
 
@@ -626,6 +635,7 @@ def load_level(level_def, level_index):
     _state.current_level_index = level_index
     _state.current_level_def   = level_def
     _state.locked_tiles        = set(level_def.get("locked", set()))
+    _state.unlocked_tiles      = set(level_def["unlocked"]) if "unlocked" in level_def else None
     _state.available_buildings = list(level_def.get("available", []))
     _state.gate_limits         = dict(level_def.get("gate_limits", {}))
 
@@ -689,11 +699,7 @@ def check_win_condition() -> bool:
                     if t.building == "measurement")
         return total >= win_count
 
-    sinks = []
-    for (x, y) in _state.locked_tiles:
-        tile = _state.get_tile(x, y)
-        if tile.building == OUTPUT_SINK:
-            sinks.append(tile)
+    sinks = [tile for tile in _state.world.values() if tile.building == OUTPUT_SINK]
     if not sinks:
         return False
     return all(

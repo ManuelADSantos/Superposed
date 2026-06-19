@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pygame
-from .core import config
+from .core import config, audio
 from .core.config import FPS, BG
 
 from .engine.gate_registry import load_gates, BELT
@@ -26,6 +26,7 @@ from .core import world as W
 
 
 def main():
+    audio.pre_init()
     pygame.init()
 
     info = pygame.display.Info()
@@ -40,6 +41,9 @@ def main():
     clock = pygame.time.Clock()
 
     load_gates()
+    audio.init()
+    audio.play_music()
+    audio.toggle_mute()
     print(f"[Superposed] font: {config.FONT_PATH}")
 
     state = GameState.MAIN_MENU
@@ -72,6 +76,8 @@ def main():
         for ev in events:
             if ev.type == pygame.QUIT:
                 running = False
+            elif ev.type == pygame.KEYDOWN and ev.key == pygame.K_m:
+                audio.toggle_mute()
             elif ev.type == pygame.VIDEORESIZE:
                 config.WIDTH, config.HEIGHT = ev.w, ev.h
                 screen = pygame.display.set_mode(
@@ -171,6 +177,7 @@ def main():
 
                 if state == GameState.LEVEL_PLAY and check_win_condition():
                     completed_levels.add(level_index)
+                    audio.play_sfx('win')
                     state = GameState.WIN_SCREEN
 
                 screen.fill(BG)

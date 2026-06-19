@@ -13,6 +13,7 @@ from .rendering import (
     show_toast, toolbar_button_rects, toggle_briefing,
 )
 from ..core import world as W
+from ..core import audio
 
 
 def _toolbar_hit(mx, my):
@@ -210,10 +211,12 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
 
             if event.button == 1 and get_speed_button_rect().collidepoint(mx, my):
                 config.SPEED_MULT = {0.5: 1, 1: 2, 2: 4, 4: 0.5}[config.SPEED_MULT]
+                audio.play_sfx('click')
                 continue
 
             if event.button == 1 and get_pause_button_rect().collidepoint(mx, my):
                 paused = not paused
+                audio.play_sfx('click')
                 continue
 
 
@@ -229,6 +232,7 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
             tb_hit = _toolbar_hit(mx, my)
             if tb_hit is not None:
                 selected_building = tb_hit
+                audio.play_sfx('click')
                 continue
 
             if my < config.HEIGHT - TOOLBAR_HEIGHT:
@@ -251,6 +255,7 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
                                 if get_tile(cx, cy).peer:
                                     _delete_building(cx, cy)
                         _place_building(wx, wy, selected_building, selected_rotation)
+                        audio.play_sfx('place')
 
                         # Start belt drag
                         if selected_building == BELT:
@@ -262,6 +267,7 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
                     _erase_last_cell = (wx, wy)
                     if not cell_locked:
                         _delete_building(wx, wy)
+                        audio.play_sfx('delete')
 
                 elif event.button == 2:
                     tile = get_tile(wx, wy)

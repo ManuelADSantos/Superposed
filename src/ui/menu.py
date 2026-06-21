@@ -502,7 +502,7 @@ def draw_win_screen(screen, level_index):
     menu_rect.center = (panel.centerx - 85, panel.bottom - 45)
     menu_hov = menu_rect.collidepoint(mx, my)
     pygame.draw.rect(screen, DARK_GRAY if not menu_hov else LIGHT_GRAY, menu_rect, border_radius=8)
-    mt = btn_font.render("CHAPTERS", True, WHITE if menu_hov else LIGHT_GRAY)
+    mt = btn_font.render("CHAPTERS", True, WHITE)
     screen.blit(mt, mt.get_rect(center=menu_rect.center))
 
     return menu_rect, next_rect

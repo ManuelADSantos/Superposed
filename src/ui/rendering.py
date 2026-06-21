@@ -37,20 +37,32 @@ def toolbar_button_rects(available=None):
 
 def _draw_sink_status(surface, rect, tile):
     lev = world_module.current_level_def
+    h = rect.height
     if tile.sink_target is not None:
-        sz = max(20, int(rect.height * 0.35))
+        sz = max(4, int(h * 0.38))
         sprite = get_qubit_sprite(
             tile.sink_target, sz, phase_angle=tile.sink_phase or 0.0)
         surface.blit(sprite,
-                     sprite.get_rect(center=(rect.centerx, rect.top + sz // 2 + 4)))
+                     sprite.get_rect(center=(rect.centerx, rect.top + int(h * 0.4))))
     if lev is None:
         return
     win_count = lev.get("win_count", 5)
     match = tile.sink_match if tile.sink_target is not None else tile.sink_total
+    capped = min(match, win_count)
+    bar_w = max(4, int(rect.width * 0.6))
+    bar_h = max(2, int(h * 0.06))
+    bar_x = rect.centerx - bar_w // 2
+    bar_y = rect.bottom - int(h * 0.42)
+    pygame.draw.rect(surface, DARK_GRAY, (bar_x, bar_y, bar_w, bar_h), border_radius=2)
+    if capped > 0:
+        fill_w = int(bar_w * capped / win_count)
+        color = GREEN if capped >= win_count else CYAN
+        pygame.draw.rect(surface, color, (bar_x, bar_y, fill_w, bar_h), border_radius=2)
+    font_sz = max(6, int(h * 0.16))
+    font = config.game_font(font_sz)
     color = GREEN if match >= win_count else (CYAN if match > 0 else LIGHT_GRAY)
-    font = config.game_font(max(10, int(rect.height * 0.18)))
-    txt = font.render(f"{min(match, win_count)}/{win_count}", True, color)
-    surface.blit(txt, txt.get_rect(center=(rect.centerx, rect.bottom - 10)))
+    txt = font.render(f"{capped}/{win_count}", True, color)
+    surface.blit(txt, txt.get_rect(center=(rect.centerx, bar_y + bar_h + int(h * 0.09))))
 
 
 def _draw_locked_indicator(surface, rect):
@@ -263,7 +275,7 @@ def draw_toolbar(surface, selected_building, selected_rotation, paused):
     _draw_ctrl_btn(speed_rect, f"{config.SPEED_MULT}x", CYAN, speed_rect.collidepoint(mx, my))
 
     pause_rect = get_pause_button_rect()
-    p_label = "| |" if not paused else ">"
+    p_label = "▮▮" if not paused else "▶"
     p_color = RED if paused else GREEN
     _draw_ctrl_btn(pause_rect, p_label, p_color, pause_rect.collidepoint(mx, my))
 

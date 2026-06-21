@@ -124,8 +124,9 @@ def _draw_qubit(state, size, disappearing=False, progress=1.0, entangled=False,
         pygame.draw.circle(s, _a(GOLD, 100), (int(cx), int(cy)), radius + 5, 1)
     pygame.draw.circle(s, _a(WHITE, 130 if state in (QubitState.ZERO, QubitState.ONE) else 220),
                        (int(cx), int(cy)), radius + 1, 2)
-    angle = phase_angle if phase_angle is not None else (math.pi if phase_flipped else 0.0)
-    _draw_phase_tick(s, cx, cy, radius, angle)
+    if state not in (QubitState.ZERO, QubitState.ONE):
+        angle = phase_angle if phase_angle is not None else (math.pi if phase_flipped else 0.0)
+        _draw_phase_tick(s, cx, cy, radius, angle)
     return s
 
 

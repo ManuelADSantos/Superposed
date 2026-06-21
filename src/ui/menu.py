@@ -300,7 +300,7 @@ def draw_chapter_select(screen):
     screen.set_clip(None)
 
     back_font = config.game_font(18)
-    back_txt = back_font.render("<< Back", True, LIGHT_GRAY)
+    back_txt = back_font.render("← Back (ESC)", True, LIGHT_GRAY)
     back_rect = back_txt.get_rect(topleft=(20, config.HEIGHT - 40))
     screen.blit(back_txt, back_rect)
     cards.append((back_rect, -1))
@@ -429,7 +429,7 @@ def draw_level_select(screen, chapter_index):
     screen.set_clip(None)
 
     back_font = config.game_font(18)
-    back_txt = back_font.render("<< Back to chapters", True, LIGHT_GRAY)
+    back_txt = back_font.render("← Back to chapters (ESC)", True, LIGHT_GRAY)
     back_rect = back_txt.get_rect(topleft=(20, config.HEIGHT - 40))
     screen.blit(back_txt, back_rect)
     cards.append((back_rect, -1))

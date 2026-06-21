@@ -202,10 +202,11 @@
   <h2>GAME PALETTE</h2>
   <div class="swatch-grid" id="swatches"></div>
 
-  <div class="color-input-row">
+  <div class="color-input-row" style="justify-content:center">
     <input type="color" id="customColor" value="#aa5aff">
     <label>Custom</label>
   </div>
+  <div id="rgbLabel" style="font-size:11px;color:#999;text-align:center">R: 170  G: 90  B: 255</div>
   <div class="color-input-row">
     <label>Alpha</label>
     <input type="range" id="alphaSlider" min="0" max="255" value="255">
@@ -365,6 +366,7 @@ function buildSwatches() {
       const rgb = hexToRgb(c.hex);
       currentColor = [rgb[0], rgb[1], rgb[2], currentColor[3]];
       document.getElementById('customColor').value = c.hex;
+      updateRgbLabel(rgb[0], rgb[1], rgb[2]);
     };
     container.appendChild(el);
   });
@@ -613,6 +615,7 @@ editorCanvas.addEventListener('mousedown', e => {
       '#' + [c[0],c[1],c[2]].map(v=>v.toString(16).padStart(2,'0')).join('');
     document.getElementById('alphaSlider').value = c[3];
     document.getElementById('alphaVal').textContent = c[3];
+    updateRgbLabel(c[0], c[1], c[2]);
     drawing = false;
     return;
   }
@@ -683,9 +686,13 @@ document.querySelectorAll('[data-tool]').forEach(btn => {
 });
 
 // Color & alpha
+function updateRgbLabel(r, g, b) {
+  document.getElementById('rgbLabel').textContent = `R: ${r}  G: ${g}  B: ${b}`;
+}
 document.getElementById('customColor').addEventListener('input', e => {
   const rgb = hexToRgb(e.target.value);
   currentColor = [rgb[0], rgb[1], rgb[2], currentColor[3]];
+  updateRgbLabel(rgb[0], rgb[1], rgb[2]);
   document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
 });
 document.getElementById('alphaSlider').addEventListener('input', e => {

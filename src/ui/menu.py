@@ -284,15 +284,16 @@ def draw_chapter_select(screen):
 
         if unlocked:
             done, total = chapter_progress(ch_idx)
-            bar_w, bar_h = card_w - 24, 8
+            prog = small_font.render(f"{done}/{total}", True, LIGHT_GRAY)
+            prog_x = cx + card_w - 12 - prog.get_width()
+            bar_w, bar_h = prog_x - cx - 18, 8
             bar_x, bar_y = cx + 12, cy + card_h - 18
             pygame.draw.rect(screen, DARK_GRAY, (bar_x, bar_y, bar_w, bar_h), border_radius=4)
             if done > 0:
                 fill = int(bar_w * done / total)
                 c = GREEN if done == total else ch.get("color", CYAN)
                 pygame.draw.rect(screen, c, (bar_x, bar_y, fill, bar_h), border_radius=4)
-            prog = small_font.render(f"{done}/{total}", True, LIGHT_GRAY)
-            screen.blit(prog, prog.get_rect(topright=(cx + card_w - 12, cy + card_h - 20)))
+            screen.blit(prog, (prog_x, cy + card_h - 23))
 
         if unlocked:
             cards.append((visible, ch_idx))

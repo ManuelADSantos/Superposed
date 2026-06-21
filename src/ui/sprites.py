@@ -116,8 +116,8 @@ def _draw_qubit(state, size, disappearing=False, progress=1.0, entangled=False,
     pygame.draw.circle(glow, _a(base, 55), (int(cx), int(cy)), glow_r)
     s.blit(glow, (0, 0))
     pygame.draw.circle(s, _a(base, 255), (int(cx), int(cy)), radius)
-    hx, hy = int(cx - radius * 0.3), int(cy - radius * 0.3)
-    pygame.draw.circle(s, _a(WHITE, 110), (hx, hy), max(1, radius // 2))
+    # hx, hy = int(cx - radius * 0.3), int(cy - radius * 0.3)
+    # pygame.draw.circle(s, _a(WHITE, 110), (hx, hy), max(1, radius // 2))
     _draw_bloch(s, cx, cy, radius, bloch)
     if entangled:
         pygame.draw.circle(s, GOLD, (int(cx), int(cy)), radius + 2, 2)
@@ -130,24 +130,39 @@ def _draw_qubit(state, size, disappearing=False, progress=1.0, entangled=False,
     return s
 
 
+# Screen-space axis vectors (right=+sx, down=+sy)
+# Z: up, Y: right, X: bottom-left at 45° from vertical, foreshortened for depth
+_BPX = (-math.sin(math.radians(45)) * 0.5, math.cos(math.radians(45)) * 0.5)
+_BPY = (1.0, 0.0)
+_BPZ = (0.0, -1.0)
+
+
+def _bloch_proj(cx, cy, r, x, y, z):
+    return (int(cx + (x * _BPX[0] + y * _BPY[0] + z * _BPZ[0]) * r),
+            int(cy + (x * _BPX[1] + y * _BPY[1] + z * _BPZ[1]) * r))
+
+
 def _draw_bloch(surface, cx, cy, radius, bloch):
     if bloch is None:
         return
-    x, _y, z = bloch
     r = max(2, int(radius * 0.58))
     center = (int(cx), int(cy))
-    pygame.draw.circle(surface, _a(WHITE, 70), center, r, 1)
-    pygame.draw.line(surface, _a(WHITE, 45),
-                     (int(cx - r), int(cy)), (int(cx + r), int(cy)), 1)
-    pygame.draw.line(surface, _a(WHITE, 45),
-                     (int(cx), int(cy - r)), (int(cx), int(cy + r)), 1)
-    end = (int(cx + x * r), int(cy - z * r))
-    pygame.draw.line(surface, _a(WHITE, 190), center, end, max(1, int(radius * 0.14)))
-    pygame.draw.circle(surface, WHITE, end, max(1, int(radius * 0.14)))
+    pygame.draw.circle(surface, WHITE, center, r, 1)
+    eq = [_bloch_proj(cx, cy, r, math.cos(a), math.sin(a), 0)
+          for a in (i * math.pi / 16 for i in range(32))]
+    pygame.draw.polygon(surface, WHITE, eq, 1)
+    for ax in [(1, 0, 0), (0, 1, 0), (0, 0, 1)]:
+        pygame.draw.line(surface, WHITE,
+                         _bloch_proj(cx, cy, r, -ax[0], -ax[1], -ax[2]),
+                         _bloch_proj(cx, cy, r, *ax), 1)
+    ex, ey = _bloch_proj(cx, cy, r, *bloch)
+    lw = max(1, int(radius * 0.12))
+    # pygame.draw.line(surface, _a(WHITE, 190), center, (ex, ey), lw)
+    pygame.draw.circle(surface, WHITE, (ex, ey), lw)
 
 
 def _draw_phase_tick(surface, cx, cy, radius, angle):
-    ux, uy = math.cos(angle), -math.sin(angle)
+    ux, uy = math.sin(angle), math.cos(angle)
     r_inner = radius - 1
     r_outer = radius + max(3, int(radius * 0.45))
     tip = (int(cx + ux * r_outer), int(cy + uy * r_outer))

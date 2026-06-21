@@ -78,19 +78,7 @@ def _draw_locked_indicator(surface, rect):
 
 
 def _draw_peer_link(surface, rect, tile, size):
-    """Draw a connecting line between primary and companion tiles."""
-    if tile.peer is None or tile.is_ctrl:
-        return
-    cx, cy = tile.peer
-    px, py = rect.centerx, rect.centery
-    csx, csy = world_to_screen(cx, cy, TILE_SIZE)
-    csx += size // 2
-    csy += size // 2
-    gate = get_gate(tile.building)
-    color = gate.color if gate else LIGHT_GRAY
-    roles = (gate.qubits if gate else 2) - 1
-    end = (px + (csx - px) * roles, py + (csy - py) * roles)
-    pygame.draw.line(surface, color, (px, py), end, max(2, int(size * 0.04)))
+    pass
 
 
 def draw_grid(surface):

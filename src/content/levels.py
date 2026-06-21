@@ -276,7 +276,7 @@ _CH4_CONCEPT = (
     "Phase is a hidden property of superposition. You can't see\n"
     "it directly, but it determines what happens when the qubit\n"
     "is measured later.\n\n"
-    "The Z gate flips the phase: |+> becomes |->. These look\n"
+    "The Z gate flips the phase: |+⟩ becomes |->. These look\n"
     "identical (both purple), but behave differently.\n\n"
     "The key insight: H → Z → H always produces |1⟩.\n"
     "The phase flip causes destructive interference —\n"
@@ -291,7 +291,7 @@ CH4_L1 = {
         "The Z gate flips the phase of a qubit.\n"
         "Watch the tick on the qubit ring — Z rotates it 180°.\n\n"
         "Route qubits through  H → Z → H.\n"
-        "H creates |+>, Z flips its phase to |->.\n"
+        "H creates |+⟩, Z flips its phase to |->.\n"
         "The second H converts that phase difference into\n"
         "a bit flip: |-> always becomes |1⟩, never random.\n\n"
         "This is interference — the phase is consumed\n"
@@ -316,13 +316,13 @@ CH4_L2 = {
         "The Y gate is the third Pauli gate.\n\n"
         "Like X, it flips bits. Unlike X, it also flips\n"
         "the phase of a superposition:\n"
-        "  Y|+> = |−>   and   Y|−> = |+>\n\n"
-        "A locked H gate puts the qubit into |+>.\n"
+        "  Y|+⟩ = |−>   and   Y|−> = |+⟩\n\n"
+        "A locked H gate puts the qubit into |+⟩.\n"
         "The sink wants |−> — a superposition with the phase\n"
         "tick pointing left (180°).\n"
         "Place Y after H to flip the phase."
     ),
-    "hint": "H makes |+>, Y flips it to |−> — match the phase tick.",
+    "hint": "H makes |+⟩, Y flips it to |−> — match the phase tick.",
     "pre_placed": {
         (0, 2): (GEN, RIGHT, None),
         (2, 2): (H, RIGHT, None),
@@ -343,7 +343,7 @@ CH4_L3 = {
         "H·H = identity → if nothing is between them, you get |0⟩ back.\n"
         "The sink wants |1⟩.  Just belts won't work.\n\n"
         "Experiment: what happens when Y sits between two H gates?\n"
-        "  H|0⟩ = |+>,  Y|+> = |−>,  H|−> = |1⟩\n\n"
+        "  H|0⟩ = |+⟩,  Y|+⟩ = |−>,  H|−> = |1⟩\n\n"
         "Place Y between the two locked H gates to create\n"
         "the H·Y·H interference circuit."
     ),
@@ -470,10 +470,10 @@ CH6_L1 = {
         "it applies Z to the target.  But something stranger\n"
         "happens when the ROLES are reversed.\n\n"
         "If the TARGET is |1⟩ and the CONTROL is in superposition:\n"
-        "  the control's own phase gets flipped — |+> becomes |−>.\n"
+        "  the control's own phase gets flipped — |+⟩ becomes |−>.\n"
         "This is called PHASE KICKBACK.\n\n"
         "Two parallel streams, both flowing left to right:\n"
-        "  Control (top): H before CZ → |+>\n"
+        "  Control (top): H before CZ → |+⟩\n"
         "  Target (bottom): X before CZ → |1⟩\n"
         "After CZ: control is |−> — apply H to collapse it to |1⟩.\n"
         "Both sinks want |1⟩."
@@ -887,7 +887,7 @@ CH11_L2 = {
         "A balanced function flips phase.\n\n"
         "Build the Deutsch detection circuit with Z in the middle:\n"
         "  H → Z → H\n\n"
-        "The first H creates |+>. Z turns it into |->.\n"
+        "The first H creates |+⟩. Z turns it into |->.\n"
         "The final H converts that phase difference into |1⟩."
     ),
     "hint": "H → Z → H gives guaranteed |1⟩.",

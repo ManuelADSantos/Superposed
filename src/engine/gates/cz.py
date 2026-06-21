@@ -2,7 +2,7 @@
 
 Applies Z to the target when control is |1⟩.
 Phase-only: all effects invisible on pure |0⟩/|1⟩, show up through interference.
-Phase kickback on |+>|1⟩ is now correct with complex amplitudes.
+Phase kickback on |+⟩|1⟩ is now correct with complex amplitudes.
 """
 
 from __future__ import annotations

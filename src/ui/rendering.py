@@ -471,7 +471,7 @@ def get_help_button_rect():
 
 
 _HOVER_LABELS = {
-    QubitState.ZERO: "|0>", QubitState.ONE: "|1>",
+    QubitState.ZERO: "|0⟩", QubitState.ONE: "|1⟩",
     QubitState.PLUS: "|+>", QubitState.MINUS: "|->",
     QubitState.PLUS_I: "|i>", QubitState.MINUS_I: "|-i>",
 }

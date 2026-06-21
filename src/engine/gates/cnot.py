@@ -1,7 +1,7 @@
 """CNOT gate — two-qubit entangling gate.
 
 Control enters from CCW perpendicular, target enters from behind.
-If control is |1>, target is flipped.
+If control is |1⟩, target is flipped.
 If control is superposition, both become entangled.
 """
 

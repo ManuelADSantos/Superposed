@@ -1,6 +1,6 @@
 """Splitter — routes qubits by measured state.
 
-|0> goes CCW (up relative to gate), |1> goes CW (down relative to gate).
+|0⟩ goes CCW (up relative to gate), |1⟩ goes CW (down relative to gate).
 Superposition collapses first (implicit measurement).
 """
 
@@ -23,7 +23,7 @@ def _transform(sx, sy, tile, item, eject_fn):
 register(GateDef(
     id="splitter",
     name="Splitter",
-    tip="|0> up, |1> down",
+    tip="|0⟩ up, |1⟩ down",
     color=(90, 220, 200),
     category=Category.ROUTER,
     transform=_transform,

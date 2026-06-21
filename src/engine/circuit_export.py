@@ -212,7 +212,7 @@ def generate_qiskit_script(grid: dict | None = None) -> str:
                 if step.building == "splitter":
                     ops.append(
                         f"# Splitter at ({step.x},{step.y}): "
-                        f"|0> goes straight, |1> turns CW"
+                        f"|0⟩ goes straight, |1⟩ turns CW"
                     )
 
             elif step.building == OUTPUT_SINK:

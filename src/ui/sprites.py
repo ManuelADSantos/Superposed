@@ -181,7 +181,7 @@ def get_qubit_sprite(state, size, disappearing=False, progress=1.0, entangled=Fa
 
 
 # ponytail: gates that always face RIGHT regardless of tile rotation
-_ORIENTATION_LOCKED = frozenset({"measurement", "output_sink"})
+_ORIENTATION_LOCKED = frozenset({"measurement", "output_sink", "noise"})
 
 
 def _ctrl_sprite(building_id, direction, size):

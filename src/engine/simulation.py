@@ -161,6 +161,7 @@ def update_items(dt):
             continue
 
         if next_gate and next_gate.category == Category.ROUTER:
+            item._arrival_dir = tile.direction
             _safe_transform(next_gate, nx, ny, next_tile, item, _eject_qubit)
             tile.item = None
             continue

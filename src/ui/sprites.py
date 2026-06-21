@@ -1,6 +1,6 @@
 """Sprite generation and caching.
 
-Resolution order: custom PNG -> generic fallback.
+Resolution order: custom PNG → generic fallback.
 """
 
 from __future__ import annotations

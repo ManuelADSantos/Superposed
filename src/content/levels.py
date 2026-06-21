@@ -54,7 +54,7 @@ CH1_L1 = {
         "using conveyor belts.\n\n"
         "Left-click to place.  R to rotate.  Right-click to remove."
     ),
-    "hint": "Place belts to connect the generator to the sink ->",
+    "hint": "Place belts to connect the generator to the sink →",
     "pre_placed": {
         (0, 2): (GEN, RIGHT, None),
         (6, 2): (SINK, RIGHT, ZERO),
@@ -74,7 +74,7 @@ CH1_L2 = {
         "The sink wants blue |1⟩ qubits, but the generator\n"
         "only makes red |0⟩.  Use the X gate to flip them!"
     ),
-    "hint": "Place an X gate on the path to flip |0⟩ -> |1⟩",
+    "hint": "Place an X gate on the path to flip |0⟩ → |1⟩",
     "pre_placed": {
         (0, 2): (GEN, RIGHT, None),
         (7, 2): (SINK, RIGHT, ONE),
@@ -96,7 +96,7 @@ CH1_L3 = {
         "with an X gate somewhere along the path.\n\n"
         "Build both pipelines at the same time!"
     ),
-    "hint": "Top: belt only -> |0⟩.  Bottom: add X gate -> |1⟩",
+    "hint": "Top: belt only → |0⟩.  Bottom: add X gate → |1⟩",
     "pre_placed": {
         (0, 0): (GEN, RIGHT, None),
         (9, 0): (SINK, RIGHT, ZERO),
@@ -224,12 +224,12 @@ CH3_L1 = {
         "A purple (superposed) qubit becomes either red |0⟩\n"
         "or blue |1⟩ with equal probability — 50/50.\n"
         "You can never predict which.\n\n"
-        "Route qubits through H -> Measurement.\n"
+        "Route qubits through H → Measurement.\n"
         "The measurement gate absorbs the qubit and records\n"
         "the result in its histogram.\n\n"
         "Collapse 10 qubits to win."
     ),
-    "hint": "H -> Measure: watch the histogram fill up with random results",
+    "hint": "H → Measure: watch the histogram fill up with random results",
     "win_type": "measure",
     "pre_placed": {
         (0, 2): (GEN, RIGHT, None),
@@ -248,14 +248,14 @@ CH3_L2 = {
     "briefing": (
         "The Splitter is a quantum router. It measures\n"
         "a qubit and sends it down one of two paths:\n"
-        "  |0⟩ (red)  -> exits straight ahead\n"
-        "  |1⟩ (blue) -> turns clockwise\n\n"
+        "  |0⟩ (red)  → exits straight ahead\n"
+        "  |1⟩ (blue) → turns clockwise\n\n"
         "Feed superposed qubits into the Splitter to split\n"
         "the stream 50/50. Route each output to the\n"
         "matching sink: red to the |0⟩ sink, blue to the |1⟩ sink.\n\n"
         "Both sinks must collect 10 qubits to win."
     ),
-    "hint": "H -> Splitter sorts by state. Belt each output to its sink.",
+    "hint": "H → Splitter sorts by state. Belt each output to its sink.",
     "pre_placed": {
         (0, 2): (GEN, RIGHT, None),
         (5, -1): (SINK, RIGHT, ZERO),
@@ -278,7 +278,7 @@ _CH4_CONCEPT = (
     "is measured later.\n\n"
     "The Z gate flips the phase: |+> becomes |->. These look\n"
     "identical (both purple), but behave differently.\n\n"
-    "The key insight: H -> Z -> H always produces |1⟩.\n"
+    "The key insight: H → Z → H always produces |1⟩.\n"
     "The phase flip causes destructive interference —\n"
     "the |0⟩ component cancels out. This is the foundation\n"
     "of every quantum algorithm."
@@ -286,11 +286,11 @@ _CH4_CONCEPT = (
 
 CH4_L1 = {
     "name": "Interference",
-    "description": "Discover how H -> Z -> H always produces |1⟩.",
+    "description": "Discover how H → Z → H always produces |1⟩.",
     "briefing": (
         "The Z gate flips the phase of a qubit.\n"
         "Watch the tick on the qubit ring — Z rotates it 180°.\n\n"
-        "Route qubits through  H -> Z -> H.\n"
+        "Route qubits through  H → Z → H.\n"
         "H creates |+>, Z flips its phase to |->.\n"
         "The second H converts that phase difference into\n"
         "a bit flip: |-> always becomes |1⟩, never random.\n\n"
@@ -298,7 +298,7 @@ CH4_L1 = {
         "by the second H to produce a deterministic output.\n\n"
         "The sink wants blue |1⟩ qubits.  Build the circuit!"
     ),
-    "hint": "H -> Z -> H = guaranteed |1⟩  (interference!)",
+    "hint": "H → Z → H = guaranteed |1⟩  (interference!)",
     "pre_placed": {
         (0, 2): (GEN, RIGHT, None),
         (9, 2): (SINK, RIGHT, ONE),
@@ -340,7 +340,7 @@ CH4_L3 = {
     "briefing": (
         "Two Hadamard gates are locked in place.\n"
         "Every qubit passes through both of them.\n\n"
-        "H·H = identity -> if nothing is between them, you get |0⟩ back.\n"
+        "H·H = identity → if nothing is between them, you get |0⟩ back.\n"
         "The sink wants |1⟩.  Just belts won't work.\n\n"
         "Experiment: what happens when Y sits between two H gates?\n"
         "  H|0⟩ = |+>,  Y|+> = |−>,  H|−> = |1⟩\n\n"
@@ -389,7 +389,7 @@ CH5_L1 = {
         "  Bottom row = Target (gate)\n\n"
         "Both streams flow left to right.\n"
         "The rule: if control = |1⟩, target gets flipped.\n"
-        "  |0⟩ -> |1⟩  and  |1⟩ -> |0⟩\n"
+        "  |0⟩ → |1⟩  and  |1⟩ → |0⟩\n"
         "If control = |0⟩, nothing happens.\n\n"
         "Both generators make |0⟩.  Use X on the control\n"
         "path (top) to flip it to |1⟩, then the CNOT will\n"
@@ -473,8 +473,8 @@ CH6_L1 = {
         "  the control's own phase gets flipped — |+> becomes |−>.\n"
         "This is called PHASE KICKBACK.\n\n"
         "Two parallel streams, both flowing left to right:\n"
-        "  Control (top): H before CZ -> |+>\n"
-        "  Target (bottom): X before CZ -> |1⟩\n"
+        "  Control (top): H before CZ → |+>\n"
+        "  Target (bottom): X before CZ → |1⟩\n"
         "After CZ: control is |−> — apply H to collapse it to |1⟩.\n"
         "Both sinks want |1⟩."
     ),
@@ -501,8 +501,8 @@ CH6_L2 = {
         "  Top stream:    |1⟩ (straight from the generator)\n"
         "  Bottom stream: |0⟩ (straight from the generator)\n\n"
         "After the SWAP:\n"
-        "  Top exit carries the bottom stream's state -> |0⟩\n"
-        "  Bottom exit carries the top stream's state -> |1⟩\n\n"
+        "  Top exit carries the bottom stream's state → |0⟩\n"
+        "  Bottom exit carries the top stream's state → |1⟩\n\n"
         "Route each exit to the matching sink."
     ),
     "hint": "SWAP in the middle, then belt the exits to matching sinks",
@@ -876,8 +876,8 @@ _CH11_CONCEPT = (
     "  Balanced = Z phase flip\n\n"
     "Send a superposed qubit through H → function → H.\n"
     "The output is deterministic:\n"
-    "  Constant -> |0⟩  (constructive interference)\n"
-    "  Balanced -> |1⟩  (destructive interference)"
+    "  Constant → |0⟩  (constructive interference)\n"
+    "  Balanced → |1⟩  (destructive interference)"
 )
 
 CH11_L2 = {
@@ -886,11 +886,11 @@ CH11_L2 = {
     "briefing": (
         "A balanced function flips phase.\n\n"
         "Build the Deutsch detection circuit with Z in the middle:\n"
-        "  H -> Z -> H\n\n"
+        "  H → Z → H\n\n"
         "The first H creates |+>. Z turns it into |->.\n"
         "The final H converts that phase difference into |1⟩."
     ),
-    "hint": "H -> Z -> H gives guaranteed |1⟩.",
+    "hint": "H → Z → H gives guaranteed |1⟩.",
     "pre_placed": {
         (0, 3): (GEN, RIGHT, None),
         (7, 3): (SINK, RIGHT, ONE),
@@ -907,8 +907,8 @@ CH11_L3 = {
     "description": "Build constant and balanced paths, then route the answers.",
     "briefing": (
         "Now build both Deutsch cases yourself.\n\n"
-        "Top lane is constant: H -> H -> Splitter.\n"
-        "Bottom lane is balanced: H -> Z -> H -> Splitter.\n\n"
+        "Top lane is constant: H → H → Splitter.\n"
+        "Bottom lane is balanced: H → Z → H → Splitter.\n\n"
         "The locked Splitters sort the deterministic answers:\n"
         "  |0⟩ exits up to the constant sink\n"
         "  |1⟩ exits down to the balanced sink."
@@ -940,8 +940,8 @@ _CH12_CONCEPT = (
     "that copies an arbitrary unknown quantum state.\n\n"
     "Known basis states are different. If you know the input is\n"
     "either |0⟩ or |1⟩, CNOT can copy it onto a fresh |0⟩ target:\n"
-    "  |0⟩|0⟩ -> |0⟩|0⟩\n"
-    "  |1⟩|0⟩ -> |1⟩|1⟩\n\n"
+    "  |0⟩|0⟩ → |0⟩|0⟩\n"
+    "  |1⟩|0⟩ → |1⟩|1⟩\n\n"
     "That does not clone superposition. With alpha|0⟩ + beta|1⟩,\n"
     "CNOT creates entanglement, not two independent copies."
 )
@@ -1250,7 +1250,7 @@ CH15_L4 = {
         "Shor's algorithm is too large to be one factory tile.\n"
         "The important game-sized idea is period readout:\n"
         "prepare superposition, use phase kickback, then measure.\n\n"
-        "Build a small H -> CZ -> H-style readout circuit\n"
+        "Build a small H → CZ → H-style readout circuit\n"
         "and send both lanes into measurement."
     ),
     "hint": "H for superposition, CZ for kickback, H again before measurement.",

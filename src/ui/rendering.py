@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 import pygame
 from ..core import world as world_module
 from ..core import config
@@ -358,7 +360,6 @@ def draw_level_hud(surface):
 
 
 def _draw_compass(surface, direction, cx, cy):
-    import math
     r = 20
     pygame.draw.circle(surface, (30, 30, 38), (cx, cy), r)
     pygame.draw.circle(surface, DARK_GRAY, (cx, cy), r, 1)

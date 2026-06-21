@@ -124,8 +124,7 @@ def _delete_building(wx, wy):
     _clear_tile(tile)
 
 
-_SINK_CYCLE = [None, QubitState.ZERO, QubitState.ONE,
-               QubitState.PLUS, QubitState.MINUS, QubitState.PLUS_I, QubitState.MINUS_I]
+_SINK_CYCLE = [None] + list(QubitState)
 
 # Belt drag state
 _drag_active = False

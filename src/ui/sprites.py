@@ -116,8 +116,6 @@ def _draw_qubit(state, size, disappearing=False, progress=1.0, entangled=False,
     pygame.draw.circle(glow, _a(base, 55), (int(cx), int(cy)), glow_r)
     s.blit(glow, (0, 0))
     pygame.draw.circle(s, _a(base, 255), (int(cx), int(cy)), radius)
-    # hx, hy = int(cx - radius * 0.3), int(cy - radius * 0.3)
-    # pygame.draw.circle(s, _a(WHITE, 110), (hx, hy), max(1, radius // 2))
     _draw_bloch(s, cx, cy, radius, bloch)
     if entangled:
         pygame.draw.circle(s, GOLD, (int(cx), int(cy)), radius + 2, 2)
@@ -157,7 +155,6 @@ def _draw_bloch(surface, cx, cy, radius, bloch):
                          _bloch_proj(cx, cy, r, *ax), 1)
     ex, ey = _bloch_proj(cx, cy, r, *bloch)
     lw = max(1, int(radius * 0.12))
-    # pygame.draw.line(surface, _a(WHITE, 190), center, (ex, ey), lw)
     pygame.draw.circle(surface, WHITE, (ex, ey), lw)
 
 

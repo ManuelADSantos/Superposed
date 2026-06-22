@@ -6,14 +6,14 @@ import math
 
 from ..core.config import BELT_SPEED, GENERATOR_SPEED, CNOT_PROCESS_DELAY
 from ..core.entities import (
-    QubitState, QubitItem, Direction,
+    QubitState, QubitItem,
     DIR_VECTORS, opposite_dir, ccw_dir,
 )
 from ..core import world as _world_mod
 from ..core.world import get_tile
 from .gate_registry import (
     get_gate, Category,
-    EMPTY, BELT, GENERATOR, OUTPUT_SINK,
+    EMPTY, GENERATOR, OUTPUT_SINK,
 )
 
 

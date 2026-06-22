@@ -198,11 +198,9 @@ def _ctrl_sprite(building_id, direction, size):
 
 
 @lru_cache(maxsize=512)
-def get_building_sprite(building_id, direction, size, ctrl=False, role=1):
+def get_building_sprite(building_id, direction, size, role=1):
     if building_id == "empty":
         return None
-    if ctrl and role == 1:
-        role = 2
     if role != 1:
         custom = _load_custom_png(building_id, direction, size, role)
         if custom is not None:

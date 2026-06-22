@@ -121,8 +121,6 @@ _state = WorldState()
 
 # Module-level aliases — re-bound on reset/load, accessed as W.world etc.
 world           = _state.world
-entangle_groups = _state.entangle_groups
-entangle_lookup = _state.entangle_lookup
 current_level_index  = _state.current_level_index
 current_level_def    = _state.current_level_def
 locked_tiles         = _state.locked_tiles

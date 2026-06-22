@@ -8,17 +8,17 @@ import pygame
 from ..core import world as world_module
 from ..core import config
 from ..core.config import (
-    TILE_SIZE, BG, GRID_COLOR,
-    WHITE, LIGHT_GRAY, DARK_GRAY, RED, GREEN, BLUE,
+    TILE_SIZE, GRID_COLOR,
+    WHITE, LIGHT_GRAY, DARK_GRAY, RED, GREEN,
     TOOLBAR_HEIGHT, TOOLBAR_PAD, TOOLTIP_FONT_SIZE, UI_FONT_SIZE,
-    GOLD, PURPLE, CYAN,
+    PURPLE, CYAN,
 )
 from ..core.entities import (
     QubitItem, QubitState, Direction, DIR_VECTORS, ccw_dir,
 )
 from .sprites import get_building_sprite, get_qubit_sprite, get_hud_sprite
 from ..core.world import get_tile, world_to_screen, screen_to_world, count_placed, is_locked
-from ..content.levels import CHAPTERS
+from .menu import _find_chapter
 from ..engine.gate_registry import (
     get_gate, active_toolbar, Category,
     EMPTY, GENERATOR, OUTPUT_SINK,
@@ -322,14 +322,9 @@ def draw_level_hud(surface):
     surface.blit(bar, (0, 0))
     font = config.game_font(16)
     small = config.game_font(13)
-    ch_num = local = idx
-    offset = 0
-    for ci, ch in enumerate(CHAPTERS):
-        n = len(ch["levels"])
-        if offset + n > idx:
-            ch_num, local = ci + 1, idx - offset + 1
-            break
-        offset += n
+    ch_i, local_i = _find_chapter(idx)
+    ch_num = (ch_i + 1) if ch_i is not None else idx
+    local = (local_i + 1) if local_i is not None else idx
     surface.blit(font.render(f"Chapter {ch_num}, Level {local}: {lev['name']}", True, CYAN), (12, 6))
     surface.blit(small.render(lev.get("hint", ""), True, LIGHT_GRAY), (12, 26))
     bar_w, bar_h2 = 160, 14

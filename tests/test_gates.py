@@ -5,6 +5,7 @@ from __future__ import annotations
 import unittest
 import random
 import os
+import math
 
 import pygame  # noqa: E402 — needed by sprite functions at registration time
 
@@ -24,6 +25,9 @@ from src.engine.gates.cnot import _transform as cnot
 from src.engine.gates.toffoli import _transform as toffoli
 from src.engine.gates.measurement import _transform as measure
 from src.engine.gates.splitter import _transform as splitter
+from src.engine.gates.sx_gate import _transform as sx_gate
+from src.engine.gates.sy_gate import _transform as sy_gate
+from src.engine.gates.s_gate import _transform as s_gate
 
 
 def _qubit(state=QubitState.ZERO, phase=False):
@@ -53,9 +57,9 @@ class TestXGate(unittest.TestCase):
         self.assertEqual(q.state, QubitState.ZERO)
 
     def test_superposition_unchanged(self):
-        q = _qubit(QubitState.SUPERPOSITION)
+        q = _qubit(QubitState.PLUS)
         x_gate(q)
-        self.assertEqual(q.state, QubitState.SUPERPOSITION)
+        self.assertEqual(q.state, QubitState.PLUS)
 
     def test_double_x_is_identity(self):
         q = _qubit(QubitState.ZERO)
@@ -71,23 +75,23 @@ class TestHadamard(unittest.TestCase):
     def test_zero_to_superposition(self):
         q = _qubit(QubitState.ZERO)
         hadamard(q)
-        self.assertEqual(q.state, QubitState.SUPERPOSITION)
+        self.assertEqual(q.state, QubitState.PLUS)
         self.assertFalse(q.phase_flipped)
 
     def test_one_to_superposition_with_phase(self):
         q = _qubit(QubitState.ONE)
         hadamard(q)
-        self.assertEqual(q.state, QubitState.SUPERPOSITION)
+        self.assertEqual(q.state, QubitState.MINUS)
         self.assertTrue(q.phase_flipped)
 
     def test_superposition_no_phase_to_zero(self):
-        q = _qubit(QubitState.SUPERPOSITION, phase=False)
+        q = _qubit(QubitState.PLUS, phase=False)
         hadamard(q)
         self.assertEqual(q.state, QubitState.ZERO)
         self.assertFalse(q.phase_flipped)
 
     def test_superposition_with_phase_to_one(self):
-        q = _qubit(QubitState.SUPERPOSITION, phase=True)
+        q = _qubit(QubitState.PLUS, phase=True)
         hadamard(q)
         self.assertEqual(q.state, QubitState.ONE)
         self.assertFalse(q.phase_flipped)
@@ -103,6 +107,31 @@ class TestHadamard(unittest.TestCase):
         hadamard(q)
         hadamard(q)
         self.assertEqual(q.state, QubitState.ONE)
+
+    def test_arbitrary_phase_angle(self):
+        q = _qubit(QubitState.PLUS)
+        q.beta *= 1j
+        self.assertAlmostEqual(q.phase_angle, math.pi / 2)
+        self.assertAlmostEqual(q.bloch[1], 1.0)
+
+    def test_superposition_sprite_draws_phase_tick(self):
+        from src.ui import sprites
+
+        calls = []
+        draw_tick = sprites._draw_phase_tick
+
+        def spy(*args):
+            calls.append(args)
+
+        try:
+            sprites.clear_sprite_caches()
+            sprites._draw_phase_tick = spy
+            sprites.get_qubit_sprite(QubitState.PLUS, 32, phase_angle=0.5)
+        finally:
+            sprites._draw_phase_tick = draw_tick
+            sprites.clear_sprite_caches()
+
+        self.assertEqual(len(calls), 1)
 
 
 # Z gate
@@ -121,12 +150,12 @@ class TestZGate(unittest.TestCase):
         self.assertEqual(q.state, QubitState.ONE)
 
     def test_z_on_superposition_flips_phase(self):
-        q = _qubit(QubitState.SUPERPOSITION, phase=False)
+        q = _qubit(QubitState.PLUS, phase=False)
         z_gate(q)
         self.assertTrue(q.phase_flipped)
 
     def test_z_on_superposition_double_is_identity(self):
-        q = _qubit(QubitState.SUPERPOSITION, phase=False)
+        q = _qubit(QubitState.PLUS, phase=False)
         z_gate(q)
         z_gate(q)
         self.assertFalse(q.phase_flipped)
@@ -154,6 +183,63 @@ class TestInterference(unittest.TestCase):
 
 # CNOT gate
 
+class TestSXGate(unittest.TestCase):
+
+    def test_zero_to_minus_i(self):
+        q = _qubit(QubitState.ZERO)
+        sx_gate(q)
+        self.assertEqual(q.state, QubitState.MINUS_I)
+
+    def test_one_to_plus_i(self):
+        q = _qubit(QubitState.ONE)
+        sx_gate(q)
+        self.assertEqual(q.state, QubitState.PLUS_I)
+
+    def test_double_sx_is_x(self):
+        q = _qubit(QubitState.ZERO)
+        sx_gate(q)
+        sx_gate(q)
+        self.assertEqual(q.state, QubitState.ONE)
+
+
+class TestSYGate(unittest.TestCase):
+
+    def test_zero_to_plus(self):
+        q = _qubit(QubitState.ZERO)
+        sy_gate(q)
+        self.assertEqual(q.state, QubitState.PLUS)
+
+    def test_one_to_minus(self):
+        q = _qubit(QubitState.ONE)
+        sy_gate(q)
+        self.assertEqual(q.state, QubitState.MINUS)
+
+    def test_double_sy_is_y(self):
+        q = _qubit(QubitState.ZERO)
+        sy_gate(q)
+        sy_gate(q)
+        self.assertEqual(q.state, QubitState.ONE)
+
+
+class TestSGate(unittest.TestCase):
+
+    def test_zero_unchanged(self):
+        q = _qubit(QubitState.ZERO)
+        s_gate(q)
+        self.assertEqual(q.state, QubitState.ZERO)
+
+    def test_plus_to_plus_i(self):
+        q = _qubit(QubitState.PLUS)
+        s_gate(q)
+        self.assertEqual(q.state, QubitState.PLUS_I)
+
+    def test_double_s_is_z(self):
+        q = _qubit(QubitState.PLUS)
+        s_gate(q)
+        s_gate(q)
+        self.assertEqual(q.state, QubitState.MINUS)
+
+
 class TestCNOT(unittest.TestCase):
 
     def setUp(self):
@@ -178,24 +264,24 @@ class TestCNOT(unittest.TestCase):
         self.assertEqual(t.state, QubitState.ZERO)
 
     def test_control_superposition_entangles(self):
-        c = _qubit(QubitState.SUPERPOSITION)
+        c = _qubit(QubitState.PLUS)
         t = _qubit(QubitState.ZERO)
         cnot(c, t)
-        self.assertEqual(t.state, QubitState.SUPERPOSITION)
+        self.assertEqual(t.state, QubitState.PLUS)
         self.assertIsNotNone(c.entangle_group)
         self.assertEqual(c.entangle_group, t.entangle_group)
 
     def test_control_superposition_target_already_one(self):
         """Superposed control + |1> target — target becomes superposition and entangled."""
-        c = _qubit(QubitState.SUPERPOSITION)
+        c = _qubit(QubitState.PLUS)
         t = _qubit(QubitState.ONE)
         cnot(c, t)
         # CNOT puts any basis-state target into superposition when control is superposed
-        self.assertEqual(t.state, QubitState.SUPERPOSITION)
+        self.assertEqual(t.state, QubitState.PLUS)
         self.assertIsNotNone(t.entangle_group)
 
     def test_entangled_partners_found(self):
-        c = _qubit(QubitState.SUPERPOSITION)
+        c = _qubit(QubitState.PLUS)
         t = _qubit(QubitState.ZERO)
         cnot(c, t)
         partners = get_entangled_partners(c)
@@ -203,14 +289,14 @@ class TestCNOT(unittest.TestCase):
         self.assertEqual(partners[0].uid, t.uid)
 
     def test_entangled_pair_can_merge_with_third_qubit(self):
-        q1 = _qubit(QubitState.SUPERPOSITION)
+        q1 = _qubit(QubitState.PLUS)
         q2 = _qubit(QubitState.ZERO)
         q3 = _qubit(QubitState.ZERO)
         cnot(q1, q2)
         cnot(q2, q3)
         self.assertEqual(q1.entangle_group, q2.entangle_group)
         self.assertEqual(q1.entangle_group, q3.entangle_group)
-        self.assertEqual(q3.state, QubitState.SUPERPOSITION)
+        self.assertEqual(q3.state, QubitState.PLUS)
         self.assertEqual({p.uid for p in get_entangled_partners(q1)}, {q2.uid, q3.uid})
 
 
@@ -235,11 +321,11 @@ class TestToffoli(unittest.TestCase):
         self.assertEqual(t.state, QubitState.ZERO)
 
     def test_superposed_control_entangles_target(self):
-        c1 = _qubit(QubitState.SUPERPOSITION)
+        c1 = _qubit(QubitState.PLUS)
         c2 = _qubit(QubitState.ONE)
         t = _qubit(QubitState.ZERO)
         toffoli(c1, c2, t)
-        self.assertEqual(t.state, QubitState.SUPERPOSITION)
+        self.assertEqual(t.state, QubitState.PLUS)
         self.assertEqual(c1.entangle_group, t.entangle_group)
         self.assertIsNone(c2.entangle_group)
 
@@ -265,7 +351,7 @@ class TestMeasurement(unittest.TestCase):
         self.assertEqual(q.state, QubitState.ONE)
 
     def test_measure_superposition_collapses(self):
-        q = _qubit(QubitState.SUPERPOSITION)
+        q = _qubit(QubitState.PLUS)
         tile = _tile()
         measure(q, tile)
         self.assertIn(q.state, (QubitState.ZERO, QubitState.ONE))
@@ -276,7 +362,7 @@ class TestMeasurement(unittest.TestCase):
         random.seed(42)
         zeros = 0
         for _ in range(200):
-            q = _qubit(QubitState.SUPERPOSITION)
+            q = _qubit(QubitState.PLUS)
             tile = _tile()
             measure(q, tile)
             if q.state == QubitState.ZERO:
@@ -286,7 +372,7 @@ class TestMeasurement(unittest.TestCase):
         self.assertLess(zeros, 150)
 
     def test_measure_collapses_entangled_partner(self):
-        c = _qubit(QubitState.SUPERPOSITION)
+        c = _qubit(QubitState.PLUS)
         t = _qubit(QubitState.ZERO)
         cnot(c, t)  # entangles them
         tile = _tile()
@@ -302,6 +388,28 @@ class TestMeasurement(unittest.TestCase):
             measure(q, tile)
         self.assertEqual(len(tile.measurements), 20)
 
+    def test_measurement_history_scales_with_tile_size(self):
+        from src.engine.gates.measurement import _overlay
+
+        def history_heights(tile_size):
+            calls = []
+            draw_rect = pygame.draw.rect
+
+            def spy(surface, color, rect, *args, **kwargs):
+                calls.append(pygame.Rect(rect))
+                return calls[-1]
+
+            tile = _tile(measurements=[QubitState.ZERO] * 20)
+            try:
+                pygame.draw.rect = spy
+                _overlay(pygame.Surface((tile_size, tile_size), pygame.SRCALPHA),
+                         pygame.Rect(0, 0, tile_size, tile_size), tile)
+            finally:
+                pygame.draw.rect = draw_rect
+            return [r.height for r in calls[2:]]
+
+        self.assertLess(max(history_heights(20)), max(history_heights(64)))
+
     def test_measure_flash_set(self):
         q = _qubit(QubitState.ZERO)
         tile = _tile()
@@ -310,11 +418,37 @@ class TestMeasurement(unittest.TestCase):
 
     def test_sink_counts_superposition_without_measuring(self):
         from src.engine.simulation import _collect_sink
-        q = _qubit(QubitState.SUPERPOSITION)
-        tile = _tile(sink_target=QubitState.SUPERPOSITION)
+        q = _qubit(QubitState.PLUS)
+        tile = _tile(sink_target=QubitState.PLUS)
         _collect_sink(tile, q)
         self.assertEqual(tile.sink_total, 1)
         self.assertEqual(tile.sink_match, 1)
+
+
+class TestGenerator(unittest.TestCase):
+
+    def setUp(self):
+        reset_world()
+
+    def test_generator_spawn_state_and_phase_from_level(self):
+        from src.core.world import load_level, get_tile
+        from src.engine.gate_registry import GENERATOR
+        from src.engine.simulation import _spawn_qubit
+
+        for state in (QubitState.ZERO, QubitState.ONE, QubitState.PLUS):
+            with self.subTest(state=state):
+                self.assertEqual(_spawn_qubit(_tile(spawn_state=state)).state, state)
+
+        load_level({
+            "pre_placed": {(0, 0): (GENERATOR, Direction.RIGHT, (QubitState.PLUS, math.pi))},
+            "locked": {(0, 0)},
+            "available": [],
+        }, 0)
+
+        q = _spawn_qubit(get_tile(0, 0))
+
+        self.assertEqual(q.state, QubitState.MINUS)
+        self.assertAlmostEqual(q.phase_angle, math.pi)
 
 
 # Splitter
@@ -333,10 +467,10 @@ class TestSplitter(unittest.TestCase):
         splitter(0, 0, tile, q, eject)
         return q, ejected
 
-    def test_zero_goes_straight(self):
+    def test_zero_goes_ccw(self):
         q, ejected = self._run_splitter(QubitState.ZERO)
         self.assertEqual(len(ejected), 1)
-        self.assertEqual(ejected[0][:2], (1, 0))  # RIGHT = (1, 0)
+        self.assertEqual(ejected[0][:2], (0, -1))  # CCW of RIGHT = UP = (0, -1)
 
     def test_one_goes_cw(self):
         q, ejected = self._run_splitter(QubitState.ONE)
@@ -344,25 +478,25 @@ class TestSplitter(unittest.TestCase):
         self.assertEqual(ejected[0][:2], (0, 1))  # CW of RIGHT = DOWN = (0, 1)
 
     def test_superposition_collapses(self):
-        q, ejected = self._run_splitter(QubitState.SUPERPOSITION)
+        q, ejected = self._run_splitter(QubitState.PLUS)
         self.assertIn(q.state, (QubitState.ZERO, QubitState.ONE))
         self.assertEqual(len(ejected), 1)
 
     def test_superposition_distribution(self):
         """Over many trials, splitter should route roughly 50/50."""
         random.seed(42)
-        straight = 0
+        ccw_count = 0
         for _ in range(200):
-            _, ejected = self._run_splitter(QubitState.SUPERPOSITION)
-            if ejected[0][:2] == (1, 0):
-                straight += 1
-        self.assertGreater(straight, 50)
-        self.assertLess(straight, 150)
+            _, ejected = self._run_splitter(QubitState.PLUS)
+            if ejected[0][:2] == (0, -1):  # CCW of RIGHT = UP
+                ccw_count += 1
+        self.assertGreater(ccw_count, 50)
+        self.assertLess(ccw_count, 150)
 
     def test_direction_down_routes_correctly(self):
-        """When gate faces DOWN, |0> goes (0,1) and |1> goes (-1,0)."""
+        """When gate faces DOWN, |0> goes CCW=RIGHT=(1,0), |1> goes CW=LEFT=(-1,0)."""
         _, ej_zero = self._run_splitter(QubitState.ZERO, Direction.DOWN)
-        self.assertEqual(ej_zero[0][:2], (0, 1))
+        self.assertEqual(ej_zero[0][:2], (1, 0))
         _, ej_one = self._run_splitter(QubitState.ONE, Direction.DOWN)
         self.assertEqual(ej_one[0][:2], (-1, 0))
 
@@ -375,8 +509,8 @@ class TestEntanglement(unittest.TestCase):
         reset_world()
 
     def test_break_entanglement(self):
-        q1 = _qubit(QubitState.SUPERPOSITION)
-        q2 = _qubit(QubitState.SUPERPOSITION)
+        q1 = _qubit(QubitState.PLUS)
+        q2 = _qubit(QubitState.PLUS)
         gid = create_entangle_group()
         register_entangled(gid, q1)
         register_entangled(gid, q2)
@@ -387,8 +521,8 @@ class TestEntanglement(unittest.TestCase):
 
     def test_hadamard_breaks_entanglement(self):
         """H on a superposed qubit collapses it, which should break entanglement."""
-        q1 = _qubit(QubitState.SUPERPOSITION)
-        q2 = _qubit(QubitState.SUPERPOSITION)
+        q1 = _qubit(QubitState.PLUS)
+        q2 = _qubit(QubitState.PLUS)
         gid = create_entangle_group()
         register_entangled(gid, q1)
         register_entangled(gid, q2)
@@ -419,6 +553,42 @@ class TestSafeTransform(unittest.TestCase):
         self.assertEqual(q.state, QubitState.ZERO)
 
 
+class TestSprites(unittest.TestCase):
+
+    def setUp(self):
+        os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+        pygame.init()
+        pygame.display.set_mode((1, 1))
+        from src.ui import sprites
+        sprites.clear_sprite_caches()
+
+    def tearDown(self):
+        from src.ui import sprites
+        sprites.clear_sprite_caches()
+
+    def test_custom_gate_sprite_loads(self):
+        from src.ui.sprites import get_building_sprite
+
+        sprite = get_building_sprite("cnot", Direction.RIGHT, 32, role=1)
+        self.assertEqual(sprite.get_size(), (32, 32))
+
+    def test_known_gate_without_sprite_falls_back(self):
+        from unittest import mock
+        from src.ui import sprites
+
+        with mock.patch.object(sprites.os.path, "isfile", return_value=False):
+            sprite = sprites.get_building_sprite("cnot", Direction.RIGHT, 32)
+        self.assertEqual(sprite.get_size(), (32, 32))
+
+    def test_broken_gate_sprite_falls_back(self):
+        from unittest import mock
+        from src.ui import sprites
+
+        with mock.patch.object(sprites.pygame.image, "load", side_effect=pygame.error("bad image")):
+            sprite = sprites.get_building_sprite("cnot", Direction.RIGHT, 32, role=1)
+        self.assertEqual(sprite.get_size(), (32, 32))
+
+
 class TestInputHandler(unittest.TestCase):
 
     def test_right_drag_deletes_tiles(self):
@@ -436,7 +606,7 @@ class TestInputHandler(unittest.TestCase):
             reset_world()
             get_tile(0, 0).building = BELT
             get_tile(1, 0).building = BELT
-            handle_input(0, BELT, Direction.RIGHT, False, False, [
+            handle_input(0, BELT, Direction.RIGHT, False, events=[
                 pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=3, pos=(5, 5)),
                 pygame.event.Event(pygame.MOUSEMOTION, pos=(config.TILE_SIZE + 5, 5)),
                 pygame.event.Event(pygame.MOUSEBUTTONUP, button=3, pos=(config.TILE_SIZE + 5, 5)),
@@ -445,6 +615,86 @@ class TestInputHandler(unittest.TestCase):
             self.assertEqual(get_tile(1, 0).building, EMPTY)
         finally:
             config.WIDTH, config.HEIGHT = old_size
+
+    def test_shortcuts_are_current(self):
+        from src.core import config
+        from src.engine.gate_registry import BELT
+        from src.ui import rendering
+        from src.ui.input_handler import handle_input
+
+        os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+        pygame.init()
+        pygame.display.set_mode((1, 1))
+        old_size = config.WIDTH, config.HEIGHT
+        try:
+            config.WIDTH, config.HEIGHT = 320, 240
+            reset_world()
+            from src.core import world as W
+            W._state.current_level_def = {"camera": (3, 2)}
+            W.current_level_def = W._state.current_level_def
+            W._state.camera_x = 999
+            W._state.camera_y = 999
+            rendering.reset_briefing()
+
+            result = handle_input(0, BELT, Direction.RIGHT, False, events=[
+                pygame.event.Event(pygame.KEYDOWN, key=pygame.K_f),
+                pygame.event.Event(pygame.KEYDOWN, key=pygame.K_x),
+            ])
+
+            self.assertFalse(result[4])
+            self.assertTrue(rendering._show_briefing)
+            self.assertEqual(W._state.zoom, 1.0)
+            self.assertNotEqual(W._state.camera_x, 999)
+            self.assertNotEqual(W._state.camera_y, 999)
+        finally:
+            rendering.reset_briefing()
+            config.WIDTH, config.HEIGHT = old_size
+
+
+class TestProgressMeta(unittest.TestCase):
+
+    def test_progress_stays_level_based_without_xp_or_achievements(self):
+        from src.ui import menu
+
+        old = set(menu.completed_levels)
+        try:
+            menu.completed_levels.clear()
+            self.assertFalse(hasattr(menu, "xp_total"))
+            self.assertFalse(hasattr(menu, "achievements"))
+            self.assertEqual(menu.chapter_progress(0), (0, len(menu.CHAPTERS[0]["levels"])))
+            menu.completed_levels.add(0)
+            self.assertEqual(menu.chapter_progress(0)[0], 1)
+        finally:
+            menu.completed_levels.clear()
+            menu.completed_levels.update(old)
+
+
+class TestAlgorithmLevels(unittest.TestCase):
+
+    def test_algorithms_are_levels_not_gates(self):
+        from src.content.levels import ALL_LEVELS
+        from src.engine.gate_registry import get_gate
+
+        algorithm_ids = {"qft", "grover", "teleport", "shor"}
+        self.assertTrue(all(get_gate(gid) is None for gid in algorithm_ids))
+        for level in ALL_LEVELS:
+            ids = set(level.get("available", []))
+            ids.update(data[0] for data in level.get("pre_placed", {}).values())
+            self.assertFalse(ids & algorithm_ids)
+
+
+class TestRemovedGates(unittest.TestCase):
+
+    def test_removed_gates_stay_removed(self):
+        from src.content.levels import ALL_LEVELS
+        from src.engine.gate_registry import get_gate
+
+        removed = {"duplicator", "oracle_constant", "oracle_balanced"}
+        self.assertTrue(all(get_gate(gid) is None for gid in removed))
+        for level in ALL_LEVELS:
+            ids = set(level.get("available", []))
+            ids.update(data[0] for data in level.get("pre_placed", {}).values())
+            self.assertFalse(ids & removed)
 
 
 class TestCircuitExport(unittest.TestCase):
@@ -508,6 +758,85 @@ class TestCircuitExport(unittest.TestCase):
         script = self._three_cell_script()
         self.assertIn("qc.ccx(1, 0, 2)", script)
         self.assertNotIn("WARNING", script)
+
+
+class TestGateLimits(unittest.TestCase):
+    def setUp(self):
+        reset_world()
+
+    def test_count_placed_ignores_locked(self):
+        from src.core.world import load_level, count_placed
+        load_level({
+            "pre_placed": {(0, 0): ("x", Direction.RIGHT, None)},
+            "locked": {(0, 0)},
+            "available": ["x", "belt"],
+            "gate_limits": {"x": 1},
+        }, 0)
+        self.assertEqual(count_placed("x"), 0)
+
+    def test_gate_limit_enforcement(self):
+        from src.core.world import load_level, count_placed, get_tile
+        load_level({
+            "available": ["x", "belt"],
+            "gate_limits": {"x": 1},
+        }, 0)
+        tile = get_tile(5, 5)
+        tile.building = "x"
+        self.assertEqual(count_placed("x"), 1)
+        from src.ui.input_handler import _can_place_at
+        self.assertFalse(_can_place_at(6, 6, ["x", "belt"], "x"))
+        self.assertTrue(_can_place_at(6, 6, ["x", "belt"], "belt"))
+
+    def test_empty_locked_cell_blocks_and_draws(self):
+        from src.core import config
+        from src.core.world import load_level
+        from src.ui import rendering
+
+        os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+        pygame.init()
+        pygame.display.set_mode((1, 1))
+        old_size = config.WIDTH, config.HEIGHT
+        draw_locked = rendering._draw_locked_indicator
+        calls = []
+
+        def spy(*args):
+            calls.append(args)
+
+        try:
+            config.WIDTH, config.HEIGHT = 160, 160
+            load_level({"locked": {(0, 0)}, "available": ["belt"]}, 0)
+            from src.ui.input_handler import _can_place_at
+            self.assertFalse(_can_place_at(0, 0, ["belt"], "belt"))
+            rendering._draw_locked_indicator = spy
+            rendering.draw_grid(pygame.Surface((160, 160)))
+            self.assertTrue(calls)
+        finally:
+            rendering._draw_locked_indicator = draw_locked
+            config.WIDTH, config.HEIGHT = old_size
+
+    def test_unlocked_whitelist_blocks_everything_else(self):
+        from src.core.world import load_level, is_locked, reset_world
+        from src.ui.input_handler import _can_place_at
+        from src.ui import rendering
+
+        load_level({"unlocked": {(1, 1)}, "available": ["belt"]}, 0)
+
+        self.assertFalse(is_locked((1, 1)))
+        self.assertTrue(is_locked((1, 2)))
+        self.assertTrue(_can_place_at(1, 1, ["belt"], "belt"))
+        self.assertFalse(_can_place_at(1, 2, ["belt"], "belt"))
+
+        draw_locked = rendering._draw_locked_indicator
+        calls = []
+        try:
+            rendering._draw_locked_indicator = lambda *args: calls.append(args)
+            rendering.draw_grid(pygame.Surface((160, 160)))
+            self.assertTrue(calls)
+        finally:
+            rendering._draw_locked_indicator = draw_locked
+
+        reset_world()
+        self.assertFalse(is_locked((1, 2)))
 
 
 if __name__ == "__main__":

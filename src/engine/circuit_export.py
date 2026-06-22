@@ -24,6 +24,8 @@ _SINGLE_MAP = {
     "x_gate":    "x",
     "y_gate":    "y",
     "z_gate":    "z",
+    "sx_gate":   "sx",
+    "s_gate":    "s",
 }
 
 _TWO_QUBIT_MAP = {
@@ -166,7 +168,14 @@ def generate_qiskit_script(grid: dict | None = None) -> str:
                 if pos not in emitted_pairs:
                     pair = pair_map.get(pos, {})
                     tgt = pair.get("target")
-                    method = _TWO_QUBIT_MAP.get(step.building, "cx")
+                    method = _TWO_QUBIT_MAP.get(step.building)
+                    if method is None:
+                        warnings.append(
+                            f"# WARNING: {step.building} at ({pos[0]},{pos[1]}) "
+                            "has no Qiskit export yet — skipped"
+                        )
+                        emitted_pairs.add(pos)
+                        continue
                     if method == "ccx":
                         ctrl1 = pair.get("control1")
                         ctrl2 = pair.get("control2")
@@ -194,13 +203,16 @@ def generate_qiskit_script(grid: dict | None = None) -> str:
                 method = _SINGLE_MAP[step.building]
                 ops.append(f"qc.{method}({qi})")
 
+            elif step.building == "sy_gate":
+                ops.append(f"qc.ry(math.pi/2, {qi})")
+
             elif step.building in ("measurement", "splitter"):
                 ops.append(f"qc.measure({qi}, {classical_idx})")
                 classical_idx += 1
                 if step.building == "splitter":
                     ops.append(
                         f"# Splitter at ({step.x},{step.y}): "
-                        f"|0> goes straight, |1> turns CW"
+                        f"|0⟩ goes straight, |1⟩ turns CW"
                     )
 
             elif step.building == OUTPUT_SINK:

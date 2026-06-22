@@ -1,16 +1,18 @@
 """Sprite generation and caching.
 
-Resolution order: custom PNG -> gate.sprite_fn -> generic fallback.
+Resolution order: custom PNG → generic fallback.
 """
 
 from __future__ import annotations
 
 from functools import lru_cache
+import math
 import os
 
 import pygame
 
-from ..core.config import RED, BLUE, PURPLE, WHITE, YELLOW, GOLD, PINK
+from ..core import config
+from ..core.config import RED, BLUE, PURPLE, WHITE, GOLD
 from ..core.entities import QubitState, Direction
 
 
@@ -52,7 +54,8 @@ def _dir_mark(surface, d, rect, color):
 
 
 
-_GATES_SPRITE_DIR = os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'gates_sprites')
+_GATES_SPRITE_DIR = os.path.join(config.ASSETS_DIR, 'gates_sprites')
+_HUD_SPRITE_DIR = os.path.join(config.ASSETS_DIR, 'hud_sprites')
 _ROTATION_ANGLE = {
     Direction.RIGHT: 0, Direction.UP: 90,
     Direction.LEFT: 180, Direction.DOWN: -90,
@@ -87,58 +90,96 @@ def _generic_sprite(gate_id, direction, size):
     b = pygame.Rect(4, 4, size - 8, size - 8)
     _panel(s, b, tuple(c // 3 for c in color), color, 10)
     label = (gate.name[:3].upper()) if gate else "?"
-    font = pygame.font.SysFont("consolas", max(10, int(size * 0.28)), bold=True)
+    font = config.game_font(max(10, int(size * 0.28)), bold=True)
     txt = font.render(label, True, WHITE)
     s.blit(txt, txt.get_rect(center=b.center))
     _dir_mark(s, direction, b, color)
     return s
 
 
-def _draw_qubit(state, size, disappearing=False, progress=1.0, entangled=False, phase_flipped=False):
+def _draw_qubit(state, size, disappearing=False, progress=1.0, entangled=False,
+                phase_flipped=False, phase_angle=None, bloch=None):
     s = _surf(size)
     cx, cy = size / 2, size / 2
     if disappearing:
         sc = max(0.18, progress)
-        radius = max(2, int(size * 0.28 * sc))
+        radius = max(2, int(size * 0.36 * sc))
     else:
-        radius = max(3, int(size * 0.28))
+        radius = max(4, int(size * 0.36))
     glow_r = int(radius * 1.8)
-    if state == QubitState.SUPERPOSITION:
-        base = PURPLE
-    elif state == QubitState.ZERO:
+    if state == QubitState.ZERO:
         base = RED
-    else:
+    elif state == QubitState.ONE:
         base = BLUE
+    else:
+        base = PURPLE
     glow = pygame.Surface((size, size), pygame.SRCALPHA)
     pygame.draw.circle(glow, _a(base, 55), (int(cx), int(cy)), glow_r)
     s.blit(glow, (0, 0))
     pygame.draw.circle(s, _a(base, 255), (int(cx), int(cy)), radius)
-    hx, hy = int(cx - radius * 0.3), int(cy - radius * 0.3)
-    pygame.draw.circle(s, _a(WHITE, 110), (hx, hy), max(1, radius // 2))
+    _draw_bloch(s, cx, cy, radius, bloch)
     if entangled:
-        pygame.draw.circle(s, GOLD, (int(cx), int(cy)), radius + 2, 2)
-        pygame.draw.circle(s, _a(GOLD, 100), (int(cx), int(cy)), radius + 5, 1)
-    elif state == QubitState.SUPERPOSITION:
-        if phase_flipped:
-            pygame.draw.circle(s, PINK, (int(cx), int(cy)), radius + 1, 2)
-            d = max(2, radius // 2)
-            pygame.draw.line(s, _a(WHITE, 200),
-                             (int(cx) - d, int(cy)), (int(cx) + d, int(cy)), 2)
-        else:
-            pygame.draw.circle(s, WHITE, (int(cx), int(cy)), radius + 1, 2)
-            pygame.draw.circle(s, _a(YELLOW, 140), (int(cx), int(cy)), max(2, radius // 2), 1)
-    else:
-        pygame.draw.circle(s, _a(WHITE, 130), (int(cx), int(cy)), radius + 1, 1)
+        pygame.draw.circle(s, _a(GOLD, 80), (int(cx), int(cy)), radius + 6, 3)
+        pygame.draw.circle(s, GOLD, (int(cx), int(cy)), radius + 3, 3)
+    pygame.draw.circle(s, _a(WHITE, 130 if state in (QubitState.ZERO, QubitState.ONE) else 220),
+                       (int(cx), int(cy)), radius + 1, 2)
+    if state not in (QubitState.ZERO, QubitState.ONE):
+        angle = phase_angle if phase_angle is not None else (math.pi if phase_flipped else 0.0)
+        _draw_phase_tick(s, cx, cy, radius, angle)
     return s
 
 
+# Screen-space axis vectors (right=+sx, down=+sy)
+# Z: up, Y: right, X: bottom-left at 45° from vertical, foreshortened for depth
+_BPX = (-math.sin(math.radians(45)) * 0.5, math.cos(math.radians(45)) * 0.5)
+_BPY = (1.0, 0.0)
+_BPZ = (0.0, -1.0)
+
+
+def _bloch_proj(cx, cy, r, x, y, z):
+    return (int(cx + (x * _BPX[0] + y * _BPY[0] + z * _BPZ[0]) * r),
+            int(cy + (x * _BPX[1] + y * _BPY[1] + z * _BPZ[1]) * r))
+
+
+def _draw_bloch(surface, cx, cy, radius, bloch):
+    if bloch is None:
+        return
+    r = max(2, int(radius * 0.58))
+    center = (int(cx), int(cy))
+    pygame.draw.circle(surface, WHITE, center, r, 1)
+    eq = [_bloch_proj(cx, cy, r, math.cos(a), math.sin(a), 0)
+          for a in (i * math.pi / 16 for i in range(32))]
+    pygame.draw.polygon(surface, WHITE, eq, 1)
+    for ax in [(1, 0, 0), (0, 1, 0), (0, 0, 1)]:
+        pygame.draw.line(surface, WHITE,
+                         _bloch_proj(cx, cy, r, -ax[0], -ax[1], -ax[2]),
+                         _bloch_proj(cx, cy, r, *ax), 1)
+    ex, ey = _bloch_proj(cx, cy, r, *bloch)
+    lw = max(1, int(radius * 0.12))
+    pygame.draw.circle(surface, WHITE, (ex, ey), lw)
+
+
+def _draw_phase_tick(surface, cx, cy, radius, angle):
+    ux, uy = math.sin(angle), math.cos(angle)
+    r_inner = radius - 1
+    r_outer = radius + max(3, int(radius * 0.45))
+    tip = (int(cx + ux * r_outer), int(cy + uy * r_outer))
+    px, py = -uy, ux
+    hw = max(2, int(radius * 0.25))
+    base_l = (int(cx + ux * r_inner + px * hw), int(cy + uy * r_inner + py * hw))
+    base_r = (int(cx + ux * r_inner - px * hw), int(cy + uy * r_inner - py * hw))
+    pygame.draw.polygon(surface, WHITE, [tip, base_l, base_r])
+
+
 @lru_cache(maxsize=512)
-def get_qubit_sprite(state, size, disappearing=False, progress=1.0, entangled=False, phase_flipped=False):
-    return _draw_qubit(state, size, disappearing, progress, entangled, phase_flipped)
+def get_qubit_sprite(state, size, disappearing=False, progress=1.0, entangled=False,
+                     phase_flipped=False, phase_angle=None, bloch=None):
+    return _draw_qubit(state, size, disappearing, progress, entangled,
+                       phase_flipped, phase_angle, bloch)
 
 
 # ponytail: gates that always face RIGHT regardless of tile rotation
-_ORIENTATION_LOCKED = frozenset({"measurement", "output_sink"})
+_ORIENTATION_LOCKED = frozenset({"measurement", "output_sink", "noise"})
 
 
 def _ctrl_sprite(building_id, direction, size):
@@ -157,11 +198,9 @@ def _ctrl_sprite(building_id, direction, size):
 
 
 @lru_cache(maxsize=512)
-def get_building_sprite(building_id, direction, size, ctrl=False, role=1):
+def get_building_sprite(building_id, direction, size, role=1):
     if building_id == "empty":
         return None
-    if ctrl and role == 1:
-        role = 2
     if role != 1:
         custom = _load_custom_png(building_id, direction, size, role)
         if custom is not None:
@@ -172,13 +211,22 @@ def get_building_sprite(building_id, direction, size, ctrl=False, role=1):
     custom = _load_custom_png(building_id, direction, size, role)
     if custom is not None:
         return custom
-    from ..engine.gate_registry import get_gate
-    gate = get_gate(building_id)
-    if gate and gate.sprite_fn:
-        return gate.sprite_fn(direction, size)
     return _generic_sprite(building_id, direction, size)
+
+
+@lru_cache(maxsize=128)
+def get_hud_sprite(building_id, size):
+    path = os.path.join(_HUD_SPRITE_DIR, f"{building_id}.png")
+    if os.path.isfile(path):
+        try:
+            img = pygame.image.load(path).convert_alpha()
+            return pygame.transform.smoothscale(img, (size, size))
+        except Exception:
+            pass
+    return get_building_sprite(building_id, Direction.RIGHT, size)
 
 
 def clear_sprite_caches():
     get_building_sprite.cache_clear()
     get_qubit_sprite.cache_clear()
+    get_hud_sprite.cache_clear()

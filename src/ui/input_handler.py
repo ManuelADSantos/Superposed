@@ -2,18 +2,32 @@
 
 from __future__ import annotations
 
-from functools import lru_cache
+import os
 import pygame
 from ..core import config
-from ..core.config import TILE_SIZE, TOOLBAR_HEIGHT, TOOLBAR_PAD
+from ..core.config import TILE_SIZE, TOOLBAR_HEIGHT
 from ..core.entities import Direction, QubitState, cw_dir, ccw_dir, DIR_VECTORS
-from ..core.world import screen_to_world, get_tile
+from ..core.world import screen_to_world, get_tile, count_placed, is_locked
 from ..engine.gate_registry import get_gate, active_toolbar, Category, EMPTY, OUTPUT_SINK, BELT
 from .rendering import (
     get_export_button_rect, get_speed_button_rect, get_pause_button_rect,
     show_toast, toolbar_button_rects, toggle_briefing,
 )
 from ..core import world as W
+from ..core import audio
+
+
+_screenshot_counter = 0
+
+
+def _save_screenshot():
+    global _screenshot_counter
+    _screenshot_counter += 1
+    d = os.path.join(os.path.dirname(__file__), '..', '..', 'screenshots')
+    os.makedirs(d, exist_ok=True)
+    path = os.path.join(d, f'screenshot_{_screenshot_counter}.png')
+    pygame.image.save(pygame.display.get_surface(), path)
+    show_toast(f"Saved screenshot_{_screenshot_counter}.png")
 
 
 def _toolbar_hit(mx, my):
@@ -23,16 +37,6 @@ def _toolbar_hit(mx, my):
         if rect.collidepoint(mx, my):
             return gid
     return None
-
-
-@lru_cache(maxsize=32)
-def _build_key_map(available: tuple | None) -> dict:
-    active = active_toolbar(list(available) if available is not None else None)
-    return {
-        kc: gid
-        for idx, gid in enumerate(active)
-        if (kc := getattr(pygame, f"K_{idx + 1}", None))
-    }
 
 
 def _companion_pos(wx, wy, direction):
@@ -56,6 +60,8 @@ def _multi_cells(wx, wy, tile):
 def _clear_tile(tile):
     tile.building = EMPTY
     tile.item = None
+    tile.spawn_state = None
+    tile.spawn_phase = None
     tile.peer = None
     tile.is_ctrl = False
     tile.role = 1
@@ -68,9 +74,12 @@ def _clear_linked(wx, wy):
 
 def _can_place_at(wx, wy, available, building):
     """Check if a building can be placed at (wx, wy)."""
-    if (wx, wy) in W.locked_tiles:
+    if is_locked((wx, wy)):
         return False
     if available is not None and building not in available:
+        return False
+    limit = W.gate_limits.get(building)
+    if limit is not None and count_placed(building) >= limit:
         return False
     return True
 
@@ -86,6 +95,8 @@ def _place_building(wx, wy, building, direction):
     tile.direction = direction
     tile.process_timer = 0.0
     tile.measurements = []
+    tile.spawn_state = None
+    tile.spawn_phase = None
     tile.peer = None
     tile.is_ctrl = False
     tile.role = 1
@@ -93,6 +104,7 @@ def _place_building(wx, wy, building, direction):
         tile.sink_total = 0
         tile.sink_match = 0
         tile.sink_target = None
+        tile.sink_phase = None
 
     gate = get_gate(building)
     if gate and gate.category == Category.TWO_QUBIT:
@@ -126,6 +138,8 @@ def _delete_building(wx, wy):
     _clear_tile(tile)
 
 
+_SINK_CYCLE = [None] + list(QubitState)
+
 # Belt drag state
 _drag_active = False
 _drag_last_cell = None
@@ -133,8 +147,7 @@ _erase_active = False
 _erase_last_cell = None
 
 
-def handle_input(dt, selected_building, selected_rotation, paused, step_requested,
-                 events=None):
+def handle_input(dt, selected_building, selected_rotation, paused, events=None):
     global _drag_active, _drag_last_cell, _erase_active, _erase_last_cell
 
     back_to_menu = False
@@ -150,64 +163,69 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
     if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
         W._state.camera_x += speed
 
-    avail = tuple(W.available_buildings) if W.available_buildings is not None else None
-    key_map = _build_key_map(avail)
+    active = active_toolbar(W.available_buildings)
+    key_map = {
+        kc: gid
+        for idx, gid in enumerate(active)
+        if (kc := getattr(pygame, f"K_{idx + 1}", None))
+    }
 
     if events is None:
         events = pygame.event.get()
 
     for event in events:
         if event.type == pygame.QUIT:
-            return False, selected_building, selected_rotation, paused, step_requested, False
+            return False, selected_building, selected_rotation, paused, False
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                return True, selected_building, selected_rotation, paused, step_requested, True
+                return True, selected_building, selected_rotation, paused, True
 
             if event.key in key_map:
                 selected_building = key_map[event.key]
             elif event.key == pygame.K_r:
                 selected_rotation = cw_dir(selected_rotation)
-            elif event.key == pygame.K_p:
+            elif event.key == pygame.K_SPACE:
                 paused = not paused
-            elif event.key == pygame.K_n:
-                step_requested = True
+            elif event.key == pygame.K_q:
+                config.SPEED_MULT = {0.5: 0.5, 1: 0.5, 2: 1, 4: 2}[config.SPEED_MULT]
+            elif event.key == pygame.K_e:
+                config.SPEED_MULT = {0.5: 1, 1: 2, 2: 4, 4: 4}[config.SPEED_MULT]
             elif event.key == pygame.K_c:
                 for pos in list(W.world.keys()):
-                    if pos not in W.locked_tiles:
+                    if not is_locked(pos):
                         tile = get_tile(*pos)
                         tile.peer = None
                         tile.is_ctrl = False
                         tile.role = 1
                         del W.world[pos]
-            elif event.key == pygame.K_b:
+            elif event.key == pygame.K_f:
                 toggle_briefing()
-            elif event.key == pygame.K_o:
+            elif event.key == pygame.K_x:
                 ldef = W._state.current_level_def
                 cx, cy = (ldef or {}).get("camera", (0, 0))
                 W._state.camera_x = cx * TILE_SIZE - config.WIDTH / 2
                 W._state.camera_y = cy * TILE_SIZE - (config.HEIGHT - TOOLBAR_HEIGHT) / 2
                 W._state.zoom = 1.0
-            elif event.key == pygame.K_TAB:
-                back_to_menu = True
-
         if event.type == pygame.MOUSEWHEEL:
             mx, my = pygame.mouse.get_pos()
             old_zoom = W._state.zoom
             W._state.zoom = max(0.3, min(3.0, W._state.zoom + event.y * 0.12))
             factor = W._state.zoom / old_zoom
-            W._state.camera_x = mx + (W._state.camera_x - mx) * factor
-            W._state.camera_y = my + (W._state.camera_y - my) * factor
+            W._state.camera_x = (mx + W._state.camera_x) * factor - mx
+            W._state.camera_y = (my + W._state.camera_y) * factor - my
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             mx, my = event.pos
 
             if event.button == 1 and get_speed_button_rect().collidepoint(mx, my):
                 config.SPEED_MULT = {0.5: 1, 1: 2, 2: 4, 4: 0.5}[config.SPEED_MULT]
+                audio.play_sfx('click')
                 continue
 
             if event.button == 1 and get_pause_button_rect().collidepoint(mx, my):
                 paused = not paused
+                audio.play_sfx('click')
                 continue
 
 
@@ -223,13 +241,14 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
             tb_hit = _toolbar_hit(mx, my)
             if tb_hit is not None:
                 selected_building = tb_hit
+                audio.play_sfx('click')
                 continue
 
             if my < config.HEIGHT - TOOLBAR_HEIGHT:
                 wx, wy = screen_to_world(mx, my, TILE_SIZE)
-                is_locked = (wx, wy) in W.locked_tiles
+                cell_locked = is_locked((wx, wy))
 
-                if event.button == 1 and not is_locked:
+                if event.button == 1 and not cell_locked:
                     if _can_place_at(wx, wy, W.available_buildings, selected_building):
                         gate = get_gate(selected_building)
                         if gate and gate.category == Category.TWO_QUBIT:
@@ -245,6 +264,7 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
                                 if get_tile(cx, cy).peer:
                                     _delete_building(cx, cy)
                         _place_building(wx, wy, selected_building, selected_rotation)
+                        audio.play_sfx('place')
 
                         # Start belt drag
                         if selected_building == BELT:
@@ -254,20 +274,16 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
                 elif event.button == 3:
                     _erase_active = True
                     _erase_last_cell = (wx, wy)
-                    if not is_locked:
+                    if not cell_locked:
                         _delete_building(wx, wy)
+                        audio.play_sfx('delete')
 
                 elif event.button == 2:
                     tile = get_tile(wx, wy)
-                    if tile.building == OUTPUT_SINK and not is_locked:
-                        if tile.sink_target is None:
-                            tile.sink_target = QubitState.ZERO
-                        elif tile.sink_target == QubitState.ZERO:
-                            tile.sink_target = QubitState.ONE
-                        elif tile.sink_target == QubitState.ONE:
-                            tile.sink_target = QubitState.SUPERPOSITION
-                        else:
-                            tile.sink_target = None
+                    if tile.building == OUTPUT_SINK and not cell_locked:
+                        idx = _SINK_CYCLE.index(tile.sink_target) if tile.sink_target in _SINK_CYCLE else 0
+                        tile.sink_target = _SINK_CYCLE[(idx + 1) % len(_SINK_CYCLE)]
+                        tile.sink_phase = None
                         tile.sink_total = 0
                         tile.sink_match = 0
 
@@ -276,7 +292,7 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
             mx, my = event.pos
             if my < config.HEIGHT - TOOLBAR_HEIGHT:
                 wx, wy = screen_to_world(mx, my, TILE_SIZE)
-                if (wx, wy) != _drag_last_cell and (wx, wy) not in W.locked_tiles:
+                if (wx, wy) != _drag_last_cell and not is_locked((wx, wy)):
                     lx, ly = _drag_last_cell
                     dx, dy = wx - lx, wy - ly
                     if abs(dx) >= abs(dy):
@@ -285,7 +301,7 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
                         d = Direction.DOWN if dy > 0 else Direction.UP
                     # Update previous belt to point toward new cell
                     prev = get_tile(lx, ly)
-                    if prev.building == BELT and (lx, ly) not in W.locked_tiles:
+                    if prev.building == BELT and not is_locked((lx, ly)):
                         prev.direction = d
                     # Place new belt (skip tiles that are part of a multi-qubit gate)
                     target = get_tile(wx, wy)
@@ -300,7 +316,7 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
                 wx, wy = screen_to_world(mx, my, TILE_SIZE)
                 if (wx, wy) != _erase_last_cell:
                     _erase_last_cell = (wx, wy)
-                    if (wx, wy) not in W.locked_tiles:
+                    if not is_locked((wx, wy)):
                         _delete_building(wx, wy)
 
         if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
@@ -310,8 +326,7 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
             _erase_active = False
             _erase_last_cell = None
 
-    active = active_toolbar(W.available_buildings)
     if active and selected_building not in active:
         selected_building = active[0]
 
-    return True, selected_building, selected_rotation, paused, step_requested, back_to_menu
+    return True, selected_building, selected_rotation, paused, back_to_menu

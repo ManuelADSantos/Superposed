@@ -15,7 +15,7 @@ Superposed is a single-threaded pygame application structured as a proper Python
 
 The dependency flow is strictly top-down: `main.py` imports from all four subpackages, `engine/` and `ui/` import from `core/`, and `content/` imports entity types from `core/` and gate IDs from `engine/`. There are no circular dependencies.
 
-The current campaign is organized into 14 chapters and 34 levels, and the menu flow includes chapter select and concept intro screens before level play.
+The current campaign is organized into 11 chapters and 26 levels. Chapter concepts are shown on the level list, and starting a level loads play immediately with the briefing overlay visible.
 
 ## Entry Points
 
@@ -30,9 +30,8 @@ There are three ways to start the game, and all of them call the same `main()` f
 `main.py` runs the game loop with a state machine driven by the `GameState` enum (defined in `ui/menu.py`). The states are:
 
 ```
-MAIN_MENU → CHAPTER_SELECT → CONCEPT_INTRO → LEVEL_SELECT → BRIEFING → LEVEL_PLAY → WIN_SCREEN
-                                                               ↓
-MAIN_MENU → SANDBOX ←─────────────────────────────────── (Tab key)
+MAIN_MENU → CHAPTER_SELECT → LEVEL_SELECT → LEVEL_PLAY → WIN_SCREEN
+MAIN_MENU → SANDBOX
 ```
 
 Each frame follows the same sequence: process input, update simulation (if not paused), render everything. The state determines which input handler and renderer are active — for example, `MAIN_MENU` only draws the menu and listens for button clicks, while `LEVEL_PLAY` runs the full simulation loop.
@@ -53,7 +52,7 @@ Defines the fundamental data types:
 
 **QubitItem** — a qubit particle flowing through the factory. Tracks its amplitudes (`alpha`, `beta`), derived display state/phase, entanglement group, progress along the current tile, and disappearance animation state. Each instance gets a unique `uid` from a counter.
 
-**Tile** — a single grid cell. Holds the building ID (a string like `"hadamard"`), direction, the qubit currently on it, optional peer metadata for two-cell gates, spawn/process timers, measurement histogram, and sink output counters.
+**Tile** — a single grid cell. Holds the building ID (a string like `"hadamard"`), direction, the qubit currently on it, optional peer metadata for two-cell gates, generator spawn state/phase, process timers, measurement histogram, and sink output counters.
 
 ### world.py
 
@@ -61,7 +60,7 @@ All mutable game state lives in the `WorldState` class: the sparse grid (a `dict
 
 The entanglement registry is a pair of structures: `entangle_groups` maps a group ID to an `EntangleGroup` (`qubit_order` plus joint `statevec`), and `entangle_lookup` maps each qubit UID to its live `QubitItem`. This keeps partner lookup simple while allowing two-qubit gates to operate on entangled groups.
 
-Module-level proxy variables (`world`, `locked_tiles`, `available_buildings`, etc.) are re-bound to the live `WorldState` on reset/load via `_sync_from_state()`, so `import world as W; W.world` always resolves to the current dict.
+Module-level proxy variables (`world`, `locked_tiles`, `unlocked_tiles`, `available_buildings`, etc.) are re-bound to the live `WorldState` on reset/load via `_sync_from_state()`, so `import world as W; W.world` always resolves to the current dict.
 
 **Key functions:**
 - `reset_world()` — reinitialises all state, clears sprite caches.
@@ -72,7 +71,7 @@ Module-level proxy variables (`world`, `locked_tiles`, `available_buildings`, et
 
 ### gate_registry.py
 
-The central registry is a dictionary mapping string IDs to `GateDef` dataclass instances. Each `GateDef` carries the gate's metadata (name, tooltip, colour), its `category` (which determines how the simulation calls it), its `transform` function, and optional sprite/overlay callbacks.
+The central registry is a dictionary mapping string IDs to `GateDef` dataclass instances. Each `GateDef` carries the gate's metadata (name, tooltip, colour), its `category` (which determines how the simulation calls it), its `transform` function, and an optional overlay callback.
 
 **Categories and their transform signatures:**
 
@@ -80,7 +79,7 @@ The central registry is a dictionary mapping string IDs to `GateDef` dataclass i
 |---|---|---|
 | INFRASTRUCTURE | — | Hardcoded in simulation (belt movement, spawning, collecting) |
 | SINGLE | `transform(item)` | When a qubit arrives at the gate tile |
-| TWO_QUBIT | `transform(control, target)` | When both control and target slots are occupied |
+| TWO_QUBIT | `transform(*controls, target)` | When all multi-qubit slots are occupied |
 | CONSUMER | `transform(item, tile)` | Qubit is consumed (measurement records to tile) |
 | ROUTER | `transform(x, y, tile, item, eject_fn)` | Gate controls where the qubit goes next |
 
@@ -93,35 +92,37 @@ The central registry is a dictionary mapping string IDs to `GateDef` dataclass i
 `update_items(dt)` is the physics loop, called once per frame. It iterates every tile in the world and:
 
 1. **Advances progress** — qubits on belts move forward by `BELT_SPEED * dt`. When progress reaches 1.0, the qubit is ready to transfer.
-2. **Spawns qubits** — generator tiles create new `QubitItem(ZERO)` at a fixed rate.
+2. **Spawns qubits** — generator tiles create new `QubitItem`s at a fixed rate, defaulting to `|0>` unless the level config sets a spawn state.
 3. **Processes two-qubit gates** — the primary tile waits for its control-dot peer and target tile to fill (with a short delay for visual clarity), then calls the gate's transform and ejects both qubits.
 4. **Applies single-qubit gates** — when a qubit arrives (progress crosses 0.0), the gate's transform is called immediately.
 5. **Transfers qubits** — when a qubit finishes a tile, it moves to the next tile in the facing direction. If the next tile doesn't exist or is full, the qubit starts a disappearance animation.
 
 `_safe_transform(gate, *args)` wraps every gate call in a try/except so a buggy gate definition can never crash the game — it prints to stderr and leaves the qubit unmodified.
 
-**Two-qubit routing:** CNOT/CZ/SWAP occupy two parallel cells. The companion tile is the control-dot lane; the primary tile is the target lane. Both lanes flow in the gate direction.
+**Multi-qubit routing:** CNOT/CZ/SWAP occupy two parallel cells; Toffoli occupies three. Companion tiles sit counter-clockwise from the primary/target lane. All lanes flow in the gate direction.
 
 ### gates/
 
-Each gate file follows the same pattern: define a `_transform` function, optionally a `_sprite` function, then call `register()` with a `GateDef`. The files are:
+Each gate file follows the same pattern: define a `_transform` function, then call `register()` with a `GateDef`. The files are:
 
-- **_infrastructure.py** — Belt, Generator, Output Sink. These have no transform (simulation handles them directly) but provide sprite functions.
+- **_infrastructure.py** — Belt, Generator, Output Sink. These have no transform; simulation handles them directly.
 - **hadamard.py** — Applies the Hadamard matrix, creating or interfering superposition.
 - **x_gate.py** — Pauli-X / NOT gate.
 - **y_gate.py** — Pauli-Y gate, including complex phase.
 - **z_gate.py** — Phase gate.
 - **cnot.py** — Two-qubit controlled NOT via the world's state-vector helpers.
 - **cz.py** — Two-qubit controlled phase flip with phase kickback.
+- **toffoli.py** — Three-qubit controlled-controlled NOT.
 - **measurement.py** — Consumer gate. Collapses superposition to `|0>` or `|1>` with 50/50 probability. Collapses entangled partners to the same state. Records results in a tile-level histogram (capped at 20 entries). Includes an overlay function that draws the histogram directly on the tile.
 - **splitter.py** — Router gate. Implicitly measures the qubit, then routes `|0>` straight ahead and `|1>` clockwise. Used to separate qubit states spatially.
 - **swap.py** — Two-qubit gate that exchanges two qubit states.
+- **noise.py** — Router gate. Randomizes the qubit's state to one of six basis states ($\ket{0}$, $\ket{1}$, $\ket{+}$, $\ket{-}$, $\ket{+i}$, $\ket{-i}$) and ejects it in a random direction excluding the arrival direction. Never player-placed; always a locked obstacle. Tracks arrival direction via `item._arrival_dir`.
 
 ## UI Subpackage
 
 ### rendering.py
 
-Draws the grid, buildings, qubits, toolbar, HUD, level progress, and ghost previews. Two-cell gates also draw a connecting line between the primary tile and its control-dot companion (`_draw_peer_link`). Key functions:
+Draws the grid, buildings, qubits, toolbar, HUD, level progress, and ghost previews. Key functions:
 
 - `draw_grid()` — iterates visible tiles and blits cached building sprites with directional rotation. Draws qubit particles on top with glow effects.
 - `draw_qubit_item()` — standalone function that renders a qubit with state colour, entanglement halo, and fade-out animation. Extracted to its own function to avoid circular imports.
@@ -132,13 +133,10 @@ Draws the grid, buildings, qubits, toolbar, HUD, level progress, and ghost previ
 
 Sprite generation follows a three-tier resolution chain:
 
-1. **Custom PNG** — looks for `assets/gates_sprites/<gate_id>.png` and rotates it to match the gate's direction.
-2. **Registry sprite_fn** — calls `gate.sprite_fn(direction, size)` if the gate definition provides one.
-3. **Generic fallback** — draws a coloured rounded rectangle with the gate's initial.
+1. **Custom PNG** — looks for `assets/gates_sprites/<gate_id>.png` or role-specific files such as `cnot_1.png`, then rotates it to match the gate's direction.
+2. **Generic fallback** — draws a coloured rounded rectangle with the gate's initial.
 
 All sprites are cached via `@lru_cache`. The caches are cleared on `reset_world()` to handle resolution changes.
-
-The file also exports drawing primitives (`_panel`, `_shadow`, `_dir_mark`, etc.) that gate sprite functions import to maintain visual consistency.
 
 ### menu.py
 
@@ -146,44 +144,41 @@ Implements the menu flow as draw/handle function pairs:
 
 - **Main menu** — title, subtitle, three buttons (Campaign, Sandbox, Exit), version number in the corner.
 - **Chapter select** — chapter cards plus campaign progress overview.
-- **Concept intro** — chapter summary screen before the level list.
-- **Level select** — grid of level cards with completion badges (stored in a module-level `completed_levels` set).
-- **Briefing** — overlay before a level starts, showing the level name, description, and a START button.
+- **Level select** — chapter concept, level cards, and completion badges (stored in a module-level `completed_levels` set).
 - **Win screen** — overlay after completing a level, with CHAPTERS and NEXT buttons.
 
 ### input_handler.py
 
-Translates pygame events into game actions. Returns an updated `(run_ok, selected_building, selected_rotation, paused, step_requested, back_to_menu)` tuple each frame. Handles camera panning (WASD), zoom (scroll wheel), building placement (left click), removal (right click), rotation (R), single-step (N), and toolbar selection (number keys or clicking toolbar buttons). Placing a two-qubit gate auto-creates its control-dot companion one cell counter-clockwise; deleting either half removes both. Dragging with the belt selected lays a continuous run of belts that follow the cursor.
+Translates pygame events into game actions. Returns an updated `(run_ok, selected_building, selected_rotation, paused, back_to_menu)` tuple each frame. Handles camera panning (WASD), recentering (X), zoom (scroll wheel), building placement (left click), removal (right click), rotation (R), briefing toggle (F), and toolbar selection (number keys or clicking toolbar buttons). Placing a two-qubit gate auto-creates its control-dot companion one cell counter-clockwise; deleting either half removes both. Dragging with the belt selected lays a continuous run of belts that follow the cursor.
 
 ## Content Subpackage
 
 ### levels.py
 
-Thirty-four tutorial levels across 14 chapters, flattened into `ALL_LEVELS` from the per-chapter lists in `CHAPTERS`. Each level is a dictionary with:
+Twenty-six tutorial levels across 11 chapters, flattened into `ALL_LEVELS` from the per-chapter lists in `CHAPTERS`. Each level is a dictionary with:
 
 - `name`, `description`, `briefing` — text shown to the player.
-- `pre_placed` — dict mapping `(x, y)` to a `(building_id, direction, target)` tuple for tiles the level starts with (`target` is the sink's desired state, or `None`). Companions for two-qubit gates are generated automatically at load time.
-- `locked` — set of `(x, y)` coordinates the player cannot modify.
+- `pre_placed` — dict mapping `(x, y)` to a `(building_id, direction, param)` tuple for tiles the level starts with. For sinks, `param` is the desired output state or `(state, phase)`. For generators, `param` is the spawn state or `(state, phase)`. Companions for two-qubit gates are generated automatically at load time.
+- `locked` — set of `(x, y)` coordinates the player cannot modify. It may include empty cells; locked cells render with a light tint.
+- `unlocked` — optional whitelist of cells the player may modify. When present, every other campaign cell behaves as locked. Sandbox mode never sets this, so the whole grid remains free.
 - `available` — list of gate IDs the player can use (restricts the toolbar).
+- `gate_limits` — optional per-level caps for specific gates.
 - `win_count` — how many qubits the sink must collect to complete the level.
 - `camera` — initial camera position.
 
-The 14 chapters progress through the concepts in order (gates introduced in parentheses):
+The chapters progress through the concepts in order:
 
 1. **Classical Foundations** — belt routing and the X (NOT) gate.
 2. **Superposition** — the H gate and purple `|+>` particles.
 3. **Measurement** — collapse to a `|0>`/`|1>` histogram.
 4. **Phase & Interference** — Z gate; H–Z–H gives deterministic `|1>`.
-5. **Entanglement** — CNOT creates correlated Bell pairs.
-6. **Multi-Qubit Ops** — CZ and SWAP.
-7. **Interference Patterns** — combining phase and superposition.
-8. **Quantum Circuits** — multi-gate layouts and the Splitter router.
-9. **Quantum Noise** — the noise gate perturbs qubits.
-10. **Error Detection** — spotting and correcting corrupted qubits.
-11. **Deutsch's Problem** — oracles (`oracle_constant`, `oracle_balanced`).
-12. **Quantum Cloning** — the duplicator and the no-cloning limit.
-13. **Grand Challenge** — combined multi-concept puzzles.
-14. **Quantum Mastery** — capstone levels.
+5. **Entanglement** — CNOT creates correlated Bell pairs. Entangled qubits display a gold ring, show `|?>` on hover, and their Bloch sphere vector sits at the origin (physically correct for the maximally mixed reduced state).
+6. **Multi-Qubit Ops** — CZ phase kickback and SWAP.
+7. **Quantum Circuits** — entanglement chains across multiple qubits.
+8. **Quantum Noise** — the noise gate randomizes state and exit direction.
+9. **Noise Management** — probabilistic recovery using splitters and filters.
+10. **Quantum Cloning** — CNOT copies known basis states; no-cloning limits unknown states.
+11. **Algorithms** — Deutsch's classifier, QFT structure, Grover's search, and teleportation built from smaller gates.
 
 The full chapter/level data lives in `CHAPTERS` in `levels.py`; this list is the high-level map.
 
@@ -211,9 +206,9 @@ The `WorldState` class is the canonical state container, but module-level variab
 
 ## Test Coverage
 
-The test suite (`tests/test_gates.py`, 40 tests) covers:
+The test suite (`tests/test_gates.py`, 69 tests) covers:
 
-- Core gate transforms (X, H, Z, CNOT, Measurement, Splitter) with basis states and superposition.
+- Core gate transforms (X, H, Y, Z, CNOT, CZ, SWAP, Toffoli, Measurement, Splitter, Noise) with basis states and superposition.
 - Double-application identity checks (X-X, H-H, Z-Z).
 - Interference sequence (H-Z-H = `|1>`).
 - Entanglement creation, partner lookup, breaking, and merging with a third qubit.
@@ -221,6 +216,8 @@ The test suite (`tests/test_gates.py`, 40 tests) covers:
 - Splitter routing by state and direction.
 - Sink counting for superposition targets.
 - Two-cell two-qubit gate export to Qiskit.
+- Three-cell Toffoli export to Qiskit.
+- Noise gate randomization (state and direction).
 - Error handling (`_safe_transform` catches exceptions without crashing).
 - Measurement histogram capping at 20 entries.
 

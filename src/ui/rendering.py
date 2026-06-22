@@ -2,20 +2,23 @@
 
 from __future__ import annotations
 
+import math
+
 import pygame
 from ..core import world as world_module
 from ..core import config
 from ..core.config import (
-    TILE_SIZE, BG, GRID_COLOR,
-    WHITE, LIGHT_GRAY, DARK_GRAY, YELLOW, RED, GREEN, BLUE,
+    TILE_SIZE, GRID_COLOR,
+    WHITE, LIGHT_GRAY, DARK_GRAY, RED, GREEN,
     TOOLBAR_HEIGHT, TOOLBAR_PAD, TOOLTIP_FONT_SIZE, UI_FONT_SIZE,
-    GOLD, PURPLE, CYAN,
+    PURPLE, CYAN,
 )
 from ..core.entities import (
-    QubitState, QubitItem, Direction, DIR_VECTORS, state_color, ccw_dir,
+    QubitItem, QubitState, Direction, DIR_VECTORS, ccw_dir,
 )
-from .sprites import get_building_sprite, get_qubit_sprite
-from ..core.world import get_tile, world_to_screen, screen_to_world
+from .sprites import get_building_sprite, get_qubit_sprite, get_hud_sprite
+from ..core.world import get_tile, world_to_screen, screen_to_world, count_placed, is_locked
+from .menu import _find_chapter
 from ..engine.gate_registry import (
     get_gate, active_toolbar, Category,
     EMPTY, GENERATOR, OUTPUT_SINK,
@@ -34,46 +37,51 @@ def toolbar_button_rects(available=None):
         yield pygame.Rect(bx, by, btn_size, btn_size), gid
 
 
+_STATE_PHASE = {
+    QubitState.PLUS: 0.0, QubitState.MINUS: math.pi,
+    QubitState.PLUS_I: math.pi / 2, QubitState.MINUS_I: -math.pi / 2,
+}
+
+
 def _draw_sink_status(surface, rect, tile):
-    font = pygame.font.SysFont("consolas", max(10, int(rect.height * 0.18)))
+    lev = world_module.current_level_def
+    h = rect.height
     if tile.sink_target is not None:
-        ic = state_color(tile.sink_target)
-        ir = max(4, int(rect.height * 0.08))
-        pygame.draw.circle(surface, ic, (rect.centerx, rect.top + ir + 4), ir)
-    if tile.sink_total == 0:
+        sz = max(4, int(h * 0.38))
+        phase = tile.sink_phase if tile.sink_phase is not None else _STATE_PHASE.get(tile.sink_target, 0.0)
+        sprite = get_qubit_sprite(
+            tile.sink_target, sz, phase_angle=phase)
+        surface.blit(sprite,
+                     sprite.get_rect(center=(rect.centerx, rect.top + int(h * 0.4))))
+    if lev is None:
         return
-    if tile.sink_target is not None:
-        pct = int(100 * tile.sink_match / max(1, tile.sink_total))
-        color = GREEN if pct > 80 else (YELLOW if pct > 40 else RED)
-        txt = font.render(f"{tile.sink_match}/{tile.sink_total}", True, color)
-    else:
-        txt = font.render(f"#{tile.sink_total}", True, WHITE)
-    surface.blit(txt, txt.get_rect(center=(rect.centerx, rect.bottom - 10)))
+    win_count = lev.get("win_count", 5)
+    match = tile.sink_match if tile.sink_target is not None else tile.sink_total
+    capped = min(match, win_count)
+    bar_w = max(4, int(rect.width * 0.6))
+    bar_h = max(2, int(h * 0.06))
+    bar_x = rect.centerx - bar_w // 2
+    bar_y = rect.bottom - int(h * 0.42)
+    pygame.draw.rect(surface, DARK_GRAY, (bar_x, bar_y, bar_w, bar_h), border_radius=2)
+    if capped > 0:
+        fill_w = int(bar_w * capped / win_count)
+        color = GREEN if capped >= win_count else CYAN
+        pygame.draw.rect(surface, color, (bar_x, bar_y, fill_w, bar_h), border_radius=2)
+    font_sz = max(6, int(h * 0.16))
+    font = config.game_font(font_sz)
+    color = GREEN if match >= win_count else (CYAN if match > 0 else LIGHT_GRAY)
+    txt = font.render(f"{capped}/{win_count}", True, color)
+    surface.blit(txt, txt.get_rect(center=(rect.centerx, bar_y + bar_h + int(h * 0.09))))
 
 
 def _draw_locked_indicator(surface, rect):
     s = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+    s.fill((255, 255, 255, 18))
     sz = max(8, int(rect.width * 0.18))
     pygame.draw.polygon(s, (255, 255, 255, 30), [
         (rect.width - sz, 0), (rect.width, 0), (rect.width, sz)
     ])
     surface.blit(s, rect.topleft)
-
-
-def _draw_peer_link(surface, rect, tile, size):
-    """Draw a connecting line between primary and companion tiles."""
-    if tile.peer is None or tile.is_ctrl:
-        return
-    cx, cy = tile.peer
-    px, py = rect.centerx, rect.centery
-    csx, csy = world_to_screen(cx, cy, TILE_SIZE)
-    csx += size // 2
-    csy += size // 2
-    gate = get_gate(tile.building)
-    color = gate.color if gate else LIGHT_GRAY
-    roles = (gate.qubits if gate else 2) - 1
-    end = (px + (csx - px) * roles, py + (csy - py) * roles)
-    pygame.draw.line(surface, color, (px, py), end, max(2, int(size * 0.04)))
 
 
 def draw_grid(surface):
@@ -103,8 +111,6 @@ def draw_grid(surface):
                 if sprite:
                     surface.blit(sprite, sprite.get_rect(center=rect.center))
 
-                _draw_peer_link(surface, rect, tile, int(size))
-
                 gate = get_gate(tile.building)
                 if gate and gate.overlay_fn:
                     gate.overlay_fn(surface, rect, tile)
@@ -112,14 +118,14 @@ def draw_grid(surface):
                 if tile.building == OUTPUT_SINK:
                     _draw_sink_status(surface, rect, tile)
 
-                if (wx, wy) in world_module.locked_tiles:
-                    _draw_locked_indicator(surface, rect)
+            if is_locked((wx, wy)):
+                _draw_locked_indicator(surface, rect)
 
             if tile.item:
                 _draw_item_on_tile(surface, tile, tile.item, sx, sy, size)
 
 
-def draw_qubit_item(surface, item: QubitItem, x, y, size):
+def _draw_qubit_item(surface, item: QubitItem, x, y, size):
     if item.is_disappearing:
         scale = max(0.18, item.disappear_time / 0.3)
     else:
@@ -128,7 +134,7 @@ def draw_qubit_item(surface, item: QubitItem, x, y, size):
     sprite = get_qubit_sprite(item.state, sprite_size,
                               item.is_disappearing, scale,
                               item.entangle_group is not None,
-                              item.phase_flipped)
+                              item.phase_flipped, item.phase_angle, item.bloch)
     sprite_rect = sprite.get_rect(center=(x + size // 2, y + size // 2))
     surface.blit(sprite, sprite_rect)
 
@@ -140,13 +146,8 @@ def _draw_item_on_tile(surface, tile, item, sx, sy, size):
     else:
         px = sx + size / 2 + dx * item.progress * size * 0.4
         py = sy + size / 2 + dy * item.progress * size * 0.4
-    draw_qubit_item(surface, item, px - 10, py - 10, 20)
-
-
-def _companion_offset(direction):
-    """Return (dx, dy) for companion tile position — CCW from gate direction."""
-    cd = ccw_dir(direction)
-    return DIR_VECTORS[cd]
+    q = max(20, int(size * 0.45))
+    _draw_qubit_item(surface, item, px - q // 2, py - q // 2, q)
 
 
 def draw_ghost(surface, selected_building, selected_rotation, mouse_pos):
@@ -156,7 +157,7 @@ def draw_ghost(surface, selected_building, selected_rotation, mouse_pos):
     if my >= config.HEIGHT - TOOLBAR_HEIGHT:
         return
     wx, wy = screen_to_world(mx, my, TILE_SIZE)
-    if (wx, wy) in world_module.locked_tiles:
+    if is_locked((wx, wy)):
         return
     sx, sy = world_to_screen(wx, wy, TILE_SIZE)
     size = int(TILE_SIZE * world_module._state.zoom)
@@ -169,33 +170,33 @@ def draw_ghost(surface, selected_building, selected_rotation, mouse_pos):
     # Show companion ghosts for multi-qubit gates
     gate = get_gate(selected_building)
     if gate and gate.category == Category.TWO_QUBIT:
-        cdx, cdy = _companion_offset(selected_rotation)
+        cdx, cdy = DIR_VECTORS[ccw_dir(selected_rotation)]
         for role in range(2, gate.qubits + 1):
             cw, ch = wx + cdx * (role - 1), wy + cdy * (role - 1)
             csx, csy = world_to_screen(cw, ch, TILE_SIZE)
             ctrl_sprite = get_building_sprite(selected_building, selected_rotation, size, role=role)
             if ctrl_sprite:
                 ctrl_ghost = ctrl_sprite.copy()
-                blocked = (cw, ch) in world_module.locked_tiles
+                blocked = is_locked((cw, ch))
                 ctrl_ghost.set_alpha(40 if blocked else 90)
                 surface.blit(ctrl_ghost, ctrl_ghost.get_rect(
                     center=(csx + size // 2, csy + size // 2)))
 
 
 def _draw_help_tooltip(surface, anchor_rect):
-    font = pygame.font.SysFont("consolas", 13)
+    font = config.game_font(13)
     lines = [
         "R  Rotate direction",
-        "P  Pause / Resume",
-        "N  Single step",
+        "SPACE  Pause / Resume",
+        "Q / E  Slow / Fast",
         "C  Clear all placed",
-        "O  Recenter camera",
+        "X  Recenter camera",
         "WASD  Pan camera",
         "Scroll  Zoom",
         "ESC  Back to menu",
     ]
     if world_module.current_level_index is not None:
-        lines.insert(2, "B  Show briefing")
+        lines.insert(3, "F  Show briefing")
     rendered = [font.render(l, True, WHITE) for l in lines]
     lh = font.get_linesize()
     pad = 10
@@ -215,8 +216,8 @@ def draw_toolbar(surface, selected_building, selected_rotation, paused):
     pygame.draw.rect(surface, (22, 22, 28), (0, tb_y, config.WIDTH, TOOLBAR_HEIGHT))
     pygame.draw.line(surface, DARK_GRAY, (0, tb_y), (config.WIDTH, tb_y), 1)
 
-    font = pygame.font.SysFont("consolas", UI_FONT_SIZE)
-    small = pygame.font.SysFont("consolas", TOOLTIP_FONT_SIZE)
+    font = config.game_font(UI_FONT_SIZE)
+    small = config.game_font(TOOLTIP_FONT_SIZE)
 
     for i, (rect, gid) in enumerate(toolbar_button_rects(world_module.available_buildings)):
         gate = get_gate(gid)
@@ -231,12 +232,19 @@ def draw_toolbar(surface, selected_building, selected_rotation, paused):
             pygame.draw.rect(surface, DARK_GRAY, rect, 1, border_radius=8)
 
         btn_size = rect.width
-        mini = get_building_sprite(gid, Direction.RIGHT, btn_size - 8)
+        mini = get_hud_sprite(gid, btn_size - 8)
         if mini:
             surface.blit(mini, mini.get_rect(center=rect.center))
 
+        limit = world_module.gate_limits.get(gid)
+        if limit is not None:
+            remaining = max(0, limit - count_placed(gid))
+            badge_font = config.game_font(max(10, int(btn_size * 0.3)), bold=True)
+            badge_color = WHITE if remaining > 0 else RED
+            badge = badge_font.render(str(remaining), True, badge_color)
+            surface.blit(badge, badge.get_rect(topright=(rect.right - 2, rect.top + 2)))
 
-    export_font = pygame.font.SysFont("consolas", 13, bold=True)
+    export_font = config.game_font(13, bold=True)
     export_rect = get_export_button_rect()
     mx, my = pygame.mouse.get_pos()
     export_hover = export_rect.collidepoint(mx, my)
@@ -258,7 +266,7 @@ def draw_toolbar(surface, selected_building, selected_rotation, paused):
     _draw_ctrl_btn(speed_rect, f"{config.SPEED_MULT}x", CYAN, speed_rect.collidepoint(mx, my))
 
     pause_rect = get_pause_button_rect()
-    p_label = "| |" if not paused else ">"
+    p_label = "▮▮" if not paused else "▶"
     p_color = RED if paused else GREEN
     _draw_ctrl_btn(pause_rect, p_label, p_color, pause_rect.collidepoint(mx, my))
 
@@ -279,7 +287,7 @@ def draw_tooltip(surface, mouse_pos, selected_building):
         if rect.collidepoint(mx, my):
             gate = get_gate(gid)
             if gate:
-                font = pygame.font.SysFont("consolas", TOOLTIP_FONT_SIZE)
+                font = config.game_font(TOOLTIP_FONT_SIZE)
                 tip = font.render(f"{gate.name}: {gate.tip}", True, WHITE)
                 tb_y = config.HEIGHT - TOOLBAR_HEIGHT
                 tip_rect = tip.get_rect(midbottom=(rect.centerx, tb_y - 4))
@@ -303,8 +311,7 @@ def draw_level_hud(surface):
                    if t.building == "measurement")
     else:
         sink_counts = []
-        for (x, y) in world_module.locked_tiles:
-            tile = get_tile(x, y)
+        for tile in world_module.world.values():
             if tile.building == OUTPUT_SINK:
                 c = tile.sink_total if tile.sink_target is None else tile.sink_match
                 sink_counts.append(c)
@@ -313,9 +320,12 @@ def draw_level_hud(surface):
     bar = pygame.Surface((config.WIDTH, bar_h), pygame.SRCALPHA)
     bar.fill((10, 10, 14, 200))
     surface.blit(bar, (0, 0))
-    font = pygame.font.SysFont("consolas", 16)
-    small = pygame.font.SysFont("consolas", 13)
-    surface.blit(font.render(f"Level {idx + 1}: {lev['name']}", True, CYAN), (12, 6))
+    font = config.game_font(16)
+    small = config.game_font(13)
+    ch_i, local_i = _find_chapter(idx)
+    ch_num = (ch_i + 1) if ch_i is not None else idx
+    local = (local_i + 1) if local_i is not None else idx
+    surface.blit(font.render(f"Chapter {ch_num}, Level {local}: {lev['name']}", True, CYAN), (12, 6))
     surface.blit(small.render(lev.get("hint", ""), True, LIGHT_GRAY), (12, 26))
     bar_w, bar_h2 = 160, 14
     bx = config.WIDTH - bar_w - 60
@@ -334,7 +344,6 @@ def draw_level_hud(surface):
 
 
 def _draw_compass(surface, direction, cx, cy):
-    import math
     r = 20
     pygame.draw.circle(surface, (30, 30, 38), (cx, cy), r)
     pygame.draw.circle(surface, DARK_GRAY, (cx, cy), r, 1)
@@ -344,13 +353,13 @@ def _draw_compass(surface, direction, cx, cy):
     ey = cy + int(r * 0.7 * math.sin(angle))
     pygame.draw.line(surface, CYAN, (cx, cy), (ex, ey), 2)
     pygame.draw.circle(surface, CYAN, (ex, ey), 3)
-    font = pygame.font.SysFont("consolas", 10)
+    font = config.game_font(10)
     label = font.render(direction.name[0], True, CYAN)
     surface.blit(label, label.get_rect(center=(cx, cy + r + 10)))
 
 
 def draw_hud(surface, selected_rotation):
-    font = pygame.font.SysFont("consolas", UI_FONT_SIZE)
+    font = config.game_font(UI_FONT_SIZE)
     mx, my = pygame.mouse.get_pos()
     wx, wy = screen_to_world(mx, my, TILE_SIZE)
     coord = font.render(f"({wx}, {wy})", True, DARK_GRAY)
@@ -381,7 +390,7 @@ def tick_toast(dt: float):
 def _draw_toast(surface):
     if _toast_timer <= 0:
         return
-    font = pygame.font.SysFont("consolas", 15)
+    font = config.game_font(15)
     txt = font.render(_toast_text, True, WHITE)
     padding = 12
     tw, th = txt.get_size()
@@ -409,8 +418,8 @@ def reset_briefing():
     _show_briefing = False
 
 
-def _draw_briefing_overlay(surface):
-    if not _show_briefing:
+def draw_briefing_overlay(surface, hint="Press F to close", force=False):
+    if not force and not _show_briefing:
         return
     lev = world_module.current_level_def
     if lev is None:
@@ -418,7 +427,7 @@ def _draw_briefing_overlay(surface):
     text = lev.get("briefing", "")
     if not text:
         return
-    font = pygame.font.SysFont("consolas", 15)
+    font = config.game_font(15)
     lines = text.split("\n")
     rendered = [font.render(line, True, WHITE) for line in lines]
     line_h = font.get_linesize()
@@ -433,8 +442,8 @@ def _draw_briefing_overlay(surface):
     pygame.draw.rect(surface, CYAN, box, 1, border_radius=8)
     for i, r in enumerate(rendered):
         surface.blit(r, (box.left + pad, box.top + pad + i * line_h))
-    hint = font.render("Press B to close", True, DARK_GRAY)
-    surface.blit(hint, hint.get_rect(midtop=(box.centerx, box.bottom + 4)))
+    hint_txt = font.render(hint, True, DARK_GRAY)
+    surface.blit(hint_txt, hint_txt.get_rect(midtop=(box.centerx, box.bottom + 4)))
 
 
 def get_export_button_rect():
@@ -458,6 +467,35 @@ def get_help_button_rect():
     return pygame.Rect(r.right + 6, r.top, 26, r.height)
 
 
+_HOVER_LABELS = {
+    QubitState.ZERO: "|0⟩", QubitState.ONE: "|1⟩",
+    QubitState.PLUS: "|+⟩", QubitState.MINUS: "|-⟩",
+    QubitState.PLUS_I: "|i⟩", QubitState.MINUS_I: "|-i⟩",
+}
+
+
+def _draw_qubit_hover(surface):
+    mx, my = pygame.mouse.get_pos()
+    if my >= config.HEIGHT - TOOLBAR_HEIGHT:
+        return
+    wx, wy = screen_to_world(mx, my, TILE_SIZE)
+    tile = get_tile(wx, wy)
+    if not tile.item or tile.item.is_disappearing:
+        return
+    item = tile.item
+    label = "|?⟩" if item.entangle_group is not None else _HOVER_LABELS.get(item.state, "?")
+    font = config.game_font(14)
+    txt = font.render(label, True, WHITE)
+    pad = 8
+    box = pygame.Rect(mx + 16, my - 10, txt.get_width() + pad * 2, txt.get_height() + pad)
+    box.right = min(box.right, config.WIDTH - 4)
+    bg = pygame.Surface(box.size, pygame.SRCALPHA)
+    bg.fill((15, 12, 25, 220))
+    surface.blit(bg, box.topleft)
+    pygame.draw.rect(surface, CYAN, box, 1, border_radius=4)
+    surface.blit(txt, (box.left + pad, box.top + pad // 2))
+
+
 def draw_ui(surface, selected_building, selected_rotation, paused):
     mouse_pos = pygame.mouse.get_pos()
     draw_ghost(surface, selected_building, selected_rotation, mouse_pos)
@@ -465,5 +503,7 @@ def draw_ui(surface, selected_building, selected_rotation, paused):
     draw_tooltip(surface, mouse_pos, selected_building)
     draw_level_hud(surface)
     draw_hud(surface, selected_rotation)
-    _draw_briefing_overlay(surface)
+    draw_briefing_overlay(surface)
+    if paused:
+        _draw_qubit_hover(surface)
     _draw_toast(surface)

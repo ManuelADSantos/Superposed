@@ -1,6 +1,6 @@
 """Hadamard gate — creates superposition.
 
-H|0> = |+>,  H|1> = |−>,  H|+> = |0>,  H|−> = |1>
+H|0⟩ = |+⟩,  H|1⟩ = |−>,  H|+⟩ = |0⟩,  H|−> = |1⟩
 """
 
 from __future__ import annotations

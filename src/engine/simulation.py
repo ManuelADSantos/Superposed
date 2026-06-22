@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
+import math
+
 from ..core.config import BELT_SPEED, GENERATOR_SPEED, CNOT_PROCESS_DELAY
 from ..core.entities import (
-    QubitState, QubitItem, Direction,
-    DIR_VECTORS, opposite_dir, cw_dir, ccw_dir,
+    QubitState, QubitItem,
+    DIR_VECTORS, opposite_dir, ccw_dir,
 )
 from ..core import world as _world_mod
 from ..core.world import get_tile
 from .gate_registry import (
     get_gate, Category,
-    EMPTY, BELT, GENERATOR, OUTPUT_SINK,
+    EMPTY, GENERATOR, OUTPUT_SINK,
 )
 
 
@@ -25,10 +27,18 @@ def _start_disappear(item):
 def _collect_sink(tile, item):
     from ..core.world import break_entanglement
     state = item.state
+    phase = item.phase_angle
     break_entanglement(item)
     tile.sink_total += 1
-    if tile.sink_target is not None and state == tile.sink_target:
-        tile.sink_match += 1
+    if tile.sink_target is None:
+        return
+    if state != tile.sink_target:
+        return
+    if tile.sink_phase is not None:
+        diff = abs((phase - tile.sink_phase + math.pi) % (2 * math.pi) - math.pi)
+        if diff > 0.15:
+            return
+    tile.sink_match += 1
 
 
 def _safe_transform(gate, *args):
@@ -64,8 +74,33 @@ def _multi_tiles(px, py, primary, gate):
     ]
 
 
+_spawn_clock = 0.0
+
+
+def reset_spawn_clock():
+    global _spawn_clock
+    _spawn_clock = 0.0
+
+
+def _spawn_qubit(tile):
+    q = QubitItem(tile.spawn_state or QubitState.ZERO)
+    if tile.spawn_phase is not None:
+        phase = complex(math.cos(tile.spawn_phase), math.sin(tile.spawn_phase))
+        if q.state == QubitState.ZERO:
+            q.alpha *= phase
+        else:
+            q.beta *= phase
+    return q
+
+
 def update_items(dt):
+    global _spawn_clock
     ready_to_move = []
+
+    _spawn_clock += dt
+    spawn_now = _spawn_clock >= GENERATOR_SPEED
+    if spawn_now:
+        _spawn_clock -= GENERATOR_SPEED
 
     for (x, y), tile in list(_world_mod.world.items()):
         if tile.measure_flash > 0:
@@ -76,11 +111,8 @@ def update_items(dt):
             if tile.item.disappear_time <= 0:
                 tile.item = None
 
-        if tile.building == GENERATOR:
-            tile.spawn_timer += dt
-            if tile.spawn_timer >= GENERATOR_SPEED and tile.item is None:
-                tile.spawn_timer = 0.0
-                tile.item = QubitItem(QubitState.ZERO)
+        if tile.building == GENERATOR and spawn_now and tile.item is None:
+            tile.item = _spawn_qubit(tile)
 
         gate = get_gate(tile.building)
 
@@ -129,6 +161,7 @@ def update_items(dt):
             continue
 
         if next_gate and next_gate.category == Category.ROUTER:
+            item._arrival_dir = tile.direction
             _safe_transform(next_gate, nx, ny, next_tile, item, _eject_qubit)
             tile.item = None
             continue

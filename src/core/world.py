@@ -12,7 +12,7 @@ import math
 import random
 
 from .entities import Tile, QubitItem, QubitState
-from ..engine.gate_registry import EMPTY, OUTPUT_SINK
+from ..engine.gate_registry import GENERATOR, OUTPUT_SINK
 
 
 # ---------------------------------------------------------------------------
@@ -45,7 +45,9 @@ class WorldState:
         self.current_level_index: int | None = None
         self.current_level_def: dict | None = None
         self.locked_tiles: set[tuple[int, int]] = set()
+        self.unlocked_tiles: set[tuple[int, int]] | None = None
         self.available_buildings: list[str] | None = None
+        self.gate_limits: dict[str, int] = {}
 
     def create_entangle_group(self) -> int:
         self._next_entangle_id += 1
@@ -119,12 +121,12 @@ _state = WorldState()
 
 # Module-level aliases — re-bound on reset/load, accessed as W.world etc.
 world           = _state.world
-entangle_groups = _state.entangle_groups
-entangle_lookup = _state.entangle_lookup
 current_level_index  = _state.current_level_index
 current_level_def    = _state.current_level_def
 locked_tiles         = _state.locked_tiles
+unlocked_tiles       = _state.unlocked_tiles
 available_buildings  = _state.available_buildings
+gate_limits          = _state.gate_limits
 
 
 # ---------------------------------------------------------------------------
@@ -248,9 +250,11 @@ def _update_reduced(qubit):
                  for i in range(len(sv)) if not (i & bit))
 
     qubit.alpha = complex(math.sqrt(max(0, p0)))
-    qubit.beta = complex(math.sqrt(max(0, 1 - p0)))
-    if rho_01.real < 0 and p0 > 0.01 and (1 - p0) > 0.01:
-        qubit.beta = -qubit.beta
+    p1 = max(0, 1 - p0)
+    if p0 > 1e-20 and p1 > 1e-20 and abs(rho_01) > 1e-12:
+        qubit.beta = complex(math.sqrt(p1)) * rho_01.conjugate() / abs(rho_01)
+    else:
+        qubit.beta = complex(math.sqrt(p1))
 
 
 def _try_separate_group(group):
@@ -582,12 +586,14 @@ def _sync_from_state():
     _self.current_level_index = _state.current_level_index
     _self.current_level_def   = _state.current_level_def
     _self.locked_tiles        = _state.locked_tiles
+    _self.unlocked_tiles      = _state.unlocked_tiles
     _self.available_buildings = _state.available_buildings
+    _self.gate_limits        = _state.gate_limits
 
 
 def reset_world():
     global current_level_index, current_level_def
-    global locked_tiles, available_buildings
+    global locked_tiles, unlocked_tiles, available_buildings
 
     _state.__init__()
 
@@ -601,16 +607,35 @@ def reset_world():
     clear_sprite_caches()
 
 
+def count_placed(building: str) -> int:
+    """Count player-placed (non-locked, non-companion) instances of a gate."""
+    return sum(
+        1 for pos, tile in _state.world.items()
+        if tile.building == building and not tile.is_ctrl and not is_locked(pos)
+    )
+
+
+def is_locked(pos: tuple[int, int]) -> bool:
+    return pos in _state.locked_tiles or (
+        _state.unlocked_tiles is not None and pos not in _state.unlocked_tiles
+    )
+
+
 def load_level(level_def, level_index):
     global current_level_index, current_level_def
-    global locked_tiles, available_buildings
+    global locked_tiles, unlocked_tiles, available_buildings, gate_limits
 
     reset_world()
+
+    from ..engine.simulation import reset_spawn_clock
+    reset_spawn_clock()
 
     _state.current_level_index = level_index
     _state.current_level_def   = level_def
     _state.locked_tiles        = set(level_def.get("locked", set()))
+    _state.unlocked_tiles      = set(level_def["unlocked"]) if "unlocked" in level_def else None
     _state.available_buildings = list(level_def.get("available", []))
+    _state.gate_limits         = dict(level_def.get("gate_limits", {}))
 
     from ..engine.gate_registry import get_gate, Category
     from .entities import ccw_dir, DIR_VECTORS
@@ -622,7 +647,17 @@ def load_level(level_def, level_index):
         tile.role = 1
         if len(data) > 2 and data[2] is not None:
             if tile.building == OUTPUT_SINK:
-                tile.sink_target = data[2]
+                target = data[2]
+                if isinstance(target, tuple):
+                    tile.sink_target, tile.sink_phase = target
+                else:
+                    tile.sink_target = target
+            elif tile.building == GENERATOR:
+                spawn = data[2]
+                if isinstance(spawn, tuple):
+                    tile.spawn_state, tile.spawn_phase = spawn
+                else:
+                    tile.spawn_state = spawn
 
     # Auto-create companions for pre-placed multi-qubit gates
     for (x, y), data in level_def.get("pre_placed", {}).items():
@@ -662,11 +697,7 @@ def check_win_condition() -> bool:
                     if t.building == "measurement")
         return total >= win_count
 
-    sinks = []
-    for (x, y) in _state.locked_tiles:
-        tile = _state.get_tile(x, y)
-        if tile.building == OUTPUT_SINK:
-            sinks.append(tile)
+    sinks = [tile for tile in _state.world.values() if tile.building == OUTPUT_SINK]
     if not sinks:
         return False
     return all(

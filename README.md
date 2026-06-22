@@ -8,8 +8,8 @@ Superposed models five core ideas from quantum computing, mapped to a visual fac
 
 - **Basis states** — qubits flow as coloured particles: red for `|0>`, blue for `|1>`.
 - **Superposition** — the Hadamard gate puts a qubit into superposition (purple), meaning it is both `|0>` and `|1>` until observed.
-- **Phase flip** — the Z gate flips the internal phase of a superposed qubit, invisible until it interferes with another gate.
-- **Interference** — H then Z then H produces a deterministic `|1>`, demonstrating constructive/destructive interference via the `phase_flipped` flag.
+- **Phase** — qubits show their phase with an arrow; Z flips that phase and H can turn the difference into a visible state change.
+- **Interference** — H then Z then H produces a deterministic `|1>`, demonstrating constructive/destructive interference via phase angle.
 - **Entanglement** — the CNOT gate entangles two qubits into a Bell pair. Measuring one instantly collapses the other to the same state.
 
 ## Getting Started
@@ -47,7 +47,7 @@ superposed
 
 The game has two modes accessible from the main menu:
 
-**Campaign** — a chapter-based progression with 34 tutorial levels across 14 chapters. The campaign introduces one concept at a time, from basic belt transport through entanglement, noise, error detection, and Deutsch's algorithm. Each level locks certain tiles and restricts which gates you can use, with a target number of qubits to deliver to the output sink.
+**Campaign** — a chapter-based progression through 11 chapters and 26 levels. The campaign introduces one concept at a time, from basic belt transport through entanglement, quantum noise, the no-cloning theorem, and algorithm-building challenges (Deutsch, Grover, QFT, teleportation). Each level locks certain tiles and restricts which gates you can use, with a target number of qubits to deliver to the output sink.
 
 **Sandbox** — an open canvas with every gate unlocked and no win condition, for free experimentation.
 
@@ -60,11 +60,12 @@ The game has two modes accessible from the main menu:
 | 1-9 | Select gate from toolbar |
 | Left click | Place selected gate |
 | Left-click + drag (belt) | Lay a continuous line of belts |
-| Right click | Remove gate |
+| Right click / drag | Remove gates |
 | R | Rotate selected gate |
-| P | Pause simulation |
-| N | Single step (while paused) |
+| Space | Pause simulation |
 | C | Clear all non-locked tiles |
+| F | Show level briefing |
+| X | Recenter camera |
 | Tab | Return to menu |
 | Middle-click sink | Cycle sink target state |
 
@@ -78,17 +79,20 @@ The game has two modes accessible from the main menu:
 | **Hadamard (H)** | Single-qubit | `\|0>` or `\|1>` becomes superposition; superposition collapses back based on phase |
 | **X (NOT)** | Single-qubit | Flips `\|0>` to `\|1>` and vice versa; superposition unchanged |
 | **Y (Pauli-Y)** | Single-qubit | Flips `\|0>` and `\|1>`, and toggles phase on superposition |
-| **Z (Phase)** | Single-qubit | Flips the phase of a superposed qubit; no visible effect on basis states |
+| **Z (Phase)** | Single-qubit | Flips qubit phase; the phase arrow makes this visible before interference |
 | **CNOT** | Two-qubit | Two-cell gate: control dot lane plus target gate lane. If control is `\|1>`, flips target. If superposed, entangles both |
 | **CZ** | Two-qubit | Controlled phase flip; useful for phase kickback and interference |
 | **SWAP** | Two-qubit | Exchanges the states of two qubits |
+| **Toffoli** | Three-qubit | Controlled-controlled NOT: flips the target only when both controls are `\|1>` |
 | **Measurement** | Consumer | Collapses superposition to `\|0>` or `\|1>` (50/50). Shows a histogram of results |
+| **Noise** | Router | Randomizes qubit state and ejects in a random direction (never player-placed; locked obstacle) |
 | **Splitter** | Router | Measures then routes: `\|0>` goes straight, `\|1>` turns clockwise |
 
 ## Project Structure
 
 ```
 Superposed/
+├── build-executable.md     # Standalone build notes
 ├── pyproject.toml          # Package metadata, entry point
 ├── run.py                  # Quick launcher
 ├── src/                    # Main package
@@ -106,18 +110,18 @@ Superposed/
 │   ├── ui/                 # Rendering and input
 │   │   ├── rendering.py    # Grid, toolbar, HUD, qubit drawing
 │   │   ├── sprites.py      # Sprite generation and caching
-│   │   ├── menu.py         # Main menu, level select, briefing, win screen
+│   │   ├── menu.py         # Main menu, campaign select, briefing overlay, win screen
 │   │   └── input_handler.py    # Keyboard, mouse, zoom
 │   └── content/            # Game content
-│       └── levels.py       # 34 tutorial level definitions across 14 chapters
+│       └── levels.py       # Campaign level definitions
 ├── assets/gates_sprites/   # Custom gate PNGs
 ├── tests/
-│   └── test_gates.py       # 40 unit tests
+│   └── test_gates.py       # Unit tests
 ├── tools/
 │   └── sprite_editor.html  # Visual sprite editor
 └── docs/
-    ├── Quantum Games.pdf   # Reference material
-    └── ARCHITECTURE.md     # Detailed architecture documentation
+    ├── ARCHITECTURE.md
+    └── superposed_architecture.svg
 ```
 
 For a deeper dive into the design, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
@@ -128,14 +132,9 @@ The gate registry pattern means adding a gate requires only one new file. Create
 
 ```python
 from ..gate_registry import register, GateDef, Category
-from ...core.entities import QubitState
 
 def _transform(item):
     # Your gate logic here
-    pass
-
-def _sprite(direction, size):
-    # Return a pygame.Surface
     pass
 
 register(GateDef(
@@ -145,7 +144,6 @@ register(GateDef(
     color=(100, 200, 150),
     category=Category.SINGLE,
     transform=_transform,
-    sprite_fn=_sprite,
     order=25,
 ))
 ```
@@ -158,7 +156,7 @@ The gate will automatically appear in the toolbar, be handled by the simulation,
 python -m pytest tests/ -v
 ```
 
-All 40 tests cover gate transforms, entanglement mechanics, measurement statistics, splitter routing, interference, sink counting, circuit export, and error handling.
+The test suite covers gate transforms, entanglement mechanics, measurement statistics, splitter routing, interference, sink counting, circuit export, and error handling.
 
 ## License
 

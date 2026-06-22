@@ -18,7 +18,7 @@ def _transform(control_a, control_b, target):
 register(GateDef(
     id="toffoli",
     name="Toffoli",
-    tip="Flips target only when both controls are |1>",
+    tip="Flips target only when both controls are |1⟩",
     color=(255, 210, 90),
     category=Category.TWO_QUBIT,
     transform=_transform,

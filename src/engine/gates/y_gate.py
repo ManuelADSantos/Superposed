@@ -1,4 +1,4 @@
-"""Y gate — Pauli Y: flips |0>↔|1> and flips phase on superposition."""
+"""Y gate — Pauli Y: flips |0⟩↔|1⟩ and flips phase on superposition."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ def _transform(item):
 register(GateDef(
     id="y_gate",
     name="Y Gate",
-    tip="Flips |0>↔|1> + phase flip",
+    tip="Flips |0⟩↔|1⟩ + phase flip",
     color=(100, 220, 100),
     category=Category.SINGLE,
     transform=_transform,

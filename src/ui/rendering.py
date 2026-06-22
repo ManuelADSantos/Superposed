@@ -37,13 +37,20 @@ def toolbar_button_rects(available=None):
         yield pygame.Rect(bx, by, btn_size, btn_size), gid
 
 
+_STATE_PHASE = {
+    QubitState.PLUS: 0.0, QubitState.MINUS: math.pi,
+    QubitState.PLUS_I: math.pi / 2, QubitState.MINUS_I: -math.pi / 2,
+}
+
+
 def _draw_sink_status(surface, rect, tile):
     lev = world_module.current_level_def
     h = rect.height
     if tile.sink_target is not None:
         sz = max(4, int(h * 0.38))
+        phase = tile.sink_phase if tile.sink_phase is not None else _STATE_PHASE.get(tile.sink_target, 0.0)
         sprite = get_qubit_sprite(
-            tile.sink_target, sz, phase_angle=tile.sink_phase or 0.0)
+            tile.sink_target, sz, phase_angle=phase)
         surface.blit(sprite,
                      sprite.get_rect(center=(rect.centerx, rect.top + int(h * 0.4))))
     if lev is None:

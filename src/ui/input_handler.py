@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import pygame
 from ..core import config
 from ..core.config import TILE_SIZE, TOOLBAR_HEIGHT
@@ -14,6 +15,19 @@ from .rendering import (
 )
 from ..core import world as W
 from ..core import audio
+
+
+_screenshot_counter = 0
+
+
+def _save_screenshot():
+    global _screenshot_counter
+    _screenshot_counter += 1
+    d = os.path.join(os.path.dirname(__file__), '..', '..', 'screenshots')
+    os.makedirs(d, exist_ok=True)
+    path = os.path.join(d, f'screenshot_{_screenshot_counter}.png')
+    pygame.image.save(pygame.display.get_surface(), path)
+    show_toast(f"Saved screenshot_{_screenshot_counter}.png")
 
 
 def _toolbar_hit(mx, my):
@@ -187,6 +201,8 @@ def handle_input(dt, selected_building, selected_rotation, paused, events=None):
                         del W.world[pos]
             elif event.key == pygame.K_f:
                 toggle_briefing()
+            elif event.key == pygame.K_p:
+                _save_screenshot()
             elif event.key == pygame.K_x:
                 ldef = W._state.current_level_def
                 cx, cy = (ldef or {}).get("camera", (0, 0))

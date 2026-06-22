@@ -76,6 +76,9 @@ def main():
                 running = False
             elif ev.type == pygame.KEYDOWN and ev.key == pygame.K_m:
                 audio.toggle_mute()
+            elif ev.type == pygame.KEYDOWN and ev.key == pygame.K_p:
+                from .ui.input_handler import _save_screenshot
+                _save_screenshot()
             elif ev.type == pygame.VIDEORESIZE:
                 config.WIDTH, config.HEIGHT = ev.w, ev.h
                 screen = pygame.display.set_mode(

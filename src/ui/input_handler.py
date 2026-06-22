@@ -201,8 +201,6 @@ def handle_input(dt, selected_building, selected_rotation, paused, events=None):
                         del W.world[pos]
             elif event.key == pygame.K_f:
                 toggle_briefing()
-            elif event.key == pygame.K_p:
-                _save_screenshot()
             elif event.key == pygame.K_x:
                 ldef = W._state.current_level_def
                 cx, cy = (ldef or {}).get("camera", (0, 0))

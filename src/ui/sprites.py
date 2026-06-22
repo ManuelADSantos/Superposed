@@ -55,6 +55,7 @@ def _dir_mark(surface, d, rect, color):
 
 
 _GATES_SPRITE_DIR = os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'gates_sprites')
+_HUD_SPRITE_DIR = os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'hud_sprites')
 _ROTATION_ANGLE = {
     Direction.RIGHT: 0, Direction.UP: 90,
     Direction.LEFT: 180, Direction.DOWN: -90,
@@ -215,6 +216,19 @@ def get_building_sprite(building_id, direction, size, ctrl=False, role=1):
     return _generic_sprite(building_id, direction, size)
 
 
+@lru_cache(maxsize=128)
+def get_hud_sprite(building_id, size):
+    path = os.path.join(_HUD_SPRITE_DIR, f"{building_id}.png")
+    if os.path.isfile(path):
+        try:
+            img = pygame.image.load(path).convert_alpha()
+            return pygame.transform.smoothscale(img, (size, size))
+        except Exception:
+            pass
+    return get_building_sprite(building_id, Direction.RIGHT, size)
+
+
 def clear_sprite_caches():
     get_building_sprite.cache_clear()
     get_qubit_sprite.cache_clear()
+    get_hud_sprite.cache_clear()

@@ -16,7 +16,7 @@ from ..core.config import (
 from ..core.entities import (
     QubitItem, QubitState, Direction, DIR_VECTORS, ccw_dir,
 )
-from .sprites import get_building_sprite, get_qubit_sprite
+from .sprites import get_building_sprite, get_qubit_sprite, get_hud_sprite
 from ..core.world import get_tile, world_to_screen, screen_to_world, count_placed, is_locked
 from ..content.levels import CHAPTERS
 from ..engine.gate_registry import (
@@ -231,7 +231,7 @@ def draw_toolbar(surface, selected_building, selected_rotation, paused):
             pygame.draw.rect(surface, DARK_GRAY, rect, 1, border_radius=8)
 
         btn_size = rect.width
-        mini = get_building_sprite(gid, Direction.RIGHT, btn_size - 8)
+        mini = get_hud_sprite(gid, btn_size - 8)
         if mini:
             surface.blit(mini, mini.get_rect(center=rect.center))
 

@@ -47,7 +47,7 @@ superposed
 
 The game has two modes accessible from the main menu:
 
-**Campaign** — a chapter-based progression. The campaign introduces one concept at a time, from basic belt transport through entanglement, noise, error detection, Deutsch's algorithm, and algorithm-building challenges. Each level locks certain tiles and restricts which gates you can use, with a target number of qubits to deliver to the output sink.
+**Campaign** — a chapter-based progression through 11 chapters and 26 levels. The campaign introduces one concept at a time, from basic belt transport through entanglement, quantum noise, the no-cloning theorem, and algorithm-building challenges (Deutsch, Grover, QFT, teleportation). Each level locks certain tiles and restricts which gates you can use, with a target number of qubits to deliver to the output sink.
 
 **Sandbox** — an open canvas with every gate unlocked and no win condition, for free experimentation.
 
@@ -85,6 +85,7 @@ The game has two modes accessible from the main menu:
 | **SWAP** | Two-qubit | Exchanges the states of two qubits |
 | **Toffoli** | Three-qubit | Controlled-controlled NOT: flips the target only when both controls are `\|1>` |
 | **Measurement** | Consumer | Collapses superposition to `\|0>` or `\|1>` (50/50). Shows a histogram of results |
+| **Noise** | Router | Randomizes qubit state and ejects in a random direction (never player-placed; locked obstacle) |
 | **Splitter** | Router | Measures then routes: `\|0>` goes straight, `\|1>` turns clockwise |
 
 ## Project Structure

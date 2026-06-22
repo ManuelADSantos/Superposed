@@ -15,7 +15,7 @@ Superposed is a single-threaded pygame application structured as a proper Python
 
 The dependency flow is strictly top-down: `main.py` imports from all four subpackages, `engine/` and `ui/` import from `core/`, and `content/` imports entity types from `core/` and gate IDs from `engine/`. There are no circular dependencies.
 
-The current campaign is organized into 15 chapters and 37 levels. Chapter concepts are shown on the level list, and starting a level loads play immediately with the briefing overlay visible.
+The current campaign is organized into 11 chapters and 26 levels. Chapter concepts are shown on the level list, and starting a level loads play immediately with the briefing overlay visible.
 
 ## Entry Points
 
@@ -116,13 +116,13 @@ Each gate file follows the same pattern: define a `_transform` function, then ca
 - **measurement.py** — Consumer gate. Collapses superposition to `|0>` or `|1>` with 50/50 probability. Collapses entangled partners to the same state. Records results in a tile-level histogram (capped at 20 entries). Includes an overlay function that draws the histogram directly on the tile.
 - **splitter.py** — Router gate. Implicitly measures the qubit, then routes `|0>` straight ahead and `|1>` clockwise. Used to separate qubit states spatially.
 - **swap.py** — Two-qubit gate that exchanges two qubit states.
-- **noise.py** — Randomly applies an X error.
+- **noise.py** — Router gate. Randomizes the qubit's state to one of six basis states ($\ket{0}$, $\ket{1}$, $\ket{+}$, $\ket{-}$, $\ket{+i}$, $\ket{-i}$) and ejects it in a random direction excluding the arrival direction. Never player-placed; always a locked obstacle. Tracks arrival direction via `item._arrival_dir`.
 
 ## UI Subpackage
 
 ### rendering.py
 
-Draws the grid, buildings, qubits, toolbar, HUD, level progress, and ghost previews. Two-cell gates also draw a connecting line between the primary tile and its control-dot companion (`_draw_peer_link`). Key functions:
+Draws the grid, buildings, qubits, toolbar, HUD, level progress, and ghost previews. Key functions:
 
 - `draw_grid()` — iterates visible tiles and blits cached building sprites with directional rotation. Draws qubit particles on top with glow effects.
 - `draw_qubit_item()` — standalone function that renders a qubit with state colour, entanglement halo, and fade-out animation. Extracted to its own function to avoid circular imports.
@@ -149,13 +149,13 @@ Implements the menu flow as draw/handle function pairs:
 
 ### input_handler.py
 
-Translates pygame events into game actions. Returns an updated `(run_ok, selected_building, selected_rotation, paused, step_requested, back_to_menu)` tuple each frame. Handles camera panning (WASD), recentering (X), zoom (scroll wheel), building placement (left click), removal (right click), rotation (R), briefing toggle (F), and toolbar selection (number keys or clicking toolbar buttons). Placing a two-qubit gate auto-creates its control-dot companion one cell counter-clockwise; deleting either half removes both. Dragging with the belt selected lays a continuous run of belts that follow the cursor.
+Translates pygame events into game actions. Returns an updated `(run_ok, selected_building, selected_rotation, paused, back_to_menu)` tuple each frame. Handles camera panning (WASD), recentering (X), zoom (scroll wheel), building placement (left click), removal (right click), rotation (R), briefing toggle (F), and toolbar selection (number keys or clicking toolbar buttons). Placing a two-qubit gate auto-creates its control-dot companion one cell counter-clockwise; deleting either half removes both. Dragging with the belt selected lays a continuous run of belts that follow the cursor.
 
 ## Content Subpackage
 
 ### levels.py
 
-Thirty-seven tutorial levels across 15 chapters, flattened into `ALL_LEVELS` from the per-chapter lists in `CHAPTERS`. Each level is a dictionary with:
+Twenty-six tutorial levels across 11 chapters, flattened into `ALL_LEVELS` from the per-chapter lists in `CHAPTERS`. Each level is a dictionary with:
 
 - `name`, `description`, `briefing` — text shown to the player.
 - `pre_placed` — dict mapping `(x, y)` to a `(building_id, direction, param)` tuple for tiles the level starts with. For sinks, `param` is the desired output state or `(state, phase)`. For generators, `param` is the spawn state or `(state, phase)`. Companions for two-qubit gates are generated automatically at load time.
@@ -172,17 +172,13 @@ The chapters progress through the concepts in order:
 2. **Superposition** — the H gate and purple `|+>` particles.
 3. **Measurement** — collapse to a `|0>`/`|1>` histogram.
 4. **Phase & Interference** — Z gate; H–Z–H gives deterministic `|1>`.
-5. **Entanglement** — CNOT creates correlated Bell pairs.
-6. **Multi-Qubit Ops** — CZ and SWAP.
-7. **Interference Patterns** — combining phase and superposition.
-8. **Quantum Circuits** — multi-gate layouts and the Splitter router.
-9. **Quantum Noise** — the noise gate perturbs qubits.
-10. **Error Detection** — spotting and correcting corrupted qubits.
-11. **Deutsch's Problem** — constant and balanced functions built from basic gates.
-12. **Quantum Cloning** — CNOT copies known basis states; no-cloning limits unknown states.
-13. **Grand Challenge** — combined multi-concept puzzles.
-14. **Quantum Mastery** — capstone levels.
-15. **Algorithms** — QFT, Grover, teleportation, and Shor-inspired circuits built from smaller gates.
+5. **Entanglement** — CNOT creates correlated Bell pairs. Entangled qubits display a gold ring, show `|?>` on hover, and their Bloch sphere vector sits at the origin (physically correct for the maximally mixed reduced state).
+6. **Multi-Qubit Ops** — CZ phase kickback and SWAP.
+7. **Quantum Circuits** — entanglement chains across multiple qubits.
+8. **Quantum Noise** — the noise gate randomizes state and exit direction.
+9. **Noise Management** — probabilistic recovery using splitters and filters.
+10. **Quantum Cloning** — CNOT copies known basis states; no-cloning limits unknown states.
+11. **Algorithms** — Deutsch's classifier, QFT structure, Grover's search, and teleportation built from smaller gates.
 
 The full chapter/level data lives in `CHAPTERS` in `levels.py`; this list is the high-level map.
 
@@ -210,9 +206,9 @@ The `WorldState` class is the canonical state container, but module-level variab
 
 ## Test Coverage
 
-The test suite (`tests/test_gates.py`) covers:
+The test suite (`tests/test_gates.py`, 69 tests) covers:
 
-- Core gate transforms (X, H, Z, CNOT, CZ, SWAP, Toffoli, Measurement, Splitter) with basis states and superposition.
+- Core gate transforms (X, H, Y, Z, CNOT, CZ, SWAP, Toffoli, Measurement, Splitter, Noise) with basis states and superposition.
 - Double-application identity checks (X-X, H-H, Z-Z).
 - Interference sequence (H-Z-H = `|1>`).
 - Entanglement creation, partner lookup, breaking, and merging with a third qubit.
@@ -221,7 +217,7 @@ The test suite (`tests/test_gates.py`) covers:
 - Sink counting for superposition targets.
 - Two-cell two-qubit gate export to Qiskit.
 - Three-cell Toffoli export to Qiskit.
-- Removed gates and algorithm-as-level constraints.
+- Noise gate randomization (state and direction).
 - Error handling (`_safe_transform` catches exceptions without crashing).
 - Measurement histogram capping at 20 entries.
 

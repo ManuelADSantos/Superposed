@@ -526,14 +526,14 @@ CH6_L2 = {
 # ---------------------------------------------------------------------------
 
 _CH7_CONCEPT = (
-    "Real quantum circuits combine single-qubit and two-qubit gates\n"
-    "into larger patterns with surprising properties.\n\n"
-    "A key equivalence: sandwiching CZ between two Hadamard gates\n"
-    "on the target makes it behave exactly like CNOT.\n"
-    "This is because H converts phase flips into bit flips.\n\n"
-    "Understanding circuit equivalences is the foundation of\n"
-    "quantum algorithm design — there are always multiple ways\n"
-    "to build the same computation."
+    "Entanglement doesn't stop at two qubits.\n\n"
+    "By chaining CNOT gates, you can propagate entanglement\n"
+    "across many qubit streams. When one partner is measured,\n"
+    "ALL entangled partners collapse together.\n\n"
+    "This is how real quantum circuits scale: small two-qubit\n"
+    "interactions build up into large correlated systems.\n"
+    "The key constraint is resources — you often have fewer\n"
+    "gates than qubits, forcing creative circuit design."
 )
 
 CH7_L2 = {
@@ -768,7 +768,7 @@ CH10_L2 = {
 
 
 # ---------------------------------------------------------------------------
-# Chapter 12: Algorithms
+# Chapter 11: Algorithms
 # ---------------------------------------------------------------------------
 
 _CH12_CONCEPT = (
@@ -952,7 +952,7 @@ CHAPTERS = [
     },
     {
         "name": "Quantum Circuits",
-        "subtitle": "Gate equivalences and entanglement chains",
+        "subtitle": "Scaling entanglement across qubits",
         "concept": _CH7_CONCEPT,
         "color": (180, 255, 180),
         "levels": [CH7_L2],
@@ -978,7 +978,7 @@ CHAPTERS = [
         "color": (100, 200, 140),
         "levels": [CH10_L2],
     },
-{
+    {
         "name": "Algorithms",
         "subtitle": "Deutsch, QFT, Grover, and teleportation",
         "concept": _CH12_CONCEPT,

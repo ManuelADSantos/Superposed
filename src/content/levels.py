@@ -663,6 +663,7 @@ CH8_L1 = {
     },
     "locked": {(-1, 2), (-1, 3), (4, 3), (8, 2), (8, 3)},
     "available": [BELT, H, X],
+    "gate_limits": {X: 1},
     "win_count": 5,
     "camera": (4, 3),
 }

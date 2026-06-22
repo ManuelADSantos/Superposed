@@ -79,18 +79,13 @@ def play_music():
         _music_ch = _sounds['music'].play(loops=-1)
 
 
-def stop_music():
-    global _music_ch
-    if _music_ch:
-        _music_ch.stop()
-        _music_ch = None
-
-
 def toggle_mute():
-    global _muted
+    global _muted, _music_ch
     _muted = not _muted
     if _muted:
-        stop_music()
+        if _music_ch:
+            _music_ch.stop()
+            _music_ch = None
     else:
         play_music()
     return _muted

@@ -606,7 +606,7 @@ class TestInputHandler(unittest.TestCase):
             reset_world()
             get_tile(0, 0).building = BELT
             get_tile(1, 0).building = BELT
-            handle_input(0, BELT, Direction.RIGHT, False, False, [
+            handle_input(0, BELT, Direction.RIGHT, False, events=[
                 pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=3, pos=(5, 5)),
                 pygame.event.Event(pygame.MOUSEMOTION, pos=(config.TILE_SIZE + 5, 5)),
                 pygame.event.Event(pygame.MOUSEBUTTONUP, button=3, pos=(config.TILE_SIZE + 5, 5)),
@@ -636,7 +636,7 @@ class TestInputHandler(unittest.TestCase):
             W._state.camera_y = 999
             rendering.reset_briefing()
 
-            result = handle_input(0, BELT, Direction.RIGHT, False, False, [
+            result = handle_input(0, BELT, Direction.RIGHT, False, events=[
                 pygame.event.Event(pygame.KEYDOWN, key=pygame.K_f),
                 pygame.event.Event(pygame.KEYDOWN, key=pygame.K_x),
             ])

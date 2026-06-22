@@ -77,10 +77,6 @@ def _draw_locked_indicator(surface, rect):
     surface.blit(s, rect.topleft)
 
 
-def _draw_peer_link(surface, rect, tile, size):
-    pass
-
-
 def draw_grid(surface):
     size = TILE_SIZE * world_module._state.zoom
     playable_h = config.HEIGHT - TOOLBAR_HEIGHT
@@ -108,8 +104,6 @@ def draw_grid(surface):
                 if sprite:
                     surface.blit(sprite, sprite.get_rect(center=rect.center))
 
-                _draw_peer_link(surface, rect, tile, int(size))
-
                 gate = get_gate(tile.building)
                 if gate and gate.overlay_fn:
                     gate.overlay_fn(surface, rect, tile)
@@ -124,7 +118,7 @@ def draw_grid(surface):
                 _draw_item_on_tile(surface, tile, tile.item, sx, sy, size)
 
 
-def draw_qubit_item(surface, item: QubitItem, x, y, size):
+def _draw_qubit_item(surface, item: QubitItem, x, y, size):
     if item.is_disappearing:
         scale = max(0.18, item.disappear_time / 0.3)
     else:
@@ -146,7 +140,7 @@ def _draw_item_on_tile(surface, tile, item, sx, sy, size):
         px = sx + size / 2 + dx * item.progress * size * 0.4
         py = sy + size / 2 + dy * item.progress * size * 0.4
     q = max(20, int(size * 0.45))
-    draw_qubit_item(surface, item, px - q // 2, py - q // 2, q)
+    _draw_qubit_item(surface, item, px - q // 2, py - q // 2, q)
 
 
 def draw_ghost(surface, selected_building, selected_rotation, mouse_pos):

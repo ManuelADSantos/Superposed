@@ -52,18 +52,16 @@ def main():
     selected_building = BELT
     selected_rotation = Direction.RIGHT
     paused = False
-    step_requested = False
     show_briefing = False
     running = True
 
     def _load_and_start(idx):
-        nonlocal level_index, selected_building, paused, step_requested, show_briefing
+        nonlocal level_index, selected_building, paused, show_briefing
         level_index = idx
         load_level(ALL_LEVELS[level_index], level_index)
         reset_briefing()
         selected_building = BELT
         paused = False
-        step_requested = False
         avail = W.available_buildings
         if avail and selected_building not in avail:
             selected_building = avail[0]
@@ -156,10 +154,10 @@ def main():
                         show_briefing = False
             else:
                 result = handle_input(
-                    dt, selected_building, selected_rotation, paused, step_requested,
+                    dt, selected_building, selected_rotation, paused,
                     events=events,
                 )
-                run_ok, selected_building, selected_rotation, paused, step_requested, back_to_menu = result
+                run_ok, selected_building, selected_rotation, paused, back_to_menu = result
 
                 if not run_ok:
                     state = GameState.CHAPTER_SELECT if state == GameState.LEVEL_PLAY else GameState.MAIN_MENU
@@ -171,9 +169,8 @@ def main():
                     state = GameState.CHAPTER_SELECT if state == GameState.LEVEL_PLAY else GameState.MAIN_MENU
                     continue
 
-                if not paused or step_requested:
+                if not paused:
                     update_items(dt * config.SPEED_MULT)
-                    step_requested = False
 
                 if state == GameState.LEVEL_PLAY and check_win_condition():
                     completed_levels.add(level_index)

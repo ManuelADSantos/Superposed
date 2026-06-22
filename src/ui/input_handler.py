@@ -133,8 +133,7 @@ _erase_active = False
 _erase_last_cell = None
 
 
-def handle_input(dt, selected_building, selected_rotation, paused, step_requested,
-                 events=None):
+def handle_input(dt, selected_building, selected_rotation, paused, events=None):
     global _drag_active, _drag_last_cell, _erase_active, _erase_last_cell
 
     back_to_menu = False
@@ -162,11 +161,11 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
 
     for event in events:
         if event.type == pygame.QUIT:
-            return False, selected_building, selected_rotation, paused, step_requested, False
+            return False, selected_building, selected_rotation, paused, False
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                return True, selected_building, selected_rotation, paused, step_requested, True
+                return True, selected_building, selected_rotation, paused, True
 
             if event.key in key_map:
                 selected_building = key_map[event.key]
@@ -194,9 +193,6 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
                 W._state.camera_x = cx * TILE_SIZE - config.WIDTH / 2
                 W._state.camera_y = cy * TILE_SIZE - (config.HEIGHT - TOOLBAR_HEIGHT) / 2
                 W._state.zoom = 1.0
-            elif event.key == pygame.K_TAB:
-                back_to_menu = True
-
         if event.type == pygame.MOUSEWHEEL:
             mx, my = pygame.mouse.get_pos()
             old_zoom = W._state.zoom
@@ -319,4 +315,4 @@ def handle_input(dt, selected_building, selected_rotation, paused, step_requeste
     if active and selected_building not in active:
         selected_building = active[0]
 
-    return True, selected_building, selected_rotation, paused, step_requested, back_to_menu
+    return True, selected_building, selected_rotation, paused, back_to_menu

@@ -121,7 +121,6 @@ class Tile:
         self.building = "empty"
         self.direction = Direction.RIGHT
         self.item: QubitItem | None = None
-        self.spawn_timer = 0.0
         self.spawn_state: QubitState | None = None
         self.spawn_phase: float | None = None
         self.process_timer = 0.0

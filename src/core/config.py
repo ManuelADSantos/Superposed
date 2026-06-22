@@ -3,8 +3,13 @@
 from __future__ import annotations
 
 import os
+import sys
 
-_FONTS_DIR = os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'fonts')
+# ponytail: PyInstaller sets sys._MEIPASS; normal runs use __file__-relative
+_BASE = getattr(sys, '_MEIPASS', os.path.join(os.path.dirname(__file__), '..', '..'))
+ASSETS_DIR = os.path.join(_BASE, 'assets')
+
+_FONTS_DIR = os.path.join(ASSETS_DIR, 'fonts')
 FONT_PATH = next((os.path.join(_FONTS_DIR, f) for f in os.listdir(_FONTS_DIR)
                    if f.endswith(('.ttf', '.otf'))), None)
 

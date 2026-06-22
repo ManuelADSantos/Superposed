@@ -54,8 +54,8 @@ def _dir_mark(surface, d, rect, color):
 
 
 
-_GATES_SPRITE_DIR = os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'gates_sprites')
-_HUD_SPRITE_DIR = os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'hud_sprites')
+_GATES_SPRITE_DIR = os.path.join(config.ASSETS_DIR, 'gates_sprites')
+_HUD_SPRITE_DIR = os.path.join(config.ASSETS_DIR, 'hud_sprites')
 _ROTATION_ANGLE = {
     Direction.RIGHT: 0, Direction.UP: 90,
     Direction.LEFT: 180, Direction.DOWN: -90,

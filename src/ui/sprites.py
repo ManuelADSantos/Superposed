@@ -119,8 +119,8 @@ def _draw_qubit(state, size, disappearing=False, progress=1.0, entangled=False,
     pygame.draw.circle(s, _a(base, 255), (int(cx), int(cy)), radius)
     _draw_bloch(s, cx, cy, radius, bloch)
     if entangled:
-        pygame.draw.circle(s, GOLD, (int(cx), int(cy)), radius + 2, 2)
-        pygame.draw.circle(s, _a(GOLD, 100), (int(cx), int(cy)), radius + 5, 1)
+        pygame.draw.circle(s, _a(GOLD, 80), (int(cx), int(cy)), radius + 6, 3)
+        pygame.draw.circle(s, GOLD, (int(cx), int(cy)), radius + 3, 3)
     pygame.draw.circle(s, _a(WHITE, 130 if state in (QubitState.ZERO, QubitState.ONE) else 220),
                        (int(cx), int(cy)), radius + 1, 2)
     if state not in (QubitState.ZERO, QubitState.ONE):

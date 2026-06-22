@@ -488,7 +488,7 @@ def _draw_qubit_hover(surface):
     if not tile.item or tile.item.is_disappearing:
         return
     item = tile.item
-    label = _HOVER_LABELS.get(item.state, "?")
+    label = "|?⟩" if item.entangle_group is not None else _HOVER_LABELS.get(item.state, "?")
     font = config.game_font(14)
     txt = font.render(label, True, WHITE)
     pad = 8

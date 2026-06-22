@@ -105,6 +105,8 @@ class QubitItem:
 
     @property
     def bloch(self) -> tuple[float, float, float]:
+        if self.entangle_group is not None:
+            return (0.0, 0.0, 0.0)
         norm = abs(self.alpha) ** 2 + abs(self.beta) ** 2
         if norm <= 1e-20:
             return (0.0, 0.0, 1.0)

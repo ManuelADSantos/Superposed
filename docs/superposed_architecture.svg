@@ -146,7 +146,7 @@
 
   <rect x="35" y="590" width="200" height="42" rx="7" fill="#fdf2f8" stroke="#f9a8d4" stroke-width="1" style="fill:rgb(253, 242, 248);stroke:rgb(249, 168, 212);color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:system-ui, -apple-system, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
   <text x="135" y="608" text-anchor="middle" font-size="12" font-weight="600" fill="#9d174d" style="fill:rgb(157, 23, 77);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:system-ui, -apple-system, sans-serif;font-size:12px;font-weight:600;text-anchor:middle;dominant-baseline:auto">levels.py</text>
-  <text x="135" y="622" text-anchor="middle" font-size="9" fill="#ec4899" style="fill:rgb(236, 72, 153);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:system-ui, -apple-system, sans-serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto">37 tutorial levels</text>
+  <text x="135" y="622" text-anchor="middle" font-size="9" fill="#ec4899" style="fill:rgb(236, 72, 153);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:system-ui, -apple-system, sans-serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto">26 tutorial levels</text>
   <text x="135" y="635" text-anchor="middle" font-size="8" fill="#ec4899" style="fill:rgb(236, 72, 153);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:system-ui, -apple-system, sans-serif;font-size:8px;font-weight:400;text-anchor:middle;dominant-baseline:auto">Foundations → Algorithms</text>
 
   <!-- ═══ DEPENDENCY ARROWS ═══ -->
@@ -219,5 +219,5 @@
   <text x="667" y="856" text-anchor="middle" font-size="9" fill="#a16207" style="fill:rgb(161, 98, 7);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:system-ui, -apple-system, sans-serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto">H → Z → H = deterministic |1⟩</text>
 
   <!-- Stats footer -->
-  <text x="390" y="900" text-anchor="middle" font-size="11" fill="var(--text-color-tertiary, #888)" style="fill:rgb(136, 136, 136);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:system-ui, -apple-system, sans-serif;font-size:11px;font-weight:400;text-anchor:middle;dominant-baseline:auto">4 subpackages · 15 chapters · 37 tutorial levels</text>
+  <text x="390" y="900" text-anchor="middle" font-size="11" fill="var(--text-color-tertiary, #888)" style="fill:rgb(136, 136, 136);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:system-ui, -apple-system, sans-serif;font-size:11px;font-weight:400;text-anchor:middle;dominant-baseline:auto">4 subpackages · 11 chapters · 26 levels</text>
 </svg>

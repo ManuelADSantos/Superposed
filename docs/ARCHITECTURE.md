@@ -48,7 +48,7 @@ Defines the fundamental data types:
 
 **Direction** — enum with UP, RIGHT, DOWN, LEFT and helper functions for rotation (`cw_dir`, `ccw_dir`, `opposite_dir`) and delta conversion.
 
-**QubitState** — enum with ZERO, ONE, SUPERPOSITION. The `state_color()` function maps these to red, blue, and purple respectively.
+**QubitState** — enum with ZERO, ONE, PLUS, MINUS, PLUS_I, MINUS_I. Derived from the qubit's complex amplitudes via the `state` property. The `state_color()` function maps basis states to red/blue and all superposition states to purple.
 
 **QubitItem** — a qubit particle flowing through the factory. Tracks its amplitudes (`alpha`, `beta`), derived display state/phase, entanglement group, progress along the current tile, and disappearance animation state. Each instance gets a unique `uid` from a counter.
 

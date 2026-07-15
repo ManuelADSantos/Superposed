@@ -224,9 +224,9 @@ CH3_L1 = {
         "A purple (superposed) qubit becomes either red |0⟩\n"
         "or blue |1⟩ with equal probability — 50/50.\n"
         "You can never predict which.\n\n"
-        "Route qubits through H → Measurement.\n"
-        "The measurement gate absorbs the qubit and records\n"
-        "the result in its histogram.\n\n"
+        "Connect the generator to H, and H to the Measurement\n"
+        "gate using belts. The measurement gate absorbs the\n"
+        "qubit and records the result in its histogram.\n\n"
         "Collapse 10 qubits to win."
     ),
     "hint": "H → Measure: watch the histogram fill up with random results",

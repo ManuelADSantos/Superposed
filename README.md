@@ -51,7 +51,7 @@ superposed
 
 The game has two modes accessible from the main menu:
 
-**Campaign** — a chapter-based progression through 11 chapters and 26 levels. The campaign introduces one concept at a time, from basic belt transport through entanglement, quantum noise, the no-cloning theorem, and algorithm-building challenges (Deutsch, Grover, QFT, teleportation). Each level locks certain tiles and restricts which gates you can use, with a target number of qubits to deliver to the output sink.
+**Campaign** — a chapter-based progression through 11 chapters and 26 levels. The campaign introduces one concept at a time, from basic belt transport through entanglement, quantum noise, the no-cloning theorem, and algorithm-building challenges (Deutsch, Grover, QFT, teleportation). Each level constrains the puzzle three ways: locked pre-placed tiles that can't be changed, a gate palette with per-gate budgets (most levels give you exactly the gates the intended circuit needs), and — on most levels — a restricted build area where only highlighted cells accept placement. The few open-grid levels are the routing puzzles, where finding a path through free space is the challenge.
 
 **Sandbox** — an open canvas with every gate unlocked and no win condition, for free experimentation. Any circuit built in either mode can be exported as a runnable Qiskit Python script via the Export button.
 

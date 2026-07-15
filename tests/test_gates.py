@@ -683,6 +683,34 @@ class TestAlgorithmLevels(unittest.TestCase):
             self.assertFalse(ids & algorithm_ids)
 
 
+class TestLevelConstraints(unittest.TestCase):
+
+    def test_gate_limits_reference_available_gates(self):
+        from src.content.levels import ALL_LEVELS
+
+        for level in ALL_LEVELS:
+            available = set(level.get("available", []))
+            for gid, limit in level.get("gate_limits", {}).items():
+                self.assertIn(gid, available, f"{level['name']}: limit on unavailable gate {gid}")
+                self.assertGreater(limit, 0)
+
+    def test_whitelists_allow_generator_output(self):
+        from src.content.levels import ALL_LEVELS
+        from src.core.entities import DIR_VECTORS
+
+        for level in ALL_LEVELS:
+            wl = level.get("unlocked")
+            if wl is None:
+                continue
+            pre = set(level.get("pre_placed", {}))
+            for (x, y), data in level.get("pre_placed", {}).items():
+                if data[0] == "generator":
+                    dx, dy = DIR_VECTORS[data[1]]
+                    out = (x + dx, y + dy)
+                    self.assertTrue(out in wl or out in pre,
+                                    f"{level['name']}: generator at {(x, y)} outputs to unbuildable cell")
+
+
 class TestRemovedGates(unittest.TestCase):
 
     def test_removed_gates_stay_removed(self):

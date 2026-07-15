@@ -418,6 +418,28 @@ def reset_briefing():
     _show_briefing = False
 
 
+def _briefing_gate_strip(available):
+    """Render a row of gate sprites for the briefing overlay."""
+    gate_size = 48
+    gap = 12
+    gates = [g for g in available if g != "belt"]
+    if not gates:
+        return None, 0
+    strip_w = len(gates) * gate_size + (len(gates) - 1) * gap
+    strip = pygame.Surface((strip_w, gate_size + 20), pygame.SRCALPHA)
+    label_font = config.game_font(10)
+    for i, gid in enumerate(gates):
+        gdef = get_gate(gid)
+        if gdef is None:
+            continue
+        sprite = get_hud_sprite(gid, gate_size)
+        x = i * (gate_size + gap)
+        strip.blit(sprite, (x, 0))
+        label = label_font.render(gdef.name, True, LIGHT_GRAY)
+        strip.blit(label, label.get_rect(midtop=(x + gate_size // 2, gate_size + 2)))
+    return strip, gate_size + 20
+
+
 def draw_briefing_overlay(surface, hint="Press F to close", force=False):
     if not force and not _show_briefing:
         return
@@ -432,8 +454,16 @@ def draw_briefing_overlay(surface, hint="Press F to close", force=False):
     rendered = [font.render(line, True, WHITE) for line in lines]
     line_h = font.get_linesize()
     pad = 20
-    w = max(r.get_width() for r in rendered) + pad * 2
-    h = line_h * len(rendered) + pad * 2
+
+    available = lev.get("available", [])
+    gate_strip, strip_h = _briefing_gate_strip(available)
+    strip_section = (strip_h + pad) if gate_strip else 0
+
+    text_w = max(r.get_width() for r in rendered)
+    strip_w = gate_strip.get_width() if gate_strip else 0
+    w = max(text_w, strip_w) + pad * 2
+    h = line_h * len(rendered) + strip_section + pad * 2
+
     box = pygame.Rect(0, 0, w, h)
     box.center = (config.WIDTH // 2, (config.HEIGHT - TOOLBAR_HEIGHT) // 2)
     bg = pygame.Surface(box.size, pygame.SRCALPHA)
@@ -442,6 +472,12 @@ def draw_briefing_overlay(surface, hint="Press F to close", force=False):
     pygame.draw.rect(surface, CYAN, box, 1, border_radius=8)
     for i, r in enumerate(rendered):
         surface.blit(r, (box.left + pad, box.top + pad + i * line_h))
+
+    if gate_strip:
+        strip_y = box.top + pad + line_h * len(rendered) + pad // 2
+        strip_x = box.centerx - gate_strip.get_width() // 2
+        surface.blit(gate_strip, (strip_x, strip_y))
+
     hint_txt = font.render(hint, True, DARK_GRAY)
     surface.blit(hint_txt, hint_txt.get_rect(midtop=(box.centerx, box.bottom + 4)))
 

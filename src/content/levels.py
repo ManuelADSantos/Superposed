@@ -51,7 +51,7 @@ CH1_L1 = {
         "Your factory makes qubits — tiny quantum particles.\n"
         "The green machine spawns |0⟩ qubits (red dots).\n\n"
         "Goal: connect the generator to the output sink\n"
-        "using conveyor belts.\n\n"
+        "using conveyor belts. Build on the highlighted cells.\n\n"
         "Left-click to place.  R to rotate.  Right-click to remove."
     ),
     "hint": "Place belts to connect the generator to the sink →",
@@ -60,6 +60,7 @@ CH1_L1 = {
         (6, 2): (SINK, RIGHT, ZERO),
     },
     "locked": {(0, 2), (6, 2)},
+    "unlocked": {(x, 2) for x in range(1, 6)},
     "available": [BELT],
     "win_count": 5,
     "camera": (3, 2),
@@ -80,7 +81,9 @@ CH1_L2 = {
         (7, 2): (SINK, RIGHT, ONE),
     },
     "locked": {(0, 2), (7, 2)},
+    "unlocked": {(x, 2) for x in range(1, 7)},
     "available": [BELT, X],
+    "gate_limits": {X: 1},
     "win_count": 5,
     "camera": (3, 2),
 }
@@ -94,6 +97,7 @@ CH1_L3 = {
         "so just run a belt straight across.\n\n"
         "Bottom sink wants |1⟩ — you'll need to flip the qubit\n"
         "with an X gate somewhere along the path.\n\n"
+        "You only have ONE X gate — which lane needs it?\n"
         "Build both pipelines at the same time!"
     ),
     "hint": "Top: belt only → |0⟩.  Bottom: add X gate → |1⟩",
@@ -104,7 +108,9 @@ CH1_L3 = {
         (9, 5): (SINK, RIGHT, ONE),
     },
     "locked": {(0, 0), (9, 0), (0, 5), (9, 5)},
+    "unlocked": {(x, y) for x in range(1, 9) for y in (0, 5)},
     "available": [BELT, X],
+    "gate_limits": {X: 1},
     "win_count": 5,
     "camera": (4, 2),
 }
@@ -142,7 +148,9 @@ CH2_L1 = {
         (7, 2): (SINK, RIGHT, PLUS),
     },
     "locked": {(0, 2), (7, 2)},
+    "unlocked": {(x, 2) for x in range(1, 7)},
     "available": [BELT, H],
+    "gate_limits": {H: 1},
     "win_count": 5,
     "camera": (3, 2),
 }
@@ -156,7 +164,7 @@ CH2_L2 = {
         "  Middle lane: flip |0⟩ into |1⟩\n"
         "  Bottom lane: put |0⟩ into superposition\n\n"
         "Each lane is independent — build them in any order.\n"
-        "You already know every gate needed!"
+        "You have exactly one X and one H — place them wisely!"
     ),
     "hint": "Top: belt. Middle: X gate. Bottom: H gate.",
     "pre_placed": {
@@ -168,7 +176,9 @@ CH2_L2 = {
         (9, 8): (SINK, RIGHT, PLUS),
     },
     "locked": {(0, 0), (9, 0), (0, 4), (9, 4), (0, 8), (9, 8)},
+    "unlocked": {(x, y) for x in range(1, 9) for y in (0, 4, 8)},
     "available": [BELT, X, H],
+    "gate_limits": {X: 1, H: 1},
     "win_count": 5,
     "camera": (4, 4),
 }
@@ -194,7 +204,9 @@ CH2_L3 = {
         (9, 5): (SINK, RIGHT, PLUS),
     },
     "locked": {(0, 0), (4, 0), (9, 0), (0, 5), (9, 5)},
+    "unlocked": {(x, y) for x in range(1, 9) for y in (0, 5)},
     "available": [BELT, H],
+    "gate_limits": {H: 1},
     "win_count": 5,
     "camera": (4, 2),
 }
@@ -224,9 +236,9 @@ CH3_L1 = {
         "A purple (superposed) qubit becomes either red |0⟩\n"
         "or blue |1⟩ with equal probability — 50/50.\n"
         "You can never predict which.\n\n"
-        "Route qubits through H → Measurement.\n"
-        "The measurement gate absorbs the qubit and records\n"
-        "the result in its histogram.\n\n"
+        "Connect the generator to H, and H to the Measurement\n"
+        "gate using belts. The measurement gate absorbs the\n"
+        "qubit and records the result in its histogram.\n\n"
         "Collapse 10 qubits to win."
     ),
     "hint": "H → Measure: watch the histogram fill up with random results",
@@ -237,6 +249,7 @@ CH3_L1 = {
         (2, 2): (H, RIGHT, None),
     },
     "locked": {(0, 2), (4, 2), (2, 2)},
+    "unlocked": {(1, 2), (3, 2)},
     "available": [BELT],
     "win_count": 10,
     "camera": (3, 2),
@@ -263,6 +276,7 @@ CH3_L2 = {
     },
     "locked": {(0, 2), (5, -1), (5, 5)},
     "available": [BELT, H, SPLIT],
+    "gate_limits": {H: 1, SPLIT: 1},
     "win_count": 10,
     "camera": (4, 2),
 }
@@ -304,7 +318,9 @@ CH4_L1 = {
         (9, 2): (SINK, RIGHT, ONE),
     },
     "locked": {(0, 2), (9, 2)},
+    "unlocked": {(x, 2) for x in range(1, 9)},
     "available": [BELT, H, Z],
+    "gate_limits": {H: 2, Z: 1},
     "win_count": 5,
     "camera": (4, 2),
 }
@@ -329,7 +345,9 @@ CH4_L2 = {
         (9, 2): (SINK, RIGHT, MINUS),
     },
     "locked": {(0, 2), (2, 2), (9, 2)},
+    "unlocked": {(x, 2) for x in range(1, 9)},
     "available": [BELT, Y],
+    "gate_limits": {Y: 1},
     "win_count": 5,
     "camera": (4, 2),
 }
@@ -344,6 +362,8 @@ CH4_L3 = {
         "The sink wants |1⟩.  Just belts won't work.\n\n"
         "Experiment: what happens when Y sits between two H gates?\n"
         "  H|0⟩ = |+⟩,  Y|+⟩ = |−⟩,  H|−⟩ = |1⟩\n\n"
+        "You can only build on the highlighted corridor —\n"
+        "no detours around the H gates!\n"
         "Place Y between the two locked H gates to create\n"
         "the H·Y·H interference circuit."
     ),
@@ -355,7 +375,9 @@ CH4_L3 = {
         (11, 2): (SINK, RIGHT, ONE),
     },
     "locked": {(0, 2), (3, 2), (8, 2), (11, 2)},
+    "unlocked": {(1, 2), (2, 2), (4, 2), (5, 2), (6, 2), (7, 2), (9, 2), (10, 2)},
     "available": [BELT, Y],
+    "gate_limits": {Y: 1},
     "win_count": 5,
     "camera": (5, 2),
 }
@@ -393,7 +415,9 @@ CH5_L1 = {
         "If control = |0⟩, nothing happens.\n\n"
         "Both generators make |0⟩.  Use X on the control\n"
         "path (top) to flip it to |1⟩, then the CNOT will\n"
-        "flip the target too.  Both sinks want |1⟩."
+        "flip the target too.  Both sinks want |1⟩.\n\n"
+        "You can only build on the highlighted top row —\n"
+        "and you have exactly one X gate."
     ),
     "hint": "X on the control (top) path — CNOT flips the target",
     "pre_placed": {
@@ -415,6 +439,7 @@ CH5_L1 = {
                (0, 2), (1, 2), (2, 2), (3, 2), (4, 2),
                (5, 2), (6, 2), (7, 2), (8, 2),
                (9, 1), (9, 2)},
+    "unlocked": {(x, 1) for x in range(9)},
     "available": [BELT, X],
     "gate_limits": {X: 1},
     "win_count": 5,
@@ -440,7 +465,9 @@ CH5_L2 = {
         (-1, 3): (GEN, RIGHT, None),
     },
     "locked": {(-1, 2), (-1, 3)},
+    "unlocked": {(x, y) for x in range(10) for y in (2, 3)},
     "available": [BELT, H, CNOT, MEAS],
+    "gate_limits": {H: 1, CNOT: 1, MEAS: 2},
     "win_count": 10,
     "win_type": "measure",
     "camera": (4, 3),
@@ -486,7 +513,9 @@ CH6_L1 = {
         (10, 3): (SINK, RIGHT, ONE),
     },
     "locked": {(-1, 2), (-1, 3), (10, 2), (10, 3)},
+    "unlocked": {(x, y) for x in range(10) for y in (2, 3)},
     "available": [BELT, H, X, CZ],
+    "gate_limits": {H: 2, X: 1, CZ: 1},
     "win_count": 5,
     "camera": (5, 3),
 }
@@ -559,8 +588,9 @@ CH7_L2 = {
         (9, 4): (SINK, RIGHT, ONE),
     },
     "locked": {(-1, 2), (-1, 3), (-1, 4), (9, 2), (9, 3), (9, 4)},
+    "unlocked": {(x, y) for x in range(9) for y in (2, 3, 4)},
     "available": [BELT, H, CNOT],
-    "gate_limits": {H: 1},
+    "gate_limits": {H: 1, CNOT: 2},
     "win_count": 3,
     "camera": (4, 3),
 }
@@ -627,6 +657,7 @@ CH8_L2 = {
     },
     "locked": {(0, 1), (12, 1), (0, 6), (5, 6), (12, 6)},
     "available": [BELT, H, Z],
+    "gate_limits": {H: 4, Z: 2},
     "win_count": 5,
     "camera": (6, 3),
 }
@@ -693,6 +724,7 @@ CH9_L1 = {
     },
     "locked": {(0, 3), (4, 3)},
     "available": [BELT, SINK],
+    "gate_limits": {SINK: 3},
     "win_count": 10,
     "camera": (4, 3),
 }
@@ -717,7 +749,8 @@ CH9_L2 = {
     },
     "locked": {(0, 3), (3, 3), (9, 0)},
     "available": [BELT, SPLIT],
-    "win_count": 5,
+    "gate_limits": {SPLIT: 3},
+    "win_count": 3,
     "camera": (5, 3),
 }
 
@@ -749,7 +782,11 @@ CH10_L2 = {
         "Bottom lane: fresh |0⟩ target, kept clean.\n\n"
         "CNOT copies the |1⟩ before noise destroys it.\n"
         "The clean backup sink wants |1⟩.\n"
-        "The original is lost to noise — that's expected."
+        "The original is lost to noise — that's expected.\n\n"
+        "Important: this only works because |1⟩ is a known\n"
+        "basis state. A superposed qubit can NOT be copied —\n"
+        "CNOT would entangle them instead of cloning.\n"
+        "This is the No-Cloning Theorem."
     ),
     "hint": "CNOT before Noise. Top is control, bottom is target.",
     "pre_placed": {
@@ -808,6 +845,7 @@ CH12_L1 = {
     },
     "locked": {(0, 2), (8, 2), (8, 1),
                (0, 4), (8, 4), (8, 5)},
+    "unlocked": {(x, y) for x in range(1, 8) for y in (2, 4)},
     "available": [BELT, H, Z],
     "gate_limits": {H: 4, Z: 1},
     "win_count": 5,
@@ -839,6 +877,7 @@ CH12_L2 = {
     },
     "locked": {(-1, 2), (-1, 3), (1, 2), (3, 3), (5, 3), (7, 3),
                (10, 2), (10, 3)},
+    "unlocked": {(x, y) for x in range(10) for y in (2, 3)},
     "available": [BELT],
     "win_count": 5,
     "camera": (4, 3),
@@ -863,6 +902,7 @@ CH12_L3 = {
         (14, 3): (SINK, RIGHT, ONE),
     },
     "locked": {(-1, 2), (-1, 3), (14, 2), (14, 3)},
+    "unlocked": {(x, y) for x in range(14) for y in (2, 3)},
     "available": [BELT, H, X, CZ],
     "gate_limits": {H: 6, X: 4, CZ: 2},
     "win_count": 5,
@@ -883,7 +923,10 @@ CH12_L4 = {
         "  Bottom: the other half → travels to the sink\n\n"
         "Build the Bell pair (H + CNOT on middle/bottom),\n"
         "then entangle the source with its half (CNOT + H),\n"
-        "and measure the top two."
+        "and measure the top two.\n\n"
+        "Note: real teleportation also needs classical corrections\n"
+        "(X and Z gates applied based on measurement results).\n"
+        "Here we build just the quantum half of the circuit."
     ),
     "hint": "Use H and CNOTs, then route the top two lanes into measurements.",
     "win_type": "measure",
@@ -896,6 +939,7 @@ CH12_L4 = {
         (10, 3): (SINK, RIGHT, None),
     },
     "locked": {(-1, 1), (-1, 2), (-1, 3), (10, 1), (10, 2), (10, 3)},
+    "unlocked": {(x, y) for x in range(10) for y in (1, 2, 3)},
     "available": [BELT, H, CNOT],
     "gate_limits": {H: 2, CNOT: 2},
     "win_count": 10,

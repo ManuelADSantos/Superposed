@@ -4,13 +4,17 @@ A 2D quantum computing puzzle game built with pygame, inspired by factory builde
 
 ## Quantum Concepts
 
-Superposed models five core ideas from quantum computing, mapped to a visual factory metaphor:
+Superposed covers the full introductory quantum computing curriculum across 11 chapters:
 
-- **Basis states** — qubits flow as coloured particles: red for `|0>`, blue for `|1>`.
+- **Basis states** — qubits flow as coloured particles: red for `|0>`, blue for `|1>`. The X gate flips between them.
 - **Superposition** — the Hadamard gate puts a qubit into superposition (purple), meaning it is both `|0>` and `|1>` until observed.
-- **Phase** — qubits show their phase with an arrow; Z flips that phase and H can turn the difference into a visible state change.
-- **Interference** — H then Z then H produces a deterministic `|1>`, demonstrating constructive/destructive interference via phase angle.
+- **Measurement** — measuring a superposed qubit collapses it to `|0>` or `|1>` probabilistically. The Splitter routes by measurement outcome.
+- **Phase & Interference** — qubits show their phase with an arrow; Z flips that phase. H-Z-H produces deterministic `|1>` via interference.
 - **Entanglement** — the CNOT gate entangles two qubits into a Bell pair. Measuring one instantly collapses the other to the same state.
+- **Multi-qubit ops** — CZ demonstrates phase kickback; SWAP exchanges qubit states between lanes.
+- **Quantum noise** — noise gates randomize qubits, modelling real-world decoherence. Route around them or filter survivors with splitters.
+- **No-cloning theorem** — CNOT can copy known basis states but cannot clone arbitrary quantum states.
+- **Algorithms** — build toy versions of Deutsch's algorithm, QFT, Grover's search, and quantum teleportation from gates you already know.
 
 ## Getting Started
 
@@ -47,9 +51,9 @@ superposed
 
 The game has two modes accessible from the main menu:
 
-**Campaign** — a chapter-based progression through 11 chapters and 26 levels. The campaign introduces one concept at a time, from basic belt transport through entanglement, quantum noise, the no-cloning theorem, and algorithm-building challenges (Deutsch, Grover, QFT, teleportation). Each level locks certain tiles and restricts which gates you can use, with a target number of qubits to deliver to the output sink.
+**Campaign** — a chapter-based progression through 11 chapters and 26 levels. The campaign introduces one concept at a time, from basic belt transport through entanglement, quantum noise, the no-cloning theorem, and algorithm-building challenges (Deutsch, Grover, QFT, teleportation). Each level constrains the puzzle three ways: locked pre-placed tiles that can't be changed, a gate palette with per-gate budgets (most levels give you exactly the gates the intended circuit needs), and — on most levels — a restricted build area where only highlighted cells accept placement. The few open-grid levels are the routing puzzles, where finding a path through free space is the challenge.
 
-**Sandbox** — an open canvas with every gate unlocked and no win condition, for free experimentation.
+**Sandbox** — an open canvas with every gate unlocked and no win condition, for free experimentation. Any circuit built in either mode can be exported as a runnable Qiskit Python script via the Export button.
 
 ### Controls
 

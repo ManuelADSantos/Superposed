@@ -717,7 +717,7 @@ CH9_L2 = {
     },
     "locked": {(0, 3), (3, 3), (9, 0)},
     "available": [BELT, SPLIT],
-    "win_count": 5,
+    "win_count": 3,
     "camera": (5, 3),
 }
 
@@ -749,7 +749,11 @@ CH10_L2 = {
         "Bottom lane: fresh |0⟩ target, kept clean.\n\n"
         "CNOT copies the |1⟩ before noise destroys it.\n"
         "The clean backup sink wants |1⟩.\n"
-        "The original is lost to noise — that's expected."
+        "The original is lost to noise — that's expected.\n\n"
+        "Important: this only works because |1⟩ is a known\n"
+        "basis state. A superposed qubit can NOT be copied —\n"
+        "CNOT would entangle them instead of cloning.\n"
+        "This is the No-Cloning Theorem."
     ),
     "hint": "CNOT before Noise. Top is control, bottom is target.",
     "pre_placed": {
@@ -883,7 +887,10 @@ CH12_L4 = {
         "  Bottom: the other half → travels to the sink\n\n"
         "Build the Bell pair (H + CNOT on middle/bottom),\n"
         "then entangle the source with its half (CNOT + H),\n"
-        "and measure the top two."
+        "and measure the top two.\n\n"
+        "Note: real teleportation also needs classical corrections\n"
+        "(X and Z gates applied based on measurement results).\n"
+        "Here we build just the quantum half of the circuit."
     ),
     "hint": "Use H and CNOTs, then route the top two lanes into measurements.",
     "win_type": "measure",

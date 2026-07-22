@@ -20,7 +20,7 @@ Superposed covers the full introductory quantum computing curriculum across 11 c
 
 ### Requirements
 
-- Python 3.9+
+- Python 3.9 to 3.12
 - pygame 2.1+
 
 ### Install and Run
